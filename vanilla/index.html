@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ginti — Urdu Numbers Engine</title>
+  <!-- Google Fonts: Plus Jakarta Sans & Noto Nastaliq Urdu -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Noto+Nastaliq+Urdu:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- =============================================================================
+      GLOBAL TOAST NOTIFICATION CONTAINER
+      ============================================================================= -->
+  <div id="toast-notification" class="hidden">
+    <span class="sparkle-icon">✨</span>
+    <span id="toast-text">Toast message goes here.</span>
+  </div>
+
+  <!-- =============================================================================
+      ONBOARDING ENTRANCE DIALOG OVERLAY
+      ============================================================================= -->
+  <div id="onboarding-overlay" class="overlay">
+    <div id="onboarding-card">
+      <div class="top-accent-bar"></div>
+      <div class="emoji-banner">🇵🇰</div>
+      <h1>Welcome to <span class="text-accent-gold">Ginti</span></h1>
+      <p>
+        Ever spoken perfect conversational Urdu—but when a micro-merchant yells out <strong>"Tirpan"</strong> or <strong>"Chaunsath"</strong>, you panic? <strong>Ginti</strong> bridges this exact gap instantly.
+      </p>
+      
+      <div id="onboarding-choices">
+        <button id="choice-learn-btn" class="onboard-option">
+          <span class="option-title">📚 Learn Systematically</span>
+          <span class="option-subtitle">Step-by-step unit exercises</span>
+        </button>
+        <button id="choice-lookup-btn" class="onboard-option">
+          <span class="option-title">⚡ Instant Search Hub</span>
+          <span class="option-subtitle">Phonetic lookup dictionary</span>
+        </button>
+      </div>
+      <p class="onboarding-footnote">Runs completely client-side in your local browser environment.</p>
+    </div>
+  </div>
+
+  <!-- =============================================================================
+      GLOBAL STICKY HEADER
+      ============================================================================= -->
+  <header id="global-header">
+    <div id="header-logo" class="logo-group">
+      <div class="logo-box">G</div>
+      <div class="logo-text">
+        <h2>Ginti</h2>
+        <p class="logo-sub">Urdu Numbers Engine</p>
+      </div>
+    </div>
+
+    <!-- Right-aligned Header Stats Statuses -->
+    <div class="header-status-group">
+      <!-- 3D Level Badge -->
+      <div class="tactile-badge">
+        <span class="badge-icon">🧠</span>
+        <span id="lvl-display">Level 1</span>
+      </div>
+
+      <!-- 3D XP Badge -->
+      <div class="tactile-badge">
+        <span class="badge-icon">⭐</span>
+        <span id="xp-display">0 XP Total</span>
+      </div>
+
+      <!-- 3D Streak Badge -->
+      <div class="tactile-badge" id="streak-badge">
+        <span class="badge-icon">🔥</span>
+        <span id="streak-counter-val">3 Day Streak</span>
+      </div>
+
+      <!-- Native Script Toggle Switcher -->
+      <div id="script-toggle-wrapper">
+        <span class="toggle-label-roman">Roman</span>
+        <button id="script-toggle" title="Toggle Native Nastaliq Script">
+          <span id="script-toggle-handle"></span>
+        </button>
+        <span class="toggle-label-urdu">اردو</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- =============================================================================
+      UNIFIED #APP-CONTAINER FOR VIEWS ROUTING
+      ============================================================================= -->
+  <main id="app-container">
+
+    <!-- =============================================================================
+        SCREEN A: MAIN DASHBOARD
+        ============================================================================= -->
+    <section id="screen-dashboard" class="dashboard-grid animate-fade-in">
+      
+      <!-- Highly streamlined, compact "Panic Search Bar" zone -->
+      <div id="panic-search-hub">
+        <div class="search-header">
+          <div>
+            <h3>🔍 Instant Bidirectional Lookup</h3>
+            <p>Search Roman spelling (e.g., paintees), digits, or Urdu scripts instantly.</p>
+          </div>
+          <div class="search-utilities" style="display: flex; gap: 8px; align-items: center;">
+            <span class="search-indicator">Scale: 1 - 5,000</span>
+            <button class="btn-gold" data-action="start-arcade" style="padding: 0.25rem 0.6rem; font-size: 0.7rem; font-weight: 800; border-radius: 0.5rem; border: 2px solid #0f172a; border-bottom: 4px solid #0f172a; background-color: var(--color-gold-500); width: auto;">⚡ Blitz</button>
+          </div>
+        </div>
+
+         <div class="search-input-container" style="display: flex; gap: 8px;">
+          <input type="text" id="ginti-search" placeholder="Type a number, roman word or Urdu text..." style="flex: 1;">
+          <button id="clear-search-btn" class="hidden">×</button>
+          <button class="btn-primary" style="padding: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem;"><span style="font-size: 1.1rem; line-height: 1;">🔍</span></button>
+        </div>
+
+        <!-- Stuck / Lost Shortcuts Panel - Quick click lookup buttons -->
+        <div id="panic-suggest-shortcuts" style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.75rem;">
+          <span style="font-weight: 700; color: #475569; display: flex; align-items: center; gap: 4px;">
+            ℹ️ Confusions:
+          </span>
+          <button class="panic-quick-btn" data-term="atasi" style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.1s;">88 (atasi)</button>
+          <button class="panic-quick-btn" data-term="satasi" style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.1s;">87 (satasi)</button>
+          <button class="panic-quick-btn" data-term="sathattar" style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.1s;">77 (sathattar)</button>
+          <button class="panic-quick-btn" data-term="ninanwe" style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.1s;">99 (ninanwe)</button>
+          <button class="panic-quick-btn" data-term="unhattar" style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.1s;">69 (unhattar)</button>
+          <button class="panic-quick-btn" data-term="derh sau" style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.1s;">150 (derh sau)</button>
+        </div>
+
+        <!-- Search Outcome Layout Split Panel container -->
+        <div id="search-outcome-panel" class="hidden">
+          
+          <!-- High-contrast standalone preview line container -->
+          <div id="search-best-match-wrapper" class="hidden"></div>
+          
+          <div class="results-columns-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%;">
+            <div class="results-column">
+              <div class="column-title">Lookup Results</div>
+              <div id="search-results-list">
+                <!-- Dynamically populated via app.js -->
+              </div>
+            </div>
+
+            <div class="preview-column">
+              <div id="search-entry-details-box">
+                <div class="help-empty-state">
+                  <span class="help-icon">❓</span>
+                  <p>Tap any search result item to view full context descriptors and trigger TTS pronunciation.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Playful Mithu speech bubbles widget -->
+      <div id="screen-dashboard-companion-bento" class="mascot-speech-hub-card">
+        <div id="ginti-mascot-container" class="mascot-container-box">
+          <svg id="mithu-avatar-svg" viewBox="0 0 100 100" class="mithu-svg-graphic pointer-events-none">
+            <defs>
+              <linearGradient id="mithuBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981" />
+                <stop offset="100%" stop-color="#046a38" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="30" r="18" fill="url(#mithuBody)" />
+            <circle cx="50" cy="55" r="30" fill="url(#mithuBody)" />
+            <ellipse cx="20" cy="55" rx="5" ry="11" fill="#046a38" />
+            <ellipse cx="80" cy="55" rx="5" ry="11" fill="#046a38" />
+            <ellipse cx="50" cy="71" rx="16" ry="12" fill="#d1fae5" />
+            <circle cx="43" cy="27" r="2.5" fill="#1e293b" />
+            <circle cx="57" cy="27" r="2.5" fill="#1e293b" />
+            <path d="M 44 43 Q 50 37 56 43 Q 50 59 44 43" fill="#fbbf24" />
+            <path d="M 44 43 Q 50 46 56 43" stroke="#d97706" stroke-width="1" fill="none" />
+          </svg>
+          <span class="mascot-badge-level">Lv 1</span>
+        </div>
+        
+        <div class="speech-bubble-wrapper">
+          <div class="speech-bubble-bubble">
+            <span class="speech-bubble-intro">🦜 Mithu's Interactive Guide:</span>
+            <p id="mithu-speech-text">"Assalam-o-Alaikum! Ready to master Urdu counts? I recommend starting with Unit 1 to build your base! Let's count!"</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Practice Unit Grid Headers -->
+      <div class="section-divider">
+        <h3>📚 Interactive Practice Units</h3>
+        <span id="units-mastery-count">0 / 5 Mastered</span>
+      </div>
+
+      <!-- Units Container holding exactly unit1 to unit5 -->
+      <div id="units-feed">
+        
+        <!-- Unit 1 -->
+        <article class="unit-card" data-unit-id="unit1" data-action="start-unit">
+          <div class="unit-card-header">
+            <span class="unit-emoji">🌱</span>
+            <div class="unit-meta">
+              <h4>Unit 1 — Numbers 1 to 20</h4>
+              <span class="unit-range">Range: 1–20 (20 entries)</span>
+            </div>
+            <span class="mastered-badge hidden">✓ Mastered</span>
+          </div>
+          <p class="unit-desc">The foundational scale. Essential for basic shopping, counting small items, and simple conversations.</p>
+          <div class="unit-progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="progress-percentage">0%</span>
+            <button class="unit-action-btn" data-unit-id="unit1" data-action="start-unit">Start</button>
+          </div>
+        </article>
+
+        <!-- Unit 2 -->
+        <article class="unit-card" data-unit-id="unit2" data-action="start-unit">
+          <div class="unit-card-header">
+            <span class="unit-emoji">🚀</span>
+            <div class="unit-meta">
+              <h4>Unit 2 — Numbers 21 to 50</h4>
+              <span class="unit-range">Range: 21–50 (9 entries)</span>
+            </div>
+            <span class="mastered-badge hidden">✓ Mastered</span>
+          </div>
+          <p class="unit-desc">Stepping up. Great for calling transaction prices, ages, and timing schedules.</p>
+          <div class="unit-progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="progress-percentage">0%</span>
+            <button class="unit-action-btn" data-unit-id="unit2" data-action="start-unit">Start</button>
+          </div>
+        </article>
+
+        <!-- Unit 3 -->
+        <article class="unit-card" data-unit-id="unit3" data-action="start-unit">
+          <div class="unit-card-header">
+            <span class="unit-emoji">🎯</span>
+            <div class="unit-meta">
+              <h4>Unit 3 — Numbers 51 to 75</h4>
+              <span class="unit-range">Range: 51–75 (5 entries)</span>
+            </div>
+            <span class="mastered-badge hidden">✓ Mastered</span>
+          </div>
+          <p class="unit-desc">Intermediate challenges. Vital for intermediate street negotiations, weights, and measures.</p>
+          <div class="unit-progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="progress-percentage">0%</span>
+            <button class="unit-action-btn" data-unit-id="unit3" data-action="start-unit">Start</button>
+          </div>
+        </article>
+
+        <!-- Unit 4 -->
+        <article class="unit-card" data-unit-id="unit4" data-action="start-unit">
+          <div class="unit-card-header">
+            <span class="unit-emoji">🌟</span>
+            <div class="unit-meta">
+              <h4>Unit 4 — Numbers 76 to 100</h4>
+              <span class="unit-range">Range: 76–100 (7 entries)</span>
+            </div>
+            <span class="mastered-badge hidden">✓ Mastered</span>
+          </div>
+          <p class="unit-desc">Mastery scale. Includes tricky phonetics like 'Ninanwe' (99) and 'Satasi' (87).</p>
+          <div class="unit-progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="progress-percentage">0%</span>
+            <button class="unit-action-btn" data-unit-id="unit4" data-action="start-unit">Start</button>
+          </div>
+        </article>
+
+        <!-- Unit 5 -->
+        <article class="unit-card" data-unit-id="unit5" data-action="start-unit">
+          <div class="unit-card-header">
+            <span class="unit-emoji">🛒</span>
+            <div class="unit-meta">
+              <h4>Unit 5 — Practical Market Numbers</h4>
+              <span class="unit-range">Range: 100–5000 (5 entries)</span>
+            </div>
+            <span class="mastered-badge hidden">✓ Mastered</span>
+          </div>
+          <p class="unit-desc">Real-world bulk indices. Hundreds, thousands, and market slang like 'Derh Sau' (150).</p>
+          <div class="unit-progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="progress-percentage">0%</span>
+            <button class="unit-action-btn" data-unit-id="unit5" data-action="start-unit">Start</button>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Control center and progress statistics -->
+      <div id="insights-panel">
+        <div class="insight-block">
+          <div class="icon-circle text-emerald">🏆</div>
+          <div class="insight-details">
+            <span class="insight-label">Accumulated XP</span>
+            <span class="insight-value" id="total-xp-score-panel">0 XP</span>
+          </div>
+        </div>
+
+        <div class="insight-block">
+          <div class="icon-circle text-gold">⭐</div>
+          <div class="insight-details">
+            <span class="insight-label">Arcade Blitz Record</span>
+            <span class="insight-value" id="arcade-high-score-panel">0 pts</span>
+          </div>
+        </div>
+
+        <div class="insight-block">
+          <div class="icon-circle text-rose">⚙️</div>
+          <div class="insight-details">
+            <span class="insight-label">Control Center</span>
+            <button id="reset-app-progress-btn">Reset All Metrics</button>
+          </div>
+        </div>
+
+        <!-- Weak Areas Section Panel -->
+        <div class="weak-areas-box">
+          <div class="weak-areas-header">
+            <h4>Your Targeted Numbers to Practice</h4>
+            <button id="clear-weak-areas-btn" class="hidden">Wipe History</button>
+          </div>
+          <p id="weak-areas-empty-state" class="empty-state-text">
+            Splendid accuracy! No weak areas identified yet. Answer quiz options correctly to build milestones.
+          </p>
+          <div id="weak-areas-list" class="weak-list-grid"></div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- =============================================================================
+        SCREEN B: PRACTICE QUIZ ARENA
+        ============================================================================= -->
+    <section id="screen-practice" class="hidden animate-fade-in text-center">
+      
+      <div class="practice-header">
+        <button id="practice-back-btn">← Back to Dashboard</button>
+        <span id="question-counter">Card 1 of 10</span>
+      </div>
+
+      <!-- Unified Mini progress loader -->
+      <div class="progress-bar-container practice-progress">
+        <div id="practice-progress-fill" class="progress-fill" style="width: 10%"></div>
+      </div>
+
+      <!-- MAIN PROMPT CARD -->
+      <div id="prompt-card">
+        <span class="prompt-meta">Evaluate Translation</span>
+        <div id="prompt-display">7</div>
+        
+        <div class="pronunciation-tts-trigger-box">
+          <button id="practice-tts-trigger" title="Hear correct pronunciation">🔊</button>
+          <p class="tts-instruction">Phonetic mapping guide activated</p>
+        </div>
+      </div>
+
+      <div class="feedback-hint-banner">
+        <span>Identify the perfect match translation choice card located below.</span>
+      </div>
+
+      <!-- MULTIPLE CHOICES GRID -->
+      <div id="choice-grid" class="choices-layout-grid-four">
+        <!-- Populated dynamically via JS -->
+      </div>
+
+      <!-- ACTION FEEDBACK TRAY -->
+      <div id="practice-feedback-tray" class="hidden">
+        <div class="feedback-content">
+          <span id="feedback-icon-img">✓</span>
+          <div class="feedback-text-cluster">
+            <h4 id="answer-feedback-msg">Shabash! Splendid Translation.</h4>
+            <span id="feedback-sub-msg">Nice matching intuition!</span>
+          </div>
+        </div>
+        <button id="next-question-btn">Next Card →</button>
+      </div>
+
+    </section>
+
+    <!-- =============================================================================
+        SCREEN C: ARCADE BLITZ CHALLENGE
+        ============================================================================= -->
+    <section id="screen-arcade" class="hidden animate-fade-in text-center">
+      
+      <div class="arcade-header">
+        <span id="arcade-timer" class="rapid-timer-capsule">
+          ⏱️ <span id="timer-display">30</span>s
+        </span>
+
+        <span id="arcade-score">
+          Score: <strong id="arcade-score-display">0</strong> pts
+        </span>
+
+        <button id="arcade-abandon-btn" class="escape-match-capsule">Abandon</button>
+      </div>
+
+      <div id="arcade-panic-warning" class="hidden">
+        ⚠️ RAPID INTUITION: TIMER CRITICALLY LOW!
+      </div>
+
+      <!-- MAIN PLAYABLE GRID -->
+      <div id="arcade-interactive-container">
+        
+        <div id="arcade-prompt">
+          <span class="badge-rapid">RAPID-FIRE CHIP</span>
+          <div id="arcade-prompt-display">Saat</div>
+          <span class="arcade-footer-helper">Double speed matches (+10 pts reward, -5 pts crash penalties)</span>
+        </div>
+
+        <div id="arcade-choice-grid" class="choices-layout-grid-four">
+          <!-- Populated dynamically -->
+        </div>
+
+      </div>
+
+      <!-- GAME OVER POST-GAME FEED SUMMARY CARD -->
+      <div id="arcade-end-screen" class="hidden">
+        <div class="crown-bouncing-logo">⭐</div>
+        <h2>Match Completed!</h2>
+        <p>Excellent speed reflex training deck! You scored a majestic scorecard total of <b id="arcade-final-score-box"><span id="arcade-final-score">0</span> pts</b>.</p>
+        
+        <div id="new-high-score-tag" class="hidden">
+          👑 All-time High Record Broken!
+        </div>
+
+        <div class="end-actions">
+          <button id="arcade-restart-btn" class="btn-gold">Retry blitz match</button>
+          <button id="arcade-home-btn" class="btn-secondary">Back to Dashboard</button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =============================================================================
+      GLOBAL SYSTEM STATUTORY FOOTER
+      ============================================================================= -->
+  <footer>
+    <div class="footer-copy">
+      <strong>Ginti.</strong> — Urdu Romanized Numerical Trainer. Built for high fidelity matching and bilingual reflexes.
+    </div>
+    <div class="footer-deploy-build">
+      V1.0.0 Stable Deployment Frame | 2026 Sandbox Local Host Client
+    </div>
+  </footer>
+
+  <script src="dataset.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
