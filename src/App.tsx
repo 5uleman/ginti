@@ -740,6 +740,7 @@ export default function App() {
   // Mithu Learning Assistant state
   const [digitMistakes, setDigitMistakes] = useState<Record<number, number>>({});
   const [mithuExplanationDigit, setMithuExplanationDigit] = useState<number | null>(null);
+  const [mithuLanguage, setMithuLanguage] = useState<"ur" | "en">("ur");
   const mithuExplanationDigitRef = useRef<number | null>(null);
   useEffect(() => {
     mithuExplanationDigitRef.current = mithuExplanationDigit;
@@ -3464,7 +3465,11 @@ export default function App() {
                         playSoundSynth("click");
                         setShowStreakPopup(false);
                       }}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white border-2 border-emerald-700 border-b-[6px] border-b-emerald-800 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none"
+                      className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-full py-2.5 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
+                        appState.isDarkMode 
+                          ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                          : "border-2 border-emerald-700 border-b-[6px] border-b-emerald-800 active:translate-y-[4px] active:border-b-[2px]"
+                      }`}
                     >
                       Keep Learning! 🚀
                     </button>
@@ -3636,16 +3641,31 @@ export default function App() {
                       Mithu's Code Decoder
                     </span>
                   </div>
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setMithuExplanationDigit(null);
-                    }}
-                    className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center justify-center border-2 border-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-800 cursor-pointer transition active:scale-90 ginti-decoder-close-btn"
-                    aria-label="Close decoder"
-                  >
-                    <X className="w-4 h-4 stroke-[2.5]" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Small unobtrusive English language toggle button */}
+                    <button
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setMithuLanguage(prev => prev === "ur" ? "en" : "ur");
+                      }}
+                      className="px-2 py-1 text-[9px] font-extrabold rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 select-none cursor-pointer transition-all active:scale-95 shadow-xs"
+                      title={mithuLanguage === "ur" ? "Switch to English explanation" : "Switch to Urdu explanation"}
+                    >
+                      <span className="text-[10px]">🌐</span>
+                      <span>{mithuLanguage === "ur" ? "EN" : "UR"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setMithuExplanationDigit(null);
+                      }}
+                      className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center justify-center border-2 border-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-800 cursor-pointer transition active:scale-90 ginti-decoder-close-btn"
+                      aria-label="Close decoder"
+                    >
+                      <X className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Word is the Star */}
@@ -3671,7 +3691,7 @@ export default function App() {
                   <div className="flex-1 px-3 py-2 bg-sky-50 border-2 border-sky-200 border-b-[5px] border-b-sky-300 text-sky-800 rounded-2xl text-center shadow-xs dark:bg-sky-950/40 dark:border-sky-900/60 dark:border-b-sky-850 dark:text-sky-300 ginti-decoder-prefix-block">
                     <span className="text-xl font-black block tracking-tight leading-none text-sky-700 dark:text-sky-300">{explanation.prefix}</span>
                     <span className="text-[9px] font-black text-sky-500 dark:text-sky-400 block leading-none mt-1 uppercase tracking-wide">
-                      {explanation.prefixMeaning}
+                      {mithuLanguage === "en" ? explanation.prefixMeaningEn : explanation.prefixMeaning}
                     </span>
                   </div>
                   
@@ -3715,9 +3735,13 @@ export default function App() {
                     <MithuMascot mood="happy" size={46} />
                   </div>
                   <div className="text-left flex-1">
-                    <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest block leading-none mb-1">Mithu guides you:</span>
+                    <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest block leading-none mb-1">
+                      {mithuLanguage === "en" ? "Mithu guides you:" : "Mithu ka mashwara:"}
+                    </span>
                     <p className="text-[11.5px] font-black text-emerald-950 dark:text-emerald-100 leading-snug">
-                      "{explanation.mithuHeader.replace("👀", "")} 👀 {explanation.simpleExplanation}"
+                      "{mithuLanguage === "en" 
+                        ? `${explanation.mithuHeaderEn.replace("👀", "").trim()} 👀 ${explanation.simpleExplanationEn}`
+                        : `${explanation.mithuHeader.replace("👀", "").trim()} 👀 ${explanation.simpleExplanation}`}"
                     </p>
                   </div>
                 </div>
@@ -3730,7 +3754,7 @@ export default function App() {
                   }}
                   className="w-full bg-emerald-500 hover:bg-emerald-400 text-white border-2 border-emerald-500 border-b-[6px] border-b-emerald-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-3 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md select-none mt-1 ginti-samajh-gaya-btn"
                 >
-                  Samajh Gaya! 👍
+                  {mithuLanguage === "en" ? "Got It! 👍" : "Samajh Gaya! 👍"}
                 </button>
               </motion.div>
             </motion.div>
@@ -4382,7 +4406,11 @@ export default function App() {
 
                         setRecoveryState(null);
                       }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5 cursor-pointer shadow-md transition-all duration-150 active:scale-[0.99]"
+                      className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all duration-150 ${
+                        appState.isDarkMode 
+                          ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 active:scale-[0.99]" 
+                          : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5 active:scale-[0.99]"
+                      }`}
                     >
                       Save Progress & Complete 🎉
                     </button>
@@ -5323,7 +5351,11 @@ export default function App() {
                             {isCurrent && (
                               <button
                                 onClick={() => startUnitJourney(unit.id)}
-                                className="unit-action-btn flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:translate-y-[2px] active:border-b-2 text-white font-black text-[10px] rounded-xl border-b-4 border-b-emerald-800 transition-all cursor-pointer shadow-sm"
+                                className={`unit-action-btn flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] rounded-xl transition-all cursor-pointer shadow-sm ${
+                                  appState.isDarkMode 
+                                    ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                                    : "border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                }`}
                               >
                                 <span>{unitPercent > 0 ? "Continue" : "Start"}</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
@@ -5867,7 +5899,7 @@ export default function App() {
               /* ARCADE DISMISSED END SCREEN CARD */
               <div 
                 id="arcade-end-screen" 
-                className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-slate-200 border-b-[6px] border-b-slate-350 p-6 sm:p-8 flex flex-col items-center justify-center text-center relative shadow-xl max-w-md mx-auto w-full animate-fade-in animate-scale-up"
+                className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-slate-200 border-b-[6px] border-b-slate-350 p-6 sm:p-8 flex-1 flex flex-col items-center justify-center text-center relative shadow-xl max-w-md mx-auto w-full animate-fade-in animate-scale-up my-auto"
               >
                 
                 {/* 3D Circular Crown/Pedestal */}
@@ -6342,7 +6374,11 @@ export default function App() {
                             setNextStageToFocus(2);
                             setActiveStageIndex(null);
                           }}
-                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all shadow-md"
+                          className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
+                            appState.isDarkMode 
+                              ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                              : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                          }`}
                         >
                           CONTINUE TO NEXT STAGE
                         </button>
@@ -6380,7 +6416,7 @@ export default function App() {
             
             if (hasFinishedQuiz) {
               return (
-                <div id="screen-journey-stage-2-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8">
+                <div id="screen-journey-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
                   <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 border border-amber-200 mb-1 shadow-sm animate-bounce">
                     <Star className="w-7 h-7 fill-amber-300" />
                   </div>
@@ -6523,7 +6559,7 @@ export default function App() {
 
             if (hasFinishedListening) {
               return (
-                <div id="screen-journey-stage-3-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8">
+                <div id="screen-journey-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
                   <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 border border-rose-200 mb-1 shadow-sm animate-bounce">
                     <Star className="w-7 h-7 fill-rose-300" />
                   </div>
@@ -6677,7 +6713,7 @@ export default function App() {
             if (stageArcadeOver) {
               const pass = stageArcadeScore >= 3;
               return (
-                <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8">
+                <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
                   <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-200 mb-1 shadow-sm">
                     {pass ? (
                       <Star className="w-7 h-7 fill-indigo-300 text-indigo-500" />
@@ -6919,7 +6955,11 @@ export default function App() {
                         playSoundSynth("click");
                         setArenaActiveStage(1);
                       }}
-                      className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
+                      className={`py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all ${
+                        appState.isDarkMode 
+                          ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                          : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                      }`}
                     >
                       EXPLORE
                     </button>
@@ -7178,7 +7218,11 @@ export default function App() {
                           setArenaStage1Finished(false);
                           setArenaActiveStage(null);
                         }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all shadow-md"
+                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
+                          appState.isDarkMode 
+                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                        }`}
                       >
                         CONTINUE TO NEXT STAGE
                       </button>
@@ -7215,7 +7259,7 @@ export default function App() {
             if (arenaQuizIdx >= 5) {
               const pass = arenaQuizScore >= 3;
               return (
-                <div id="screen-arena-stage-2-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 text-slate-800">
+                <div id="screen-arena-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md">
                     🏁
                   </div>
@@ -7237,7 +7281,11 @@ export default function App() {
                           saveArenaStageProgress(2);
                           setArenaActiveStage(null);
                         }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer shadow-md animate-pulse"
+                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
+                          appState.isDarkMode 
+                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                        }`}
                       >
                         Unlock Stage 3: Listening Duel (+25 XP) 🎉
                       </button>
@@ -7384,7 +7432,7 @@ export default function App() {
             if (arenaListIdx >= 5) {
               const pass = arenaQuizScore >= 3;
               return (
-                <div id="screen-arena-stage-3-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 text-slate-800">
+                <div id="screen-arena-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
                   <div className="w-12 h-12 bg-indigo-105 rounded-2xl flex items-center justify-center text-indigo-750 border border-indigo-200 mb-1 shadow-sm">
                     {pass ? (
                       <Star className="w-6 h-6 fill-indigo-300 text-indigo-600 animate-spin-once" />
@@ -7410,7 +7458,11 @@ export default function App() {
                           saveArenaStageProgress(3);
                           setArenaActiveStage(null);
                         }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer shadow-md animate-pulse"
+                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
+                          appState.isDarkMode 
+                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                        }`}
                       >
                         Unlock Stage 4: Speed Blitz (+25 XP) 🎉
                       </button>
@@ -7573,7 +7625,7 @@ export default function App() {
             if (arenaArcadeOver) {
               const pass = arenaArcadeScore >= 3;
               return (
-                <div id="screen-arena-stage-4-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 text-slate-800">
+                <div id="screen-arena-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
                   <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center text-white border-2 border-rose-455 border-b-4 border-b-rose-900 shadow-sm">
                     {pass ? (
                       <Star className="w-6 h-6 fill-rose-200 text-white animate-bounce" />
@@ -7599,7 +7651,11 @@ export default function App() {
                           saveArenaStageProgress(4);
                           setArenaActiveStage(null);
                         }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer shadow-md animate-pulse"
+                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
+                          appState.isDarkMode 
+                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                        }`}
                       >
                         Proceed to Stage 5: Mastery Battle (+25 XP) 🎉
                       </button>
@@ -7733,7 +7789,7 @@ export default function App() {
             if (arenaQuizIdx >= 10) {
               const pass = arenaQuizScore >= 7;
               return (
-                <div id="screen-arena-stage-5-end" className="max-w-md mx-auto w-full p-4 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 text-slate-800">
+                <div id="screen-arena-stage-5-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
                   <div className="w-14 h-14 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none animate-bounce">
                     🏆
                   </div>
@@ -7756,7 +7812,11 @@ export default function App() {
                           saveArenaStageProgress(5);
                           setArenaActiveStage(null);
                         }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 cursor-pointer shadow-md"
+                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all ${
+                          appState.isDarkMode 
+                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                        }`}
                       >
                         Claim Mastery Badge & Trophy (+100 XP) 🏆
                       </button>
