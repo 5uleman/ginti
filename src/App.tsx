@@ -5272,7 +5272,9 @@ export default function App() {
                                   : "ginti-node-locked cursor-not-allowed"
                             }`}
                           >
-                            <span>{unit.emoji}</span>
+                            <span className="drop-shadow-[0_2.5px_2px_rgba(0,0,0,0.38)] filter select-none">
+                              {unit.emoji}
+                            </span>
 
                             {/* Status Overlay Badge on bottom-right of the circle node */}
                             <span className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4.5 h-4.5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-[8.5px] sm:text-[10px] font-black border border-white shadow-xs ${
