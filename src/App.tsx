@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   motion, 
-  AnimatePresence 
+  AnimatePresence,
+  useReducedMotion
 } from "motion/react";
 import { 
   Search, 
@@ -624,38 +625,17 @@ const HeartsDisplay = ({ hearts, isDarkMode }: { hearts: number; isDarkMode: boo
           );
         }
 
-        // Active hearts - check warning state
-        if (hearts === 2) {
-          // Gentle warning pulse
+        // Active hearts - check warning state (subtle gentle warning pulse for final 1 or 2 hearts)
+        if (hearts === 2 || hearts === 1) {
           return (
             <motion.span
               key={hIdx}
               className="text-xs inline-block filter-none"
               animate={{
-                scale: [1.1, 1.22, 1.1],
+                scale: [1.1, 1.2, 1.1],
               }}
               transition={{
-                duration: 1.6,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              ❤️
-            </motion.span>
-          );
-        }
-
-        if (hearts === 1) {
-          // Strong critical pulse
-          return (
-            <motion.span
-              key={hIdx}
-              className="text-xs inline-block filter-none"
-              animate={{
-                scale: [1.1, 1.35, 1.1],
-              }}
-              transition={{
-                duration: 0.8,
+                duration: 1.8,
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
@@ -695,6 +675,7 @@ const getInitialDarkMode = (): boolean => {
 };
 
 export default function App() {
+  const shouldReduceMotion = useReducedMotion();
   // =============================================================================
   // APP STATES
   // =============================================================================
@@ -775,6 +756,8 @@ export default function App() {
   const recentArcadeDigitsRef = useRef<number[]>([]);
   const recentUnitArcadeDigitsRef = useRef<Record<string, number[]>>({});
   const recentArenaArcadeDigitsRef = useRef<number[]>([]);
+  const lastPlayedStageQRef = useRef<string>("");
+  const lastPlayedArenaQRef = useRef<string>("");
 
   // =============================================================================
   // TRAINING ARENA TRANSIENT SCREEN STATE
@@ -884,6 +867,7 @@ export default function App() {
   // Mascot dynamic animations (jump, shake)
   const [mascotAnimation, setMascotAnimation] = useState<"jump" | "shake" | "">("");
   const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
+  const [showDeleteArenaConfirm, setShowDeleteArenaConfirm] = useState<boolean>(false);
   const [aboutExpanded, setAboutExpanded] = useState<boolean>(false);
   
   // Mastery Streak states
@@ -1040,13 +1024,22 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeScreen]);
 
-  // Synchronize document-level classes for seamless dark status mapping
+  // Synchronize document-level classes for seamless dark status mapping with smooth transitions
   useEffect(() => {
+    // Add transitioning class to enable smooth transition only during toggle
+    document.documentElement.classList.add("theme-transitioning");
+
     if (appState.isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    const timer = setTimeout(() => {
+      document.documentElement.classList.remove("theme-transitioning");
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [appState.isDarkMode]);
 
   const saveState = (updated: AppState) => {
@@ -1955,8 +1948,10 @@ export default function App() {
   const saveArenaStageProgress = (completedStage: number) => {
     const currentProgress = appState.arenaStageProgress ?? 1;
     let nextProgress = currentProgress;
+    let leveledUp = false;
     if (completedStage >= currentProgress) {
       nextProgress = Math.min(5, completedStage + 1);
+      leveledUp = true;
     }
     const updated: AppState = {
       ...appState,
@@ -1968,7 +1963,10 @@ export default function App() {
       updated.arenaStarted = false;
     }
     saveState(updated);
-    playSoundSynth("levelUp");
+    if (leveledUp) {
+      playSoundSynth("levelUp");
+    }
+    return leveledUp;
   };
 
   const recordArenaResponse = (digit: number, isCorrect: boolean, elapsedMs: number) => {
@@ -2197,7 +2195,9 @@ export default function App() {
       };
       saveState(updated);
       playSoundSynth("levelUp");
+      return true;
     }
+    return false;
   };
 
   // Automatically scroll to the next unlocked stage in the Unit Journey selection map when progressing
@@ -2760,6 +2760,7 @@ export default function App() {
     if (!recoveryState) return;
     const nextIdx = recoveryState.currentIndex + 1;
     if (nextIdx >= recoveryState.questions.length) {
+      playSoundSynth("levelUp");
       setRecoveryState({
         ...recoveryState,
         currentIndex: nextIdx,
@@ -3032,23 +3033,45 @@ export default function App() {
 
   useEffect(() => {
     if (activeStageIndex === 3) {
-      setStageListSpeakerAnimate(true);
-      const timer = setTimeout(() => {
-        setStageListSpeakerAnimate(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+      const currentQ = stageListQuestions[stageListIdx];
+      if (currentQ && currentQ.entry) {
+        const questionKey = `${selectedJourneyUnitId || "unit"}-${stageListIdx}-${currentQ.entry.digit}`;
+        if (lastPlayedStageQRef.current !== questionKey) {
+          lastPlayedStageQRef.current = questionKey;
+          
+          // Auto-play the word audio
+          playWordAudio(currentQ.entry);
+          
+          setStageListSpeakerAnimate(true);
+          const timer = setTimeout(() => {
+            setStageListSpeakerAnimate(false);
+          }, 1500);
+          return () => clearTimeout(timer);
+        }
+      }
     }
-  }, [activeStageIndex, stageListIdx]);
+  }, [activeStageIndex, stageListIdx, stageListQuestions, selectedJourneyUnitId]);
 
   useEffect(() => {
     if (arenaActiveStage === 3) {
-      setArenaListSpeakerAnimate(true);
-      const timer = setTimeout(() => {
-        setArenaListSpeakerAnimate(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+      const currentQ = arenaListQuestions[arenaListIdx];
+      if (currentQ && currentQ.entry) {
+        const questionKey = `${arenaListIdx}-${currentQ.entry.digit}`;
+        if (lastPlayedArenaQRef.current !== questionKey) {
+          lastPlayedArenaQRef.current = questionKey;
+          
+          // Auto-play the word audio
+          playWordAudio(currentQ.entry);
+          
+          setArenaListSpeakerAnimate(true);
+          const timer = setTimeout(() => {
+            setArenaListSpeakerAnimate(false);
+          }, 1500);
+          return () => clearTimeout(timer);
+        }
+      }
     }
-  }, [arenaActiveStage, arenaListIdx]);
+  }, [arenaActiveStage, arenaListIdx, arenaListQuestions]);
 
   useEffect(() => {
     return () => {
@@ -3074,6 +3097,7 @@ export default function App() {
         }
         setStageArcadeTime((prev) => {
           if (prev <= 1) {
+            playSoundSynth("levelUp");
             setStageArcadeOver(true);
             if (timerId) clearInterval(timerId);
             return 0;
@@ -3096,6 +3120,7 @@ export default function App() {
         }
         setArenaArcadeTime((prev) => {
           if (prev <= 1) {
+            playSoundSynth("levelUp");
             setArenaArcadeOver(true);
             if (timerId) clearInterval(timerId);
             return 0;
@@ -3154,6 +3179,27 @@ export default function App() {
   const cancelAppReset = () => {
     playSoundSynth("click");
     setShowResetConfirm(false);
+  };
+
+  const performDeleteArenaRange = () => {
+    playSoundSynth("click");
+    const updatedState = {
+      ...appState,
+      arenaMin: 30,
+      arenaMax: 100,
+      arenaStageProgress: 1,
+      arenaWeakMap: {},
+      arenaSlowMap: {},
+      arenaCorrectMap: {},
+      arenaStarted: false,
+      arenaCompleted: false,
+    };
+    saveState(updatedState);
+    setShowDeleteArenaConfirm(false);
+    setIsTrainingActive(false);
+    setArenaActiveStage(null);
+    setActiveScreen("dashboard");
+    showToast("Training range deleted successfully. ⚔️");
   };
 
   const handleOnboardMode = (typeChoice: "learn" | "lookup") => {
@@ -3317,6 +3363,63 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Custom Delete Training Range Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteArenaConfirm && (
+          <motion.div 
+            id="delete-arena-confirm-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-fade-in"
+          >
+            <motion.div 
+              id="delete-arena-confirm-card"
+              initial={{ scale: 0.92, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 15 }}
+              className="bg-white rounded-[2rem] p-6 sm:p-7 max-w-sm w-full border-2 border-slate-200 border-b-[6px] border-b-slate-350 text-center relative overflow-hidden shadow-2xl animate-scale-up"
+            >
+              {/* Premium Warning Top Stripe */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 to-orange-500" />
+              
+              {/* 3D Rose/Crimson Alert Badge */}
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center mb-4 border-2 border-rose-500 border-b-[5px] border-b-rose-900 shadow-md mt-2 relative select-none animate-pulse">
+                <Trash2 className="w-8 h-8 text-white stroke-[2.5]" />
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-black text-rose-950 tracking-tight leading-none mb-3 font-sans">
+                Delete Training Range?
+              </h2>
+              
+              <p className="text-xs sm:text-[13px] text-slate-500 font-semibold leading-relaxed mb-6 max-w-[290px] mx-auto">
+                This will remove your saved practice range.<br />
+                You can create a new one at any time.
+              </p>
+
+              <div id="delete-arena-confirm-actions" className="flex flex-col gap-3">
+                <button 
+                  onClick={performDeleteArenaRange}
+                  className="w-full bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl font-black text-xs sm:text-sm tracking-wider uppercase border-2 border-rose-500 border-b-[5px] border-b-rose-700 transition-all duration-100 cursor-pointer flex items-center justify-center gap-2 py-3.5 shadow-md select-none hover:from-rose-600 hover:to-rose-700 active:translate-y-[2px] active:border-b-[3px]"
+                >
+                  Delete Range
+                </button>
+
+                <button 
+                  onClick={() => {
+                    playSoundSynth("click");
+                    setShowDeleteArenaConfirm(false);
+                  }}
+                  className="w-full bg-slate-50 hover:bg-slate-100/80 text-slate-600 rounded-2xl font-black text-xs sm:text-sm tracking-wider uppercase border-2 border-slate-200 border-b-[5px] border-b-slate-350 transition-all duration-100 cursor-pointer flex items-center justify-center gap-2 py-3.5 shadow-sm select-none active:translate-y-[2px] active:border-b-[3px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mastery Streak Popup Modal */}
       <AnimatePresence>
         {showStreakPopup && (() => {
@@ -3467,7 +3570,7 @@ export default function App() {
                       }}
                       className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-full py-2.5 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
                         appState.isDarkMode 
-                          ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                          ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                           : "border-2 border-emerald-700 border-b-[6px] border-b-emerald-800 active:translate-y-[4px] active:border-b-[2px]"
                       }`}
                     >
@@ -4258,13 +4361,20 @@ export default function App() {
               >
                 {appState.isDarkMode ? (
                   <motion.div
-                    whileTap={{ scale: 0.8, rotate: 180 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    initial={shouldReduceMotion ? {} : { rotate: 0, scale: 0.95 }}
+                    animate={shouldReduceMotion ? {} : { rotate: 18, scale: [0.95, 1.08, 1.0] }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
                   >
                     <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 fill-amber-300" />
                   </motion.div>
                 ) : (
-                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800 fill-emerald-100" />
+                  <motion.div
+                    initial={shouldReduceMotion ? {} : { rotate: 0, scale: 0.9, opacity: 0 }}
+                    animate={shouldReduceMotion ? {} : { rotate: -8, scale: [0.9, 1.06, 1.0], opacity: 1 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800 fill-emerald-100" />
+                  </motion.div>
                 )}
               </button>
             </div>
@@ -4358,15 +4468,15 @@ export default function App() {
 
                     <button
                       onClick={() => {
-                        playSoundSynth("click");
+                        let leveledUp = false;
                         const mode = recoveryState.originalMode;
                         const uId = recoveryState.unitId;
 
                         if (mode === "journey_stage2" && uId) {
-                          saveUnitStageProgress(uId, 2);
+                          leveledUp = saveUnitStageProgress(uId, 2);
                           setStageQuizIdx(5); // Show stage end screen
                         } else if (mode === "journey_stage3" && uId) {
-                          saveUnitStageProgress(uId, 3);
+                          leveledUp = saveUnitStageProgress(uId, 3);
                           setStageListIdx(5); // Show stage end screen
                         } else if (mode === "journey_stage5" && uId) {
                           const isNewCompletion = !appState.completedUnits.includes(uId);
@@ -4388,27 +4498,32 @@ export default function App() {
 
                           saveState(updated);
                           playSoundSynth("levelUp");
+                          leveledUp = true;
                           const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
                           trackMithuMessage(celebratoryMsg);
                           showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
                           setCompletedUnitPopup(uId);
                           setActiveScreen("dashboard");
                         } else if (mode === "arena_stage2") {
-                          saveArenaStageProgress(2);
+                          leveledUp = saveArenaStageProgress(2);
                           setArenaQuizIdx(5); // Show stage end screen
                         } else if (mode === "arena_stage3") {
-                          saveArenaStageProgress(3);
+                          leveledUp = saveArenaStageProgress(3);
                           setArenaListIdx(5); // Show stage end screen
                         } else if (mode === "arena_stage5") {
-                          saveArenaStageProgress(5);
+                          leveledUp = saveArenaStageProgress(5);
                           setArenaQuizIdx(10); // Show stage end screen
+                        }
+
+                        if (!leveledUp) {
+                          playSoundSynth("click");
                         }
 
                         setRecoveryState(null);
                       }}
                       className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all duration-150 ${
                         appState.isDarkMode 
-                          ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2 active:scale-[0.99]" 
+                          ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2 active:scale-[0.99]" 
                           : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5 active:scale-[0.99]"
                       }`}
                     >
@@ -4448,8 +4563,8 @@ export default function App() {
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
                       Card {recoveryState.currentIndex + 1} of {recoveryState.questions.length}
                     </span>
-                    <span className="text-[10px] font-extrabold uppercase text-rose-500 bg-rose-50 border border-rose-100 px-2 rounded-full py-0.5 tracking-wider flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    <span className="text-[10px] font-extrabold uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 rounded-full py-0.5 tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                       🛡️ Correction
                     </span>
                   </div>
@@ -4690,7 +4805,7 @@ export default function App() {
               
               {/* Mascot Welcome & Direct Recommended Next Step (Duolingo/Mimo-styled high-impact pathway start) */}
               {hasProgress && (
-                <div className="bg-gradient-to-br from-emerald-800 via-emerald-850 to-emerald-900 text-white p-3.5 sm:p-5 rounded-[1.75rem] sm:rounded-[2rem] border-2 border-emerald-600/95 border-b-[5px] sm:border-b-[6px] border-b-emerald-950/90 shadow-[0_4px_0_#042414] sm:shadow-[0_6px_0_#042414] relative overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-5">
+                <div className="bg-gradient-to-br from-emerald-800 via-emerald-850 to-emerald-900 text-white p-3.5 sm:p-5 rounded-[1.75rem] sm:rounded-[2rem] border-2 border-emerald-600 border-b-[5px] sm:border-b-[6px] border-b-emerald-950 shadow-[0_4px_0_#042414] sm:shadow-[0_6px_0_#042414] relative overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-5">
                   {/* Backglow decoration for modernist depth */}
                   <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-emerald-700/35 rounded-full blur-2xl pointer-events-none" />
                   <div className={`absolute -left-12 -top-12 w-32 h-32 ${appState.isDarkMode ? "bg-emerald-500/20" : "bg-amber-400/10"} rounded-full blur-xl pointer-events-none`} />
@@ -4711,7 +4826,7 @@ export default function App() {
                       <div id="ginti-mascot-container" className={`relative z-10 scale-75 sm:scale-100 filter drop-shadow-md origin-center -m-1.5 sm:m-0 ${mascotAnimation}`}>
                         <MithuMascot mood={appState.weakAreas.length > 2 ? "thinking" : "happy"} />
                       </div>
-                      <span className={`absolute -bottom-0.5 -right-0.5 bg-gradient-to-r from-amber-400 to-amber-500 border-2 border-white dark:border-[#0b3a22] text-[8px] sm:text-[9.5px] ${
+                      <span className={`absolute -bottom-0.5 -right-0.5 bg-gradient-to-r from-amber-400 to-amber-500 border-2 border-emerald-600 dark:border-[#0b3a22] text-[8px] sm:text-[9.5px] ${
                         activeLevel >= 10 
                           ? "px-1.5 sm:px-2 min-w-5 h-5 sm:min-w-6.5 sm:h-6.5" 
                           : "w-5 h-5 sm:w-6.5 sm:h-6.5"
@@ -5355,7 +5470,7 @@ export default function App() {
                                 onClick={() => startUnitJourney(unit.id)}
                                 className={`unit-action-btn flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] rounded-xl transition-all cursor-pointer shadow-sm ${
                                   appState.isDarkMode 
-                                    ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                                     : "border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                                 }`}
                               >
@@ -5510,7 +5625,7 @@ export default function App() {
                 <button
                   id="reset-app-progress-btn"
                   onClick={flushAppProgress}
-                  className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition flex items-center gap-1 cursor-pointer"
+                  className="destructive-tactile-link"
                 >
                   <Trash2 className="w-3 h-3" />
                   <span>Reset Application Progress</span>
@@ -6370,15 +6485,17 @@ export default function App() {
                         {/* Option Button A (Progress Forward) */}
                         <button
                           onClick={() => {
-                            playSoundSynth("click");
-                            saveUnitStageProgress(selectedJourneyUnitId!, 1);
+                            const leveledUp = saveUnitStageProgress(selectedJourneyUnitId!, 1);
+                            if (!leveledUp) {
+                              playSoundSynth("click");
+                            }
                             setJourneyStage1Finished(false);
                             setNextStageToFocus(2);
                             setActiveStageIndex(null);
                           }}
                           className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
                             appState.isDarkMode 
-                              ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                              ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                               : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                           }`}
                         >
@@ -6539,7 +6656,13 @@ export default function App() {
                           setTimeout(() => {
                             setStageQuizSelected(null);
                             setStageQuizAnswered(false);
-                            setStageQuizIdx((prev) => prev + 1);
+                            setStageQuizIdx((prev) => {
+                              const nextIdx = prev + 1;
+                              if (nextIdx >= stageQuizQuestions.length) {
+                                playSoundSynth("levelUp");
+                              }
+                              return nextIdx;
+                            });
                           }, 1200);
                         }}
                         className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
@@ -6637,7 +6760,9 @@ export default function App() {
                   {/* Clean layout container with outline removed as requested */}
                   <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
                     <button
+                      disabled={speechActive}
                       onClick={() => {
+                        if (speechActive) return;
                         playSoundSynth("click");
                         playWordAudio(currentQ.entry);
                         setStageListSpeakerAnimate(true);
@@ -6645,7 +6770,7 @@ export default function App() {
                           setStageListSpeakerAnimate(false);
                         }, 1200);
                       }}
-                      className="w-20 h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center border-2 border-rose-500 border-b-[6px] border-b-rose-800 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none"
+                      className="w-20 h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center border-2 border-rose-500 border-b-[6px] border-b-rose-800 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
                     >
                       <PremiumSpeakerIcon className={`w-9 h-9 text-white ${stageListSpeakerAnimate ? 'animate-bounce' : ''}`} />
                     </button>
@@ -6696,7 +6821,13 @@ export default function App() {
                           setTimeout(() => {
                             setStageListSelected(null);
                             setStageListAnswered(false);
-                            setStageListIdx((prev) => prev + 1);
+                            setStageListIdx((prev) => {
+                              const nextIdx = prev + 1;
+                              if (nextIdx >= stageListQuestions.length) {
+                                playSoundSynth("levelUp");
+                              }
+                              return nextIdx;
+                            });
                           }, 1200);
                         }}
                         className={`py-4 px-3 rounded-2xl border-2 text-center text-xl font-bold font-sans transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
@@ -7097,8 +7228,20 @@ export default function App() {
 
                 </div>
 
-                <div className="mt-2 text-center text-[10.5px] text-slate-400 font-mono italic">
-                  Progress status is updated to Cloud Run container cache instantly.
+                <div className="flex flex-col items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-emerald-950/20">
+                  <button
+                    onClick={() => {
+                      playSoundSynth("click");
+                      setShowDeleteArenaConfirm(true);
+                    }}
+                    className="destructive-tactile-link"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Delete Training Range</span>
+                  </button>
+                  <div className="text-center text-[10.5px] text-slate-400 font-semibold italic">
+                    Delete your current range to create a new one.
+                  </div>
                 </div>
               </div>
             );
@@ -7215,14 +7358,16 @@ export default function App() {
                       {/* Option Button A (Progress Forward) */}
                       <button
                         onClick={() => {
-                          playSoundSynth("click");
-                          saveArenaStageProgress(1);
+                          const leveledUp = saveArenaStageProgress(1);
+                          if (!leveledUp) {
+                            playSoundSynth("click");
+                          }
                           setArenaStage1Finished(false);
                           setArenaActiveStage(null);
                         }}
                         className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
                           appState.isDarkMode 
-                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                             : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                         }`}
                       >
@@ -7285,7 +7430,7 @@ export default function App() {
                         }}
                         className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
                           appState.isDarkMode 
-                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                             : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                         }`}
                       >
@@ -7407,6 +7552,7 @@ export default function App() {
                               if (latestMistakes.length > 0) {
                                 startRecoveryRound("arena_stage2", latestMistakes);
                               } else {
+                                playSoundSynth("levelUp");
                                 setArenaQuizIdx(nextIdx);
                               }
                             } else {
@@ -7462,7 +7608,7 @@ export default function App() {
                         }}
                         className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
                           appState.isDarkMode 
-                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                             : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                         }`}
                       >
@@ -7528,7 +7674,9 @@ export default function App() {
                   {/* Clean layout container with outline removed as requested */}
                   <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
                     <button
+                      disabled={speechActive}
                       onClick={() => {
+                        if (speechActive) return;
                         playSoundSynth("click");
                         playWordAudio(currentQ.entry);
                         setArenaListSpeakerAnimate(true);
@@ -7536,7 +7684,7 @@ export default function App() {
                            setArenaListSpeakerAnimate(false);
                         }, 1200);
                       }}
-                      className="w-20 h-20 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center border-2 border-indigo-400 border-b-[6px] border-b-indigo-850 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none"
+                      className="w-20 h-20 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center border-2 border-indigo-400 border-b-[6px] border-b-indigo-850 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
                       title="Speak Spoken Numeral"
                     >
                       <PremiumSpeakerIcon className={`w-9 h-9 text-white ${arenaListSpeakerAnimate ? 'animate-bounce' : ''}`} />
@@ -7603,6 +7751,7 @@ export default function App() {
                               if (latestMistakes.length > 0) {
                                 startRecoveryRound("arena_stage3", latestMistakes);
                               } else {
+                                playSoundSynth("levelUp");
                                 setArenaListIdx(nextIdx);
                               }
                             } else {
@@ -7655,7 +7804,7 @@ export default function App() {
                         }}
                         className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
                           appState.isDarkMode 
-                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                             : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                         }`}
                       >
@@ -7810,13 +7959,15 @@ export default function App() {
                     {pass ? (
                       <button
                         onClick={() => {
-                          playSoundSynth("levelUp");
-                          saveArenaStageProgress(5);
+                          const leveledUp = saveArenaStageProgress(5);
+                          if (!leveledUp) {
+                            playSoundSynth("click");
+                          }
                           setArenaActiveStage(null);
                         }}
                         className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all ${
                           appState.isDarkMode 
-                            ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
+                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
                             : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                         }`}
                       >
@@ -7938,6 +8089,7 @@ export default function App() {
                               if (latestMistakes.length > 0) {
                                 startRecoveryRound("arena_stage5", latestMistakes);
                               } else {
+                                playSoundSynth("levelUp");
                                 setArenaQuizIdx(nextIdx);
                               }
                             } else {

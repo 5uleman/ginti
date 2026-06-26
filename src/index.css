@@ -797,6 +797,9 @@ div.font-urdu {
 .dark [class^="border-emerald-"], .dark [class*=" border-emerald-"] {
   border-color: #1a3527 !important;
 }
+.dark [class^="border-sky-"], .dark [class*=" border-sky-"] {
+  border-color: #082f49 !important;
+}
 .dark [class^="border-indigo-"], .dark [class*=" border-indigo-"] {
   border-color: #1e1b4b !important;
 }
@@ -813,6 +816,19 @@ div.font-urdu {
 }
 .dark [class*="border-b-emerald-800"] {
   border-bottom-color: #04321c !important; /* Deep dark forest green for a distinct 3D tactile shadow extrusion under the bright green face in dark mode */
+}
+.dark [class*="border-b-sky-800"] {
+  border-bottom-color: #031b2e !important; /* Deep dark blue shadow */
+}
+.dark [class*="border-b-indigo-800"] {
+  border-bottom-color: #0f0b29 !important; /* Deep dark indigo shadow */
+}
+.dark [class*="border-b-rose-800"] {
+  border-bottom-color: #27020b !important; /* Deep dark rose shadow */
+}
+.dark [class*="border-b-amber-700"],
+.dark [class*="border-b-amber-600"] {
+  border-bottom-color: #451a03 !important; /* Deep dark amber shadow */
 }
 
 /* Header structural overrides without glass/blur overlays */
@@ -1261,6 +1277,90 @@ html:not(.dark) .ginti-decoder-bubble .text-emerald-950 {
 .dark .ginti-decoder-bubble span {
   color: #34d399 !important; /* Stronger bright emerald for Mithu guides you label */
 }
+
+/* Custom Destructive Actions (Delete Training Range, Reset Progress) */
+.destructive-tactile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 2px solid transparent;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+}
+
+html:not(.dark) .destructive-tactile-link {
+  color: #94a3b8; /* slate-400 */
+  background-color: transparent;
+  border-color: transparent;
+}
+
+html:not(.dark) .destructive-tactile-link:hover,
+html:not(.dark) .destructive-tactile-link:active {
+  color: #ffffff !important; /* Proper high contrast */
+  background-color: #be123c !important; /* Red/destructive tone */
+  border-color: #f43f5e !important; /* Matching red tone */
+  border-bottom-color: #9f1239 !important; /* Darker red base shadow */
+  border-bottom-width: 4px !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+html:not(.dark) .destructive-tactile-link:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px !important;
+}
+
+.dark .destructive-tactile-link {
+  color: #34d399 !important; /* Keep the existing green appearance while idle in dark mode */
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.dark .destructive-tactile-link:hover,
+.dark .destructive-tactile-link:active {
+  color: #ffffff !important; /* Proper high contrast */
+  background-color: #be123c !important; /* Red/destructive tone */
+  border-color: #4c0519 !important; /* Plain sharp color border */
+  border-bottom-color: #4c0519 !important; /* Plain sharp color border bottom base */
+  border-bottom-width: 4px !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+}
+
+.dark .destructive-tactile-link:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px !important;
+}
+
+/* Dark mode prompt card border overrides to match the dark green plain sharp border convention */
+.dark #prompt-card {
+  border-color: #1a3527 !important;
+  border-bottom-color: #1a3527 !important;
+}
+
+/* Smooth color-only transition for theme switching, respecting prefers-reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-transitioning,
+  .theme-transitioning *,
+  .theme-transitioning ::before,
+  .theme-transitioning ::after {
+    transition-property: background-color, color, border-color, fill, stroke !important;
+    transition-duration: 180ms !important;
+    transition-timing-function: ease-out !important;
+  }
+}
+
+/* Custom background color override requested via element focus selector */
+div#root:nth-of-type(1) > div:nth-of-type(1) > main#app-container:nth-of-type(1) > div#screen-dashboard:nth-of-type(1) > div:nth-of-type(1) {
+  background-color: #0b3f24 !important;
+  background-image: none !important;
+}
+
 
 
 
