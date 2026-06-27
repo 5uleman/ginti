@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Noto+Nastaliq+Urdu:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -31,7 +31,8 @@
 
 :root {
   --bg-app: #f3fcf6;
-  --bg-radial: radial-gradient(rgba(16, 126, 74, 0.08) 1.5px, transparent 1.5px);
+  --bg-wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%230B4628' stroke-width='0.8' stroke-opacity='0.14' font-family='Noto%20Naskh%20Arabic,%20Noto%20Nastaliq%20Urdu,%20Amiri,%20sans-serif'%3E%3Ctext x='30' y='60' font-size='26' transform='rotate%28-5,%2030,%2060%29'%3E٠%3C/text%3E%3Ctext x='160' y='40' font-size='34' transform='rotate%288,%20160,%2040%29'%3E١%3C/text%3E%3Ctext x='270' y='80' font-size='32' transform='rotate%28-12,%20270,%2080%29'%3E٢%3C/text%3E%3Ctext x='90' y='130' font-size='36' transform='rotate%2810,%2090,%20130%29'%3E٣%3C/text%3E%3Ctext x='220' y='150' font-size='34' transform='rotate%28-6,%20220,%20150%29'%3E٤%3C/text%3E%3Ctext x='40' y='210' font-size='38' transform='rotate%2815,%2040,%20210%29'%3E٥%3C/text%3E%3Ctext x='150' y='230' font-size='35' transform='rotate%28-14,%20150,%20230%29'%3E٦%3C/text%3E%3Ctext x='280' y='220' font-size='32' transform='rotate%285,%20280,%20220%29'%3E٧%3C/text%3E%3Ctext x='100' y='290' font-size='36' transform='rotate%28-8,%20100,%20290%29'%3E٨%3C/text%3E%3Ctext x='210' y='280' font-size='34' transform='rotate%2812,%20210,%20280%29'%3E٩%3C/text%3E%3C/g%3E%3C/svg%3E");
+  --bg-wallpaper-en: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%230B4628' stroke-width='0.8' stroke-opacity='0.14' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate%2830,%2060%29%20rotate%28-5%29%20scale%280.26%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M50%2016%20C68%2016,%2075%2028,%2075%2050%20C75%2072,%2068%2084,%2050%2084%20C32%2084,%2025%2072,%2025%2050%20C25%2028,%2032%2016,%2050%2016%20Z'/%3E%3C/g%3E%3Cg transform='translate%28160,%2040%29%20rotate%288%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M35%2034%20C44%2032,%2050%2026,%2050%2018%20L50%2082'/%3E%3C/g%3E%3Cg transform='translate%28270,%2080%29%20rotate%28-12%29%20scale%280.32%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M28%2036%20C28%2020,%2072%2020,%2072%2040%20C72%2058,%2048%2070,%2028%2082%20L72%2082'/%3E%3C/g%3E%3Cg transform='translate%2890,%20130%29%20rotate%2810%29%20scale%280.36%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M30%2024%20C45%2020,%2068%2022,%2068%2039%20C68%2051,%2053%2052,%2046%2052%20C55%2052,%2070%2053,%2070%2067%20C70%2082,%2045%2084,%2030%2080'/%3E%3C/g%3E%3Cg transform='translate%28220,%20150%29%20rotate%28-6%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M56%2016%20L24%2058%20L76%2058%20M56%2036%20L56%2082'/%3E%3C/g%3E%3Cg transform='translate%2840,%20210%29%20rotate%2815%29%20scale%280.38%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M68%2020%20L35%2020%20L35%2044%20C44%2040,%2068%2041,%2068%2062%20C68%2079,%2053%2084,%2032%2080'/%3E%3C/g%3E%3Cg transform='translate%28150,%20230%29%20rotate%28-14%29%20scale%280.35%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M64%2022%20C48%2018,%2025%2032,%2025%2053%20C25%2071,%2038%2084,%2054%2084%20C70%2084,%2075%2072,%2075%2058%20C75%2044,%2062%2038,%2048%2038%20C34%2038,%2026%2048,%2026%2053'/%3E%3C/g%3E%3Cg transform='translate%28280,%20220%29%20rotate%285%29%20scale%280.32%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M26%2020%20L74%2020%20C62%2044,%2052%2064,%2042%2082'/%3E%3C/g%3E%3Cg transform='translate%28100,%20290%29%20rotate%28-8%29%20scale%280.36%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M50%2049%20C61%2049,%2069%2041,%2069%2031%20C69%2021,%2061%2016,%2050%2016%20C39%2016,%2031%2021,%2031%2031%20C31%2041,%2039%2049,%2050%2049%20Z%20M50%2049%20C63%2049,%2073%2057,%2073%2067%20C73%2077,%2063%2084,%2050%2084%20C37%2084,%2027%2077,%2027%2067%20C27%2057,%2037%2049,%2050%2049%20Z'/%3E%3C/g%3E%3Cg transform='translate%28210,%20280%29%20rotate%2812%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M36%2082%20C52%2086,%2075%2072,%2075%2051%20C75%2033,%2062%2020,%2046%2020%20C30%2020,%2025%2032,%2025%2046%20C25%2060,%2038%2066,%2052%2066%20C66%2066,%2074%2056,%2074%2051'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   --color-text-main: #1e293b;
 
   --card-bg: #ffffff;
@@ -57,7 +58,8 @@
 
 .dark {
   --bg-app: #0B130E; /* Elegant deep-emerald midnight shadow-sole */
-  --bg-radial: radial-gradient(rgba(52, 211, 153, 0.08) 1.5px, transparent 1.5px);
+  --bg-wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23010905' stroke-width='1.2' stroke-opacity='0.60' font-family='Noto%20Naskh%20Arabic,%20Noto%20Nastaliq%20Urdu,%20Amiri,%20sans-serif' transform='translate%281.2,%201.8%29'%3E%3Ctext x='30' y='60' font-size='26' transform='rotate%28-5,%2030,%2060%29'%3E٠%3C/text%3E%3Ctext x='160' y='40' font-size='34' transform='rotate%288,%20160,%2040%29'%3E١%3C/text%3E%3Ctext x='270' y='80' font-size='32' transform='rotate%28-12,%20270,%2080%29'%3E٢%3C/text%3E%3Ctext x='90' y='130' font-size='36' transform='rotate%2810,%2090,%20130%29'%3E٣%3C/text%3E%3Ctext x='220' y='150' font-size='34' transform='rotate%28-6,%20220,%20150%29'%3E٤%3C/text%3E%3Ctext x='40' y='210' font-size='38' transform='rotate%2815,%2040,%20210%29'%3E٥%3C/text%3E%3Ctext x='150' y='230' font-size='35' transform='rotate%28-14,%20150,%20230%29'%3E٦%3C/text%3E%3Ctext x='280' y='220' font-size='32' transform='rotate%285,%20280,%20220%29'%3E٧%3C/text%3E%3Ctext x='100' y='290' font-size='36' transform='rotate%28-8,%20100,%20290%29'%3E٨%3C/text%3E%3Ctext x='210' y='280' font-size='34' transform='rotate%2812,%20210,%20280%29'%3E٩%3C/text%3E%3C/g%3E%3Cg fill='none' stroke='%2358B77A' stroke-width='0.8' stroke-opacity='0.26' font-family='Noto%20Naskh%20Arabic,%20Noto%20Nastaliq%20Urdu,%20Amiri,%20sans-serif'%3E%3Ctext x='30' y='60' font-size='26' transform='rotate%28-5,%2030,%2060%29'%3E٠%3C/text%3E%3Ctext x='160' y='40' font-size='34' transform='rotate%288,%20160,%2040%29'%3E١%3C/text%3E%3Ctext x='270' y='80' font-size='32' transform='rotate%28-12,%20270,%2080%29'%3E٢%3C/text%3E%3Ctext x='90' y='130' font-size='36' transform='rotate%2810,%2090,%20130%29'%3E٣%3C/text%3E%3Ctext x='220' y='150' font-size='34' transform='rotate%28-6,%20220,%20150%29'%3E٤%3C/text%3E%3Ctext x='40' y='210' font-size='38' transform='rotate%2815,%2040,%20210%29'%3E٥%3C/text%3E%3Ctext x='150' y='230' font-size='35' transform='rotate%28-14,%20150,%20230%29'%3E٦%3C/text%3E%3Ctext x='280' y='220' font-size='32' transform='rotate%285,%20280,%20220%29'%3E٧%3C/text%3E%3Ctext x='100' y='290' font-size='36' transform='rotate%28-8,%20100,%20290%29'%3E٨%3C/text%3E%3Ctext x='210' y='280' font-size='34' transform='rotate%2812,%20210,%20280%29'%3E٩%3C/text%3E%3C/g%3E%3C/svg%3E");
+  --bg-wallpaper-en: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23010905' stroke-width='1.2' stroke-opacity='0.60' stroke-linecap='round' stroke-linejoin='round' transform='translate%281.2,%201.8%29'%3E%3Cg transform='translate%2830,%2060%29%20rotate%28-5%29%20scale%280.26%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M50%2016%20C68%2016,%2075%2028,%2075%2050%20C75%2072,%2068%2084,%2050%2084%20C32%2084,%2025%2072,%2025%2050%20C25%2028,%2032%2016,%2050%2016%20Z'/%3E%3C/g%3E%3Cg transform='translate%28160,%2040%29%20rotate%288%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M35%2034%20C44%2032,%2050%2026,%2050%2018%20L50%2082'/%3E%3C/g%3E%3Cg transform='translate%28270,%2080%29%20rotate%28-12%29%20scale%280.32%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M28%2036%20C28%2020,%2072%2020,%2072%2040%20C72%2058,%2048%2070,%2028%2082%20L72%2082'/%3E%3C/g%3E%3Cg transform='translate%2890,%20130%29%20rotate%2810%29%20scale%280.36%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M30%2024%20C45%2020,%2068%2022,%2068%2039%20C68%2051,%2053%2052,%2046%2052%20C55%2052,%2070%2053,%2070%2067%20C70%2082,%2045%2084,%2030%2080'/%3E%3C/g%3E%3Cg transform='translate%28220,%20150%29%20rotate%28-6%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M56%2016%20L24%2058%20L76%2058%20M56%2036%20L56%2082'/%3E%3C/g%3E%3Cg transform='translate%2840,%20210%29%20rotate%2815%29%20scale%280.38%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M68%2020%20L35%2020%20L35%2044%20C44%2040,%2068%2041,%2068%2062%20C68%2079,%2053%2084,%2032%2080'/%3E%3C/g%3E%3Cg transform='translate%28150,%20230%29%20rotate%28-14%29%20scale%280.35%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M64%2022%20C48%2018,%2025%2032,%2025%2053%20C25%2071,%2038%2084,%2054%2084%20C70%2084,%2075%2072,%2075%2058%20C75%2044,%2062%2038,%2048%2038%20C34%2038,%2026%2048,%2026%2053'/%3E%3C/g%3E%3Cg transform='translate%28280,%20220%29%20rotate%285%29%20scale%280.32%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M26%2020%20L74%2020%20C62%2044,%2052%2064,%2042%2082'/%3E%3C/g%3E%3Cg transform='translate%28100,%20290%29%20rotate%28-8%29%20scale%280.36%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M50%2049%20C61%2049,%2069%2041,%2069%2031%20C69%2021,%2061%2016,%2050%2016%20C39%2016,%2031%2021,%2031%2031%20C31%2041,%2039%2049,%2050%2049%20Z%20M50%2049%20C63%2049,%2073%2057,%2073%2067%20C73%2077,%2063%2084,%2050%2084%20C37%2084,%2027%2077,%2027%2067%20C27%2057,%2037%2049,%2050%2049%20Z'/%3E%3C/g%3E%3Cg transform='translate%28210,%20280%29%20rotate%2812%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M36%2082%20C52%2086,%2075%2072,%2075%2051%20C75%2033,%2062%2020,%2046%2020%20C30%2020,%2025%2032,%2025%2046%20C25%2060,%2038%2066,%2052%2066%20C66%2066,%2074%2056,%2074%2051'/%3E%3C/g%3E%3C/g%3E%3Cg fill='none' stroke='%2358B77A' stroke-width='0.8' stroke-opacity='0.26' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate%2830,%2060%29%20rotate%28-5%29%20scale%280.26%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M50%2016%20C68%2016,%2075%2028,%2075%2050%20C75%2072,%2068%2084,%2050%2084%20C32%2084,%2025%2072,%2025%2050%20C25%2028,%2032%2016,%2050%2016%20Z'/%3E%3C/g%3E%3Cg transform='translate%28160,%2040%29%20rotate%288%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M35%2034%20C44%2032,%2050%2026,%2050%2018%20L50%2082'/%3E%3C/g%3E%3Cg transform='translate%28270,%2080%29%20rotate%28-12%29%20scale%280.32%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M28%2036%20C28%2020,%2072%2020,%2072%2040%20C72%2058,%2048%2070,%2028%2082%20L72%2082'/%3E%3C/g%3E%3Cg transform='translate%2890,%20130%29%20rotate%2810%29%20scale%280.36%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M30%2024%20C45%2020,%2068%2022,%2068%2039%20C68%2051,%2053%2052,%2046%2052%20C55%2052,%2070%2053,%2070%2067%20C70%2082,%2045%2084,%2030%2080'/%3E%3C/g%3E%3Cg transform='translate%28220,%20150%29%20rotate%28-6%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M56%2016%20L24%2058%20L76%2058%20M56%2036%20L56%2082'/%3E%3C/g%3E%3Cg transform='translate%2840,%20210%29%20rotate%2815%29%20scale%280.38%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M68%2020%20L35%2020%20L35%2044%20C44%2040,%2068%2041,%2068%2062%20C68%2079,%2053%2084,%2032%2080'/%3E%3C/g%3E%3Cg transform='translate%28150,%20230%29%20rotate%28-14%29%20scale%280.35%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M64%2022%20C48%2018,%2025%2032,%2025%2053%20C25%2071,%2038%2084,%2054%2084%20C70%2084,%2075%2072,%2075%2058%20C75%2044,%2062%2038,%2048%2038%20C34%2038,%2026%2048,%2026%2053'/%3E%3C/g%3E%3Cg transform='translate%28280,%20220%29%20rotate%285%29%20scale%280.32%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M26%2020%20L74%2020%20C62%2044,%2052%2064,%2042%2082'/%3E%3C/g%3E%3Cg transform='translate%28100,%20290%29%20rotate%28-8%29%20scale%280.36%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M50%2049%20C61%2049,%2069%2041,%2069%2031%20C69%2021,%2061%2016,%2050%2016%20C39%2016,%2031%2021,%2031%2031%20C31%2041,%2039%2049,%2050%2049%20Z%20M50%2049%20C63%2049,%2073%2057,%2073%2067%20C73%2077,%2063%2084,%2050%2084%20C37%2084,%2027%2077,%2027%2067%20C27%2057,%2037%2049,%2050%2049%20Z'/%3E%3C/g%3E%3Cg transform='translate%28210,%20280%29%20rotate%2812%29%20scale%280.34%29%20translate%28-50,%20-80%29'%3E%3Cpath vector-effect='non-scaling-stroke' d='M36%2082%20C52%2086,%2075%2072,%2075%2051%20C75%2033,%2062%2020,%2046%2020%20C30%2020,%2025%2032,%2025%2046%20C25%2060,%2038%2066,%2052%2066%20C66%2066,%2074%2056,%2074%2051'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   --color-text-main: #f1f5f9;
 
   --card-bg: #111A14; /* Solid rich jade brand card background */
@@ -82,11 +84,15 @@
 }
 
 /* Base style resets */
+.script-off {
+  --bg-wallpaper: var(--bg-wallpaper-en) !important;
+}
+
 html, body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);
-  background-image: var(--bg-radial);
-  background-size: 24px 24px;
+  background-image: var(--bg-wallpaper);
+  background-size: 320px 320px;
   background-attachment: fixed;
   color: var(--color-text-main);
   min-height: 100vh;
@@ -134,7 +140,7 @@ html, body {
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: translateY(3.5px) !important;
+  transform: translateY(3.5px) scale(0.97) !important;
   border-bottom-width: 2px !important;
   box-shadow: 0 2px 6px -1px rgba(11, 58, 34, 0.2) !important;
 }
@@ -156,7 +162,7 @@ html, body {
 }
 
 .btn-secondary:active:not(:disabled) {
-  transform: translateY(3.5px) !important;
+  transform: translateY(3.5px) scale(0.97) !important;
   border-bottom-width: 2px !important;
 }
 
@@ -177,7 +183,7 @@ html, body {
 }
 
 .btn-gold:active {
-  transform: translateY(3.5px) !important;
+  transform: translateY(3.5px) scale(0.97) !important;
   border-bottom-width: 2px !important;
 }
 
@@ -277,7 +283,7 @@ div.font-urdu {
 }
 
 .choice-btn:active:not(:disabled) {
-  transform: translateY(4px);
+  transform: translateY(4px) scale(0.97);
   border-bottom-width: 2px;
 }
 
@@ -297,7 +303,7 @@ div.font-urdu {
 }
 
 .arcade-btn:active:not(:disabled) {
-  transform: translateY(4px);
+  transform: translateY(4px) scale(0.97);
   border-bottom-width: 2px;
 }
 
@@ -324,7 +330,7 @@ div.font-urdu {
 }
 
 .choice-btn:active:not(:disabled), .arcade-btn:active:not(:disabled), .unit-action-btn:active {
-  transform: translateY(3.5px) !important;
+  transform: translateY(3.5px) scale(0.97) !important;
   border-bottom-width: 2px !important;
 }
 
@@ -445,7 +451,7 @@ div.font-urdu {
 }
 
 .ginti-choice-btn:active:not(:disabled) {
-  transform: translateY(2.5px) !important;
+  transform: translateY(2.5px) scale(0.97) !important;
   border-bottom-width: 2px !important;
 }
 
@@ -875,13 +881,13 @@ div.font-urdu {
 }
 
 .dark .choice-btn:active:not(:disabled), .dark .arcade-btn:active:not(:disabled) {
-  transform: translateY(4px) !important;
+  transform: translateY(4px) scale(0.97) !important;
   border-bottom-width: 2.5px !important;
   box-shadow: 0 2px 0 var(--choice-btn-bottom) !important;
 }
 
 .dark .btn-secondary:active:not(:disabled) {
-  transform: translateY(3.5px) !important;
+  transform: translateY(3.5px) scale(0.97) !important;
   border-bottom-width: 2.5px !important;
   box-shadow: 0 2px 0 var(--btn-secondary-bottom) !important;
 }
@@ -900,7 +906,7 @@ div.font-urdu {
 }
 
 .dark .ginti-choice-btn:active:not(:disabled) {
-  transform: translateY(2.5px) !important;
+  transform: translateY(2.5px) scale(0.97) !important;
   border-bottom-width: 2px !important;
   box-shadow: 0 2px 0 var(--choice-btn-bottom) !important;
 }
@@ -1355,11 +1361,60 @@ html:not(.dark) .destructive-tactile-link:active {
   }
 }
 
-/* Custom background color override requested via element focus selector */
-div#root:nth-of-type(1) > div:nth-of-type(1) > main#app-container:nth-of-type(1) > div#screen-dashboard:nth-of-type(1) > div:nth-of-type(1) {
-  background-color: #0b3f24 !important;
-  background-image: none !important;
+/* ==========================================
+   PREMIUM MOBILE TACTILE & RESPONSIVENESS OVERRIDES
+   ========================================== */
+
+/* Remove delay, highlight color and add tactile response for all mobile touch interaction */
+@media (max-width: 768px) {
+  button,
+  a,
+  .cursor-pointer,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+  }
 }
+
+/* Ensure smooth native scrolling and momentum for all overflow containers on mobile */
+html,
+body,
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+}
+
+/* Micro-transition timing for immediate tap reaction and smooth release (120ms to 180ms) */
+.cursor-pointer,
+button,
+a,
+.choice-btn,
+.arcade-btn,
+.ginti-choice-btn,
+.btn-primary,
+.btn-secondary,
+.btn-gold {
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 120ms ease,
+              background-color 120ms ease,
+              box-shadow 120ms ease !important;
+}
+
+/* Touch targets optimization: give comfortable touch padding to small interactive icons */
+.small-icon-touch {
+  position: relative;
+}
+.small-icon-touch::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  bottom: -12px;
+  left: -12px;
+  right: -12px;
+  cursor: pointer;
+}
+
 
 
 

@@ -39,6 +39,7 @@ import {
 import { NUMBERS, UNITS, NumberEntry, Unit } from "./data";
 import { speakNumberEntry } from "./audio";
 import { getNumberExplanation, FAMILY_STYLES } from "./explanations";
+import { triggerHaptic } from "./haptics";
 
 // Premium Speaker Icon Component
 const PremiumSpeakerIcon = ({ 
@@ -872,7 +873,7 @@ export default function App() {
   
   // Mastery Streak states
   const [showStreakPopup, setShowStreakPopup] = useState<boolean>(false);
-  const [streakCelebration, setStreakCelebration] = useState<{ message: string; streak: number } | null>(null);
+  const [streakCelebration, setStreakCelebration] = useState<{ title: string; message: string; streak: number } | null>(null);
   
   // Unit Completion states
   const [completedUnitPopup, setCompletedUnitPopup] = useState<string | null>(null);
@@ -1042,6 +1043,15 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [appState.isDarkMode]);
 
+  // Synchronize document-level class for Urdu Script setting to display English numerals on wallpaper
+  useEffect(() => {
+    if (appState.showScript) {
+      document.documentElement.classList.remove("script-off");
+    } else {
+      document.documentElement.classList.add("script-off");
+    }
+  }, [appState.showScript]);
+
   const saveState = (updated: AppState) => {
     let finalState = updated;
     if (updated.totalXP > appState.totalXP) {
@@ -1055,22 +1065,54 @@ export default function App() {
     setAppState((prev) => {
       const nextStreak = (prev.masteryStreak ?? 0) + 1;
       
-      // Check milestones
+      // Check milestones: 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000
+      let milestoneTitle = "";
       let milestoneMsg = "";
+
+      const isUrduScriptOn = prev.showScript;
+
       if (nextStreak === 10) {
-        milestoneMsg = "Wah! 10 ka streak! Keep going!";
+        milestoneTitle = isUrduScriptOn ? "Super Start! 🚀" : "Milestone Unlocked! 🏅";
+        milestoneMsg = isUrduScriptOn ? "Bas yehi pace chahiye! 😎" : "Momentum Rising! ⚡";
       } else if (nextStreak === 20) {
-        milestoneMsg = "Wah! 20 ka streak!";
+        milestoneTitle = isUrduScriptOn ? "Awesome Progress! 🌟" : "Streak Milestone! 🔥";
+        milestoneMsg = isUrduScriptOn ? "Haan ji! Aise hi! ✨" : "Streak Secured! 🏆";
+      } else if (nextStreak === 30) {
+        milestoneTitle = isUrduScriptOn ? "Sizzling Streak! 🔥" : "Momentum Master! 🌠";
+        milestoneMsg = isUrduScriptOn ? "Acha... ab baat ban rahi hai. 🔥" : "Fire Growing! 🔥";
       } else if (nextStreak === 50) {
-        milestoneMsg = "Zabardast! 50 lagataar sahi jawab!";
+        milestoneTitle = isUrduScriptOn ? "Half Century! 🏏" : "Milestone Achieved! ✨";
+        milestoneMsg = isUrduScriptOn ? "Wah! Ab maza aa raha hai. 🦜" : "Momentum Locked In! ⭐";
+      } else if (nextStreak === 75) {
+        milestoneTitle = isUrduScriptOn ? "Master Class! 🎓" : "Mastery Rising! 💎";
+        milestoneMsg = isUrduScriptOn ? "Ab lag rahe ho player. 😏" : "Flame Intensified! 🔥";
       } else if (nextStreak === 100) {
-        milestoneMsg = "100! Aaj to aag laga di!";
+        milestoneTitle = isUrduScriptOn ? "Centurion! 👑" : "New Streak Record! 🌟";
+        milestoneMsg = isUrduScriptOn ? "Aaj toh kamaal kar diya! 🌟" : "Next Milestone Awaits! 🚀";
+      } else if (nextStreak === 150) {
+        milestoneTitle = isUrduScriptOn ? "Incredible Run! 🚀" : "Milestone Unlocked! 🏅";
+        milestoneMsg = isUrduScriptOn ? "Yeh hui na baat! 🎯" : "Momentum Rising! ⚡";
+      } else if (nextStreak === 200) {
+        milestoneTitle = isUrduScriptOn ? "Double Century! 🏅" : "Streak Secured! 🏆";
+        milestoneMsg = isUrduScriptOn ? "Shabash! Mithu khush hai. 💚" : "Flame Intensified! 🔥";
+      } else if (nextStreak === 300) {
+        milestoneTitle = isUrduScriptOn ? "Unstoppable! ⚡" : "Momentum Master! 🌠";
+        milestoneMsg = isUrduScriptOn ? "Acha... ab baat ban rahi hai. 🔥" : "Fire Growing! 🔥";
+      } else if (nextStreak === 500) {
+        milestoneTitle = isUrduScriptOn ? "Immortal Streak! 🧙‍♂️" : "Milestone Achieved! ✨";
+        milestoneMsg = isUrduScriptOn ? "Bas yehi pace chahiye! 😎" : "Ginti Legend! 👑";
+      } else if (nextStreak === 750) {
+        milestoneTitle = isUrduScriptOn ? "Grand Master! 🏆" : "Level of Mastery Increased! 🎉";
+        milestoneMsg = isUrduScriptOn ? "Yeh hui na baat! 🎯" : "Mastery Rising! 💎";
+      } else if (nextStreak === 1000) {
+        milestoneTitle = isUrduScriptOn ? "Ginti Legend! 👑" : "Streak Secured! 🏆";
+        milestoneMsg = isUrduScriptOn ? "Shabash! Mithu khush hai. 💚" : "New Streak Record! 🌟";
       }
 
       if (milestoneMsg) {
         setTimeout(() => {
-          setStreakCelebration({ message: milestoneMsg, streak: nextStreak });
-          playSoundSynth("levelUp");
+          setStreakCelebration({ title: milestoneTitle, message: milestoneMsg, streak: nextStreak });
+          playSoundSynth("levelUp", "milestone");
           // Auto-dismiss after 4 seconds
           setTimeout(() => {
             setStreakCelebration(prevCel => {
@@ -1195,9 +1237,30 @@ export default function App() {
   // =============================================================================
   // NEOCLASSICAL SYNTH SOUNDS
   // =============================================================================
-  const playSoundSynth = (type: "correct" | "incorrect" | "click" | "levelUp") => {
+  const playSoundSynth = (
+    type: "correct" | "incorrect" | "click" | "levelUp",
+    hapticOverride?: "correct" | "incorrect" | "loseHeart" | "milestone" | "complete" | "theme" | "none"
+  ) => {
+    // Premium Mobile Haptic Integration
+    if (hapticOverride) {
+      if (hapticOverride !== "none") {
+        triggerHaptic(hapticOverride);
+      }
+    } else {
+      if (type === "correct") {
+        triggerHaptic("correct");
+      } else if (type === "incorrect") {
+        triggerHaptic("incorrect");
+      } else if (type === "levelUp") {
+        triggerHaptic("complete");
+      }
+    }
+
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
 
       if (type === "correct") {
         // High-Fidelity spark bells arpeggio with warm triangle harmonic octave layer
@@ -2479,7 +2542,18 @@ export default function App() {
       resetMasteryStreak(currQuestion.entry.digit);
     }
 
-    playSoundSynth(correct ? "correct" : "incorrect");
+    const nextHearts = correct ? quizState.hearts : Math.max(0, quizState.hearts - 1);
+    const depleted = nextHearts === 0;
+
+    if (correct) {
+      triggerHaptic("correct");
+    } else if (nextHearts < quizState.hearts) {
+      triggerHaptic("loseHeart");
+    } else {
+      triggerHaptic("incorrect");
+    }
+
+    playSoundSynth(correct ? "correct" : "incorrect", "none");
     setMascotAnimation(correct ? "jump" : "shake");
     setTimeout(() => {
       setMascotAnimation("");
@@ -2495,9 +2569,6 @@ export default function App() {
         updatedWeakAreas.push(currQuestion.entry.digit);
       }
     }
-
-    const nextHearts = correct ? quizState.hearts : Math.max(0, quizState.hearts - 1);
-    const depleted = nextHearts === 0;
 
     setAppState((prev) => {
       let stateUpdate = {
@@ -3443,142 +3514,124 @@ export default function App() {
           }
 
           return (
-            <div id="streak-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <div id="streak-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
               <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 15 }}
-                transition={{ type: "spring", duration: 0.4 }}
-                className="relative w-full max-w-sm sm:max-w-2xl bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2.5rem] p-5 sm:p-6 shadow-2xl overflow-hidden"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="relative w-full max-w-[365px] bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2rem] p-5 shadow-2xl overflow-hidden flex flex-col gap-4"
               >
                 {/* Premium Gradient Top-bar Accent */}
-                <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-500" />
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-500" />
                 
                 {/* Ambient glowing radial light background */}
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 rounded-full bg-gradient-to-br from-orange-400/10 to-transparent blur-2xl pointer-events-none" />
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-36 h-36 rounded-full bg-gradient-to-br from-orange-400/10 to-transparent blur-2xl pointer-events-none" />
 
+                {/* 1. Header with Close Button */}
+                <div className="flex items-start justify-between w-full">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none mb-1">
+                      Mastery Streak
+                    </h3>
+                    <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+                      Accuracy &amp; Momentum Tracker
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      playSoundSynth("click");
+                      setShowStreakPopup(false);
+                    }}
+                    className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10 -mr-1 -mt-1"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* 2. Mithu Guidance */}
+                <div className="flex items-center gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/70 dark:border-emerald-900/30 rounded-xl py-2 px-3 text-left w-full shrink-0">
+                  {/* Mascot */}
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <div className={`absolute inset-0 ${appState.isDarkMode ? "bg-emerald-400/20" : "bg-amber-400/20"} rounded-full blur-xs animate-pulse`} />
+                    <div className="relative z-10 w-9 h-9 flex items-center justify-center">
+                      <MithuMascot mood={mithuMood} size={36} />
+                    </div>
+                  </div>
+                  {/* Bubble Content */}
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[7.5px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest block mb-0.5">
+                      Mithu says
+                    </span>
+                    <p className="font-sans text-[11px] font-normal text-slate-800 dark:text-slate-100 leading-snug mb-0.5 italic whitespace-pre-line">
+                      "{mithuDialogueRoman}"
+                    </p>
+                    <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
+                      {mithuDialogueEng}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Current Streak (Premium tactile card as visual centerpiece) */}
+                <div className="relative w-full bg-gradient-to-b from-orange-50/40 to-amber-50/10 dark:from-orange-950/5 dark:to-amber-950/2 border-2 border-orange-100/80 dark:border-orange-950/30 border-b-[5px] border-b-orange-200/80 dark:border-b-orange-950/80 rounded-[1.5rem] p-3.5 overflow-hidden shadow-xs">
+                  {/* Flame decor details */}
+                  <div className="absolute -left-3 -bottom-3 w-10 h-10 text-orange-500/5 dark:text-orange-500/10 pointer-events-none">
+                    <Flame className="w-full h-full fill-current" />
+                  </div>
+                  <div className="absolute -right-3 -top-3 w-10 h-10 text-amber-500/5 dark:text-amber-500/10 pointer-events-none">
+                    <Flame className="w-full h-full fill-current" />
+                  </div>
+
+                  <div className="flex flex-col items-center text-center">
+                    {/* Interactive Flame Container */}
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-1.5 border-2 shadow-xs bg-white dark:bg-slate-900 ${getStreakBadgeStyles()}`}>
+                      <Flame className={`w-6 h-6 ${getFlameIconStyles()}`} />
+                    </div>
+
+                    <span className="text-[8.5px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-0.5">
+                      Current Mastery Streak
+                    </span>
+                    
+                    <div className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tracking-tight flex items-center justify-center gap-1.5 leading-none py-0.5">
+                      <span className="text-3xl">🔥</span>
+                      <span>{streakVal}</span>
+                    </div>
+
+                    <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900/80 border border-orange-100 dark:border-orange-950 text-[10.5px] font-black text-orange-700 dark:text-orange-300 shadow-3xs">
+                      <span>⚡</span>
+                      <span>{streakVal === 0 ? "No Active Streak" : `${streakVal} Correct Answers`}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Explanation Section */}
+                <div className="w-full text-slate-600 dark:text-slate-400 text-center px-1">
+                  <p className="text-[11.5px] font-semibold leading-relaxed">
+                    Consecutive correct answers are tracked globally across <span className="text-emerald-600 dark:text-emerald-400 font-bold">Units</span>, <span className="text-emerald-600 dark:text-emerald-400 font-bold">Stages</span>, <span className="text-emerald-600 dark:text-emerald-400 font-bold">Training Arena</span>, and <span className="text-emerald-600 dark:text-emerald-400 font-bold">Blitz Mode</span>.
+                  </p>
+                  <p className="text-[10.5px] font-bold text-rose-500 dark:text-rose-400 mt-1.5 flex items-center justify-center gap-1">
+                    <span>⚠️</span>
+                    <span>One incorrect answer resets your Mastery Streak.</span>
+                  </p>
+                </div>
+
+                {/* 5. Primary 3D Tactile CTA Button */}
                 <button
                   onClick={() => {
                     playSoundSynth("click");
                     setShowStreakPopup(false);
                   }}
-                  className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10"
+                  className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-xl py-2.5 px-4 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
+                    appState.isDarkMode 
+                      ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
+                      : "border-2 border-emerald-700 border-b-[5px] border-b-emerald-800 active:translate-y-[3px] active:border-b-[2px]"
+                  }`}
                 >
-                  <X className="w-5 h-5" />
+                  Keep Learning! 🚀
                 </button>
 
-                <div className="flex flex-col sm:flex-row sm:items-stretch sm:gap-6 mt-2">
-                  
-                  {/* Left Section (Header, Title, Companion Bubble) */}
-                  <div className="flex-1 flex flex-col justify-between text-center sm:text-left">
-                    <div>
-                      {/* Visual Header Title */}
-                      <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none mb-1">
-                        Mastery Streak
-                      </h3>
-                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">
-                        Accuracy &amp; Momentum Tracker
-                      </p>
-
-                      {/* Companion Dialogue Box */}
-                      <div className="flex gap-3 items-center bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-3xl p-3.5 mb-4 text-left relative w-full">
-                        {/* Mascot */}
-                        <div className="relative shrink-0 flex items-center justify-center">
-                          <div className={`absolute inset-0 ${appState.isDarkMode ? "bg-emerald-400/20" : "bg-amber-400/20"} rounded-full blur-xs animate-pulse`} />
-                          <div className="relative z-10 w-12 h-12 flex items-center justify-center scale-95">
-                            <MithuMascot mood={mithuMood} size={46} />
-                          </div>
-                        </div>
-                        {/* Bubble Content */}
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[8px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest block mb-0.5">
-                            Mithu says
-                          </span>
-                          <p className="font-sans text-xs xs:text-[13px] font-bold text-slate-800 dark:text-slate-100 leading-snug mb-1 italic whitespace-pre-line">
-                            "{mithuDialogueRoman}"
-                          </p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                            {mithuDialogueEng}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Integrated Feature Info Section (Desktop/Tablet Layout Only) */}
-                      <div className="mt-4 bg-slate-500/5 dark:bg-emerald-950/10 border border-slate-100/50 dark:border-emerald-900/10 rounded-3xl p-4 hidden sm:block text-left">
-                        <div className="flex items-start gap-3">
-                          <div className="p-1.5 bg-emerald-500/10 dark:bg-emerald-400/10 rounded-xl text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
-                            <Sparkles className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
-                              Global Tracker Mechanics
-                            </h4>
-                            <p className="text-[11.5px] font-semibold text-slate-700 dark:text-slate-350 leading-relaxed">
-                              Consecutive correct answers are calculated globally across all <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">Units</span>, <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">Stages</span>, and <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">Custom Games</span>! Keep learning to lock in high mastery.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Section (Tactile Gamified Streak Card & Button) */}
-                  <div className="w-full sm:w-[250px] shrink-0 flex flex-col justify-between mt-2 sm:mt-0">
-                    
-                    {/* Tactile Gamified Streak Card */}
-                    <div className="relative w-full bg-gradient-to-b from-orange-50/60 to-amber-50/20 dark:from-orange-950/10 dark:to-amber-950/5 border-2 border-orange-200 dark:border-orange-900/30 border-b-[6px] border-b-orange-300 dark:border-b-orange-950 rounded-[2rem] p-4 mb-4 overflow-hidden shadow-xs">
-                      {/* Flame decor details */}
-                      <div className="absolute -left-3 -bottom-3 w-12 h-12 text-orange-500/5 dark:text-orange-500/10 pointer-events-none">
-                        <Flame className="w-full h-full fill-current" />
-                      </div>
-                      <div className="absolute -right-3 -top-3 w-12 h-12 text-amber-500/5 dark:text-amber-500/10 pointer-events-none">
-                        <Flame className="w-full h-full fill-current" />
-                      </div>
-
-                      <div className="flex flex-col items-center text-center">
-                        {/* Interactive Flame Container */}
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 border-2 shadow-xs ${getStreakBadgeStyles()}`}>
-                          <Flame className={`w-7 h-7 ${getFlameIconStyles()}`} />
-                        </div>
-
-                        <span className="text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-0.5">
-                          Your Current Streak
-                        </span>
-                        
-                        <div className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tracking-tight flex items-center justify-center gap-1 leading-none py-0.5">
-                          <span className="text-2xl">🔥</span>
-                          <span>{streakVal}</span>
-                        </div>
-
-                        <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900/80 border border-orange-100 dark:border-orange-950 text-[10px] font-black text-orange-700 dark:text-orange-300 shadow-3xs">
-                          <span>⚡</span>
-                          <span>{streakVal === 0 ? "No Active Streak" : `${streakVal} Correct`}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Subtitle Info Description (Mobile Layout only) */}
-                    <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed px-2 mb-4 block sm:hidden text-center">
-                      Consecutive correct answers are calculated globally across all Units, Stages, and Custom Games! Keep learning to lock in high mastery.
-                    </p>
-
-                    {/* Primary 3D Tactile CTA Button */}
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setShowStreakPopup(false);
-                      }}
-                      className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-full py-2.5 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
-                        appState.isDarkMode 
-                          ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                          : "border-2 border-emerald-700 border-b-[6px] border-b-emerald-800 active:translate-y-[4px] active:border-b-[2px]"
-                      }`}
-                    >
-                      Keep Learning! 🚀
-                    </button>
-                  </div>
-
-                </div>
               </motion.div>
             </div>
           );
@@ -3593,18 +3646,51 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             onClick={() => setStreakCelebration(null)}
-            className="fixed top-24 left-1/2 -translate-x-1/2 z-[170] w-[calc(100%-2rem)] max-w-sm bg-white dark:bg-slate-900 border-2 border-emerald-500 rounded-3xl p-4 shadow-2xl flex items-center gap-3 cursor-pointer select-none text-left"
+            className={`fixed top-24 left-1/2 -translate-x-1/2 z-[170] w-[calc(100%-2rem)] max-w-sm backdrop-blur-xs rounded-full pl-3 pr-5 py-2.5 flex items-center gap-3 cursor-pointer select-none transition-all duration-300 ${
+              appState.isDarkMode
+                ? "bg-[#042414]/95 border-2 border-emerald-950 border-b-4 border-b-emerald-955 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
+                : "bg-emerald-50/95 border border-emerald-200/90 shadow-[0_12px_32px_rgba(16,185,129,0.12)]"
+            }`}
           >
-            <div className="w-12 h-12 shrink-0">
-              <MithuMascot mood="sparkly" size={46} />
+            {/* Left side compact fire badge with dynamic shine and glow */}
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center relative overflow-hidden shrink-0 transition-all ${
+              appState.isDarkMode
+                ? "shadow-[0_3px_15px_rgba(245,158,11,0.6)]"
+                : "shadow-[0_3px_12px_rgba(245,158,11,0.35)]"
+            }`}>
+              <Flame className="w-5.5 h-5.5 text-white fill-amber-300 animate-pulse" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rotate-45 -translate-y-full animate-[shine_2s_infinite]" />
             </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 block uppercase tracking-widest leading-none mb-1">
-                Milestone Celebration! 🎉
-              </span>
-              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 leading-snug">
-                {streakCelebration.message}
-              </h4>
+
+            {/* Compact content details */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <div className="flex items-center gap-1.5 leading-none mb-0.5">
+                <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${
+                  appState.isDarkMode ? "text-emerald-400" : "text-emerald-700"
+                }`}>
+                  🔥 Milestone
+                </span>
+                <span className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full truncate shadow-xs border ${
+                  appState.isDarkMode
+                    ? "bg-amber-950/65 text-amber-300 border-amber-800/40"
+                    : "bg-amber-100/90 text-amber-900 border-amber-250/60"
+                }`}>
+                  {streakCelebration.title}
+                </span>
+              </div>
+              
+              <div className="flex items-baseline gap-1.5 leading-none">
+                <span className={`text-xs sm:text-sm font-black shrink-0 ${
+                  appState.isDarkMode ? "text-white" : "text-slate-900"
+                }`}>
+                  {streakCelebration.streak} Streak!
+                </span>
+                <span className={`text-[11px] truncate italic font-medium ${
+                  appState.isDarkMode ? "text-emerald-200/90" : "text-slate-600"
+                }`}>
+                  "{streakCelebration.message}"
+                </span>
+              </div>
             </div>
           </motion.div>
         )}
@@ -4345,7 +4431,7 @@ export default function App() {
               <button
                 id="theme-toggle"
                 onClick={() => {
-                  playSoundSynth("click");
+                  playSoundSynth("click", "theme");
                   const nextDark = !appState.isDarkMode;
                   localStorage.setItem("ginti_theme_pref", nextDark ? "dark" : "light");
                   const updated = { ...appState, isDarkMode: nextDark };
@@ -4544,168 +4630,180 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col gap-2.5 sm:gap-3.5"
+                className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col flex-1 gap-4 min-h-[78vh] sm:min-h-[82vh]"
               >
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <button 
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setRecoveryState(null);
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer active:scale-95"
-                  >
-                    <Home className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Exit Drill</span>
-                  </button>
-                  
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                      Card {recoveryState.currentIndex + 1} of {recoveryState.questions.length}
-                    </span>
-                    <span className="text-[10px] font-extrabold uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 rounded-full py-0.5 tracking-wider flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                      🛡️ Correction
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
-                  <div
-                    className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${((recoveryState.currentIndex + 1) / recoveryState.questions.length) * 100}%` }}
-                  />
-                </div>
-
-                {/* Prompt Card */}
-                <div id="prompt-card" className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative overflow-hidden bg-white min-h-[145px] sm:min-h-[165px] gap-2.5">
-                  <div className="text-[9px] font-mono uppercase font-black text-slate-400 tracking-wider">
-                    Mistake Rectification
-                  </div>
-                  <div 
-                    className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 ${
-                      appState.isDarkMode ? 'text-white' : 'text-slate-900'
-                    } ${
-                      appState.showScript &&
-                      typeof getDisplayPromptValue(currentQ) === 'string' && 
-                      (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/)
-                        ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? 'text-white' : 'text-emerald-800'}`
-                        : 'text-4xl sm:text-[3.25rem] leading-none py-2'
-                    }`}
-                  >
-                    {formatValueForDisplay(getDisplayPromptValue(currentQ))}
-                  </div>
-
-                  {/* Redesigned interactive tactile speaker button */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={() => playWordAudio(currentQ.entry)}
-                      disabled={speechActive}
-                      className={`w-[2.35rem] h-[2.35rem] rounded-full border-2 border-emerald-100 bg-emerald-50/40 flex items-center justify-center shadow-xs transition hover:scale-105 active:scale-95 disabled:opacity-50 text-emerald-800 cursor-pointer border-b-[3.5px] border-b-emerald-200 active:translate-y-[1.5px] active:border-b-[1.5px] ${
-                        speechActive ? 'pulse-primary-emerald' : ''
-                      }`}
-                      title="Hear pronunciation audio"
+                {/* Top Section: Header & Progress */}
+                <div className="flex flex-col gap-3.5 shrink-0">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <button 
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setRecoveryState(null);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer active:scale-95"
                     >
-                      <PremiumSpeakerIcon className="w-4 h-4 text-emerald-700" />
+                      <Home className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Exit Drill</span>
                     </button>
-                    <p className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wider">
-                      Tap speaker to hear pronunciation
-                    </p>
+                    
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                        Card {recoveryState.currentIndex + 1} of {recoveryState.questions.length}
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 rounded-full py-0.5 tracking-wider flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                        🛡️ Correction
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full bg-slate-100 dark:bg-slate-850 h-3 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800/80">
+                    <div
+                      className="bg-[#ffc800] h-full rounded-full transition-all duration-300"
+                      style={{ width: `${((recoveryState.currentIndex + 1) / recoveryState.questions.length) * 100}%` }}
+                    />
                   </div>
                 </div>
 
-                {/* Choice buttons */}
-                <div id="choice-grid" className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                  {currentQ.choices.map((choice: any, index: number) => {
-                    const isSelected = recoveryState.userAnswer === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
+                {/* Center Content Area (Vertically Balanced & Centered) */}
+                <div className="flex-1 flex flex-col justify-center gap-3.5 sm:gap-4 py-4 sm:py-6">
+                  {/* Prompt Card */}
+                  <div id="prompt-card" className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative overflow-hidden bg-white dark:bg-slate-900/65 min-h-[145px] sm:min-h-[165px] gap-2.5">
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-[10px] font-mono uppercase font-black text-slate-400 tracking-wider">
+                        Correction Round
+                      </span>
+                      {renderMithuHelpBadge(currentQ.entry.digit)}
+                    </div>
                     
-                    let cardStyle = "ginti-choice-btn";
-                    if (recoveryState.isAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={index}
-                        disabled={recoveryState.isAnswered}
-                        onClick={() => handleRecoveryAnswer(choice)}
-                        className={`choice-btn py-2.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[50px] sm:min-h-[58px] w-full ${cardStyle}`}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-lg sm:text-xl font-urdu leading-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Feedback footer */}
-                {recoveryState.isAnswered && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-2.5 sm:p-3 px-4 sm:px-5 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-3 ${
-                      recoveryState.userAnswer === currentQ.correctAnswer
-                        ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
-                        : "bg-rose-50 border-rose-300 text-rose-955 border-b-[5px] border-b-rose-450 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 text-left w-full sm:w-auto">
-                      <div className="scale-[0.58] -my-5 -mx-2.5 select-none shrink-0" id="recovery-avatar">
-                        <MithuMascot mood={recoveryState.userAnswer === currentQ.correctAnswer ? "sparkly" : "sad"} />
-                      </div>
-                      
-                      {recoveryState.userAnswer === currentQ.correctAnswer ? (
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                            <span>{recoveryState.mithuFeedback?.title ?? "Correct Answer! Shabash!"}</span>
-                          </div>
-                          <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                            appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
-                          }`}>
-                            {recoveryState.mithuFeedback?.subtitle ?? "You corrected this mistake card successfully."}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[12.5px] font-black flex items-center gap-1 text-rose-900 leading-tight">
-                            <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-300 shrink-0" />
-                            <span>{recoveryState.mithuFeedback?.title ?? "Incorrect! Let's reinforce."}</span>
-                          </div>
-                          <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                            appState.isDarkMode ? "text-rose-300" : "text-rose-950"
-                          }`}>
-                            {recoveryState.mithuFeedback?.subtitle ?? "Correct answer:"}{" "}
-                            <span className={`font-extrabold rounded px-1 border ${
-                              appState.isDarkMode
-                                ? "bg-rose-950 text-rose-200 border-rose-900/60"
-                                : "bg-rose-100/70 text-rose-950 border-rose-200"
-                            }`}>
-                              {formatValueForDisplay(currentQ.correctAnswer)}
-                            </span>
-                          </span>
-                        </div>
-                      )}
+                    <div 
+                      className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 ${
+                        appState.isDarkMode ? 'text-white' : 'text-slate-900'
+                      } ${
+                        appState.showScript &&
+                        typeof getDisplayPromptValue(currentQ) === 'string' && 
+                        (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/)
+                          ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? 'text-white' : 'text-emerald-800'}`
+                          : 'text-4xl sm:text-[3.25rem] leading-none py-2'
+                      }`}
+                    >
+                      {formatValueForDisplay(getDisplayPromptValue(currentQ))}
                     </div>
 
-                    <button
-                      onClick={() => advanceRecoveryRound()}
-                      className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                    {/* Redesigned interactive tactile speaker button */}
+                    <div className="flex flex-col items-center gap-1">
+                      <button
+                        onClick={() => playWordAudio(currentQ.entry)}
+                        disabled={speechActive}
+                        className={`w-[2.35rem] h-[2.35rem] rounded-full border-2 border-emerald-100 bg-emerald-50/40 flex items-center justify-center shadow-xs transition hover:scale-105 active:scale-95 disabled:opacity-50 text-emerald-800 cursor-pointer border-b-[3.5px] border-b-emerald-200 active:translate-y-[1.5px] active:border-b-[1.5px] ${
+                          speechActive ? 'pulse-primary-emerald' : ''
+                        }`}
+                        title="Hear pronunciation audio"
+                      >
+                        <PremiumSpeakerIcon className="w-4 h-4 text-emerald-700" />
+                      </button>
+                      <p className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wider">
+                        Tap speaker to hear pronunciation
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Choice buttons */}
+                  <div id="choice-grid" className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                    {currentQ.choices.map((choice: any, index: number) => {
+                      const isSelected = recoveryState.userAnswer === choice;
+                      const isCorrectVal = choice === currentQ.correctAnswer;
+                      
+                      let cardStyle = "ginti-choice-btn";
+                      if (recoveryState.isAnswered) {
+                        if (isCorrectVal) {
+                          cardStyle = "ginti-choice-btn-correct";
+                        } else if (isSelected) {
+                          cardStyle = "ginti-choice-btn-incorrect";
+                        } else {
+                          cardStyle = "ginti-choice-btn-dimmed";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={index}
+                          disabled={recoveryState.isAnswered}
+                          onClick={() => handleRecoveryAnswer(choice)}
+                          className={`choice-btn py-2.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[50px] sm:min-h-[58px] w-full ${cardStyle}`}
+                        >
+                          <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-lg sm:text-xl font-urdu leading-none' : ''}>
+                            {formatValueForDisplay(choice)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom: Feedback Footer */}
+                <div className="shrink-0 min-h-[70px] sm:min-h-[80px] flex flex-col justify-end">
+                  {recoveryState.isAnswered && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-2.5 sm:p-3 px-4 sm:px-5 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-3 ${
+                        recoveryState.userAnswer === currentQ.correctAnswer
+                          ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
+                          : "bg-rose-50 border-rose-300 text-rose-955 border-b-[5px] border-b-rose-450 shadow-sm"
+                      }`}
                     >
-                      <span>Continue</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </motion.div>
-                )}
+                      <div className="flex items-center gap-2 text-left w-full sm:w-auto">
+                        <div className="scale-[0.58] -my-5 -mx-2.5 select-none shrink-0" id="recovery-avatar">
+                          <MithuMascot mood={recoveryState.userAnswer === currentQ.correctAnswer ? "sparkly" : "sad"} />
+                        </div>
+                        
+                        {recoveryState.userAnswer === currentQ.correctAnswer ? (
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                              <span>{recoveryState.mithuFeedback?.title ?? "Correct Answer! Shabash!"}</span>
+                            </div>
+                            <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                              appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
+                            }`}>
+                              {recoveryState.mithuFeedback?.subtitle ?? "You corrected this mistake card successfully."}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[12.5px] font-black flex items-center gap-1 text-rose-900 leading-tight">
+                              <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-300 shrink-0" />
+                              <span>{recoveryState.mithuFeedback?.title ?? "Incorrect! Let's reinforce."}</span>
+                            </div>
+                            <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                              appState.isDarkMode ? "text-rose-300" : "text-rose-950"
+                            }`}>
+                              Correct answer:{" "}
+                              <span className={`font-extrabold rounded px-1 border ${
+                                appState.isDarkMode
+                                  ? "bg-rose-950 text-rose-200 border-rose-900/60"
+                                  : "bg-rose-100/70 text-rose-950 border-rose-200"
+                              }`}>
+                                {formatValueForDisplay(currentQ.correctAnswer)}
+                              </span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => advanceRecoveryRound()}
+                        className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                      >
+                        <span>Continue</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
               </motion.div>
             );
           })()}
@@ -5938,19 +6036,30 @@ export default function App() {
 
             </div>
 
-            {/* Time Warning Pulsating Overlay */}
-            {arcadeState.timeLeft <= 5 && !arcadeState.isGameOver && (
-              <div className="animate-pulse text-rose-600 font-sans font-black text-xs uppercase tracking-widest bg-rose-50 border border-rose-200 py-2 rounded-xl">
-                ⚠️ RAPID INTUITION: TIMER CRITICALLY LOW!
-              </div>
-            )}
-
             {/* GAME CORE ACTIVE CONTENT SWITCH */}
             {!arcadeState.isGameOver ? (
               <div className="flex flex-col gap-6">
                 
                 {/* PROMPT BOX */}
-                <div id="arcade-prompt" className="bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950 text-white rounded-2xl sm:rounded-3xl p-5 md:p-6 flex flex-col items-center justify-center min-h-[110px] sm:min-h-[130px] relative shadow-xl border border-slate-800">
+                <div id="arcade-prompt" className="bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950 text-white rounded-2xl sm:rounded-3xl p-5 md:p-6 flex flex-col items-center justify-center min-h-[110px] sm:min-h-[130px] relative shadow-xl border border-slate-800 overflow-hidden">
+                  
+                  {/* Time Warning Pulsating Overlay Integrated with Question Card */}
+                  <AnimatePresence>
+                    {arcadeState.timeLeft <= 5 && !arcadeState.isGameOver && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="absolute top-0 left-0 right-0 z-20 pointer-events-none"
+                      >
+                        <div className="animate-pulse text-rose-600 dark:text-rose-400 font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-widest bg-rose-50/95 dark:bg-rose-950/95 border-b border-rose-200/60 dark:border-rose-900/40 py-1.5 px-3 text-center shadow-xs">
+                          ⚠️ RAPID INTUITION: TIMER CRITICALLY LOW!
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <div className="flex items-center justify-between w-full mb-1">
                     <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-extrabold text-left">
                       RAPID-FIRE CHIP
@@ -7012,7 +7121,7 @@ export default function App() {
             SCREEN E: TRAINING ARENA WORKFLOW
             ============================================================================= */}
         {!recoveryState && activeScreen === "training-arena" && (
-          <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center">
+          <div className="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
             {(() => {
           const minRange = appState.arenaMin ?? 30;
           const maxRange = appState.arenaMax ?? 100;
