@@ -89,6 +89,8 @@ interface AppState {
   isDarkMode?: boolean;
   arenaStarted?: boolean;
   arenaCompleted?: boolean;
+  hasCenturyCelebrated?: boolean;
+  hasEncounteredZero?: boolean;
 }
 
 type ScreenType = "dashboard" | "practice" | "arcade" | "unit-journey" | "training-arena";
@@ -124,6 +126,7 @@ interface ArcadeState {
   wrongCount: number;
   selectedAnswer?: string | number | null;
   isAnswered?: boolean;
+  consecutiveCorrect?: number;
 }
 
 interface RecoveryRoundState {
@@ -425,8 +428,22 @@ const getMithuCorrectFeedback = (
 
 const getMithuWrongFeedback = (
   isRecovery: boolean,
-  recentMessages: string[]
+  recentMessages: string[],
+  previousStreak?: number
 ): { title: string; subtitle: string } => {
+  if (previousStreak && previousStreak >= 100) {
+    const RESPECT_LINES = [
+      "Achi innings thi. 👏",
+      "Flame bujhi... hausla nahi.",
+      "Phir se bana lenge.",
+      "Ab nayi streak shuru!"
+    ];
+    const randomIndex = Math.floor(Math.random() * RESPECT_LINES.length);
+    const title = RESPECT_LINES[randomIndex];
+    const subtitle = `Respect! A streak of ${previousStreak} was broken.`;
+    return { title, subtitle };
+  }
+
   const pool = MITHU_WRONG_POOL;
   const title = selectMessageWithVariety(pool, recentMessages);
   
@@ -675,8 +692,28 @@ const getInitialDarkMode = (): boolean => {
   return false;
 };
 
+let sharedAudioCtx: AudioContext | null = null;
+const getSharedAudioContext = (): AudioContext => {
+  if (typeof window !== "undefined") {
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return sharedAudioCtx;
+  }
+  throw new Error("AudioContext is only available in browser environments");
+};
+
 export default function App() {
   const shouldReduceMotion = useReducedMotion();
+
+  // Instant Touch Feedback Activator for iOS & Mobile Browsers
+  useEffect(() => {
+    const handleTouchStart = () => {};
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+    };
+  }, []);
   // =============================================================================
   // APP STATES
   // =============================================================================
@@ -701,6 +738,8 @@ export default function App() {
     isDarkMode: getInitialDarkMode(),
     arenaStarted: false,
     arenaCompleted: false,
+    hasCenturyCelebrated: false,
+    hasEncounteredZero: false,
   });
 
   const [activeScreen, setActiveScreen] = useState<ScreenType>("dashboard");
@@ -759,6 +798,7 @@ export default function App() {
   const recentArenaArcadeDigitsRef = useRef<number[]>([]);
   const lastPlayedStageQRef = useRef<string>("");
   const lastPlayedArenaQRef = useRef<string>("");
+  const lastPlayedRecoveryQRef = useRef<string>("");
 
   // =============================================================================
   // TRAINING ARENA TRANSIENT SCREEN STATE
@@ -832,6 +872,63 @@ export default function App() {
     localStorage.removeItem("ginti_recent_searches");
   };
 
+  // Easter Egg "67" Wobble & Custom Reaction System
+  const [lastWobbledKey, setLastWobbledKey] = useState<string>("");
+  const [isWobbling, setIsWobbling] = useState<boolean>(false);
+  const [mithuEasterEggBubble, setMithuEasterEggBubble] = useState<string | null>(null);
+
+  const MITHU_EASTER_EGG_LINES = [
+    "🦜 Six Seven... 😭",
+    "🦜 Six Seven?! 💀",
+    "🦜 sigh... Six Seven.",
+    "🦜 No way... Six Seven.",
+    "🦜 Yup... Six Seven."
+  ];
+
+  const playWobbleSound = () => {
+    try {
+      triggerHaptic("complete");
+      const audioCtx = getSharedAudioContext();
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      const now = audioCtx.currentTime;
+      
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc1.type = "triangle";
+      osc2.type = "sine";
+      
+      osc1.frequency.setValueAtTime(220, now);
+      osc1.frequency.linearRampToValueAtTime(330, now + 0.15);
+      osc1.frequency.linearRampToValueAtTime(200, now + 0.3);
+      osc1.frequency.linearRampToValueAtTime(260, now + 0.45);
+      osc1.frequency.linearRampToValueAtTime(220, now + 0.6);
+      
+      osc2.frequency.setValueAtTime(225, now);
+      osc2.frequency.linearRampToValueAtTime(335, now + 0.15);
+      osc2.frequency.linearRampToValueAtTime(205, now + 0.3);
+      osc2.frequency.linearRampToValueAtTime(265, now + 0.45);
+      osc2.frequency.linearRampToValueAtTime(225, now + 0.6);
+      
+      gainNode.gain.setValueAtTime(0.06, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.7);
+      osc2.stop(now + 0.7);
+    } catch (e) {
+      // Ignore audioContext errors silently
+    }
+  };
+
   useEffect(() => {
     if (!searchQuery || !searchQuery.trim()) return;
     const currentQuery = searchQuery;
@@ -860,6 +957,111 @@ export default function App() {
   // Arcade Blitz Arena
   const [arcadeState, setArcadeState] = useState<ArcadeState | null>(null);
   const arcadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    let activeCardKey = "";
+    let activeCardDigit: number | null = null;
+
+    if (recoveryState && !recoveryState.isDone) {
+      const currentQ = recoveryState.questions[recoveryState.currentIndex];
+      if (currentQ) {
+        activeCardDigit = currentQ.entry.digit;
+        activeCardKey = `recovery-${recoveryState.currentIndex}-${activeCardDigit}`;
+      }
+    } else if (activeScreen === "practice" && quizState && !quizState.isDone) {
+      const currentQ = quizState.questions[quizState.currentIndex];
+      if (currentQ) {
+        activeCardDigit = currentQ.entry.digit;
+        activeCardKey = `practice-${quizState.currentIndex}-${activeCardDigit}`;
+      }
+    } else if (activeScreen === "arcade" && arcadeState && !arcadeState.isDone) {
+      const currentQ = arcadeState.activeQuestion;
+      if (currentQ) {
+        activeCardDigit = currentQ.entry.digit;
+        activeCardKey = `arcade-${arcadeState.score}-${activeCardDigit}`;
+      }
+    } else if (activeScreen === "unit-journey") {
+      const sQuizQ = stageQuizQuestions[stageQuizIdx];
+      const sListQ = stageListQuestions[stageListIdx];
+      if (sQuizQ) {
+        activeCardDigit = sQuizQ.entry.digit;
+        activeCardKey = `stagequiz-${stageQuizIdx}-${activeCardDigit}`;
+      } else if (sListQ) {
+        activeCardDigit = sListQ.entry.digit;
+        activeCardKey = `stagelist-${stageListIdx}-${activeCardDigit}`;
+      } else if (stageArcadeActiveQ) {
+        activeCardDigit = stageArcadeActiveQ.entry.digit;
+        activeCardKey = `stagearcade-${stageArcadeActiveQ.entry.digit}`;
+      }
+    } else if (activeScreen === "training-arena") {
+      if (arenaActiveStage === 2) {
+        const q = arenaQuizQuestions[arenaQuizIdx];
+        if (q) {
+          activeCardDigit = q.entry.digit;
+          activeCardKey = `arenaquiz-${arenaQuizIdx}-${activeCardDigit}`;
+        }
+      } else if (arenaActiveStage === 3) {
+        const q = arenaListQuestions[arenaListIdx];
+        if (q) {
+          activeCardDigit = q.entry.digit;
+          activeCardKey = `arenalist-${arenaListIdx}-${activeCardDigit}`;
+        }
+      } else if (arenaActiveStage === 4 && arenaArcadeActiveQ) {
+        activeCardDigit = arenaArcadeActiveQ.entry.digit;
+        activeCardKey = `arenaarcade-${activeCardDigit}`;
+      } else if (arenaActiveStage === 5) {
+        const q = arenaQuizQuestions[arenaQuizIdx];
+        if (q) {
+          activeCardDigit = q.entry.digit;
+          activeCardKey = `arenaultimate-${arenaQuizIdx}-${activeCardDigit}`;
+        }
+      }
+    }
+
+    if (mithuExplanationDigit !== null) {
+      activeCardDigit = mithuExplanationDigit;
+      activeCardKey = `explanation-${mithuExplanationDigit}`;
+    } else if (activeScreen === "dashboard" && selectedSearchEntry) {
+      activeCardDigit = selectedSearchEntry.digit;
+      activeCardKey = `search-${selectedSearchEntry.digit}`;
+    }
+
+    if (activeCardDigit === 67 && activeCardKey) {
+      if (activeCardKey !== lastWobbledKey) {
+        setLastWobbledKey(activeCardKey);
+        setIsWobbling(true);
+        
+        // Play subtle custom wobble sound
+        playWobbleSound();
+
+        // Show Mithu reaction line
+        const randomLine = MITHU_EASTER_EGG_LINES[Math.floor(Math.random() * MITHU_EASTER_EGG_LINES.length)];
+        setMithuEasterEggBubble(randomLine);
+
+        // Hide bubble after 4.5 seconds
+        const timer = setTimeout(() => {
+          setMithuEasterEggBubble(null);
+        }, 4500);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [
+    activeScreen,
+    recoveryState,
+    quizState,
+    arcadeState,
+    stageQuizIdx,
+    stageListIdx,
+    stageArcadeActiveQ,
+    arenaActiveStage,
+    arenaQuizIdx,
+    arenaListIdx,
+    arenaArcadeActiveQ,
+    mithuExplanationDigit,
+    selectedSearchEntry,
+    lastWobbledKey
+  ]);
 
   // Speech and Audio state
   const [speechActive, setSpeechActive] = useState<boolean>(false);
@@ -986,6 +1188,8 @@ export default function App() {
           isDarkMode: finalDark,
           arenaStarted: parsed.arenaStarted ?? false,
           arenaCompleted: parsed.arenaCompleted ?? false,
+          hasCenturyCelebrated: parsed.hasCenturyCelebrated ?? false,
+          hasEncounteredZero: parsed.hasEncounteredZero ?? false,
         };
         const checkedState = checkAndResetStreakOnStartup(restored);
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(checkedState));
@@ -1000,6 +1204,20 @@ export default function App() {
       setAppState((prev) => ({ ...prev, isDarkMode: initialTheme }));
     }
   }, []);
+
+  // Trigger effect to record 0 encounter once the 0 clues are opened
+  useEffect(() => {
+    if (mithuExplanationDigit === 0 && !appState.hasEncounteredZero) {
+      setAppState((prev) => {
+        const updated = {
+          ...prev,
+          hasEncounteredZero: true,
+        };
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [mithuExplanationDigit, appState.hasEncounteredZero]);
 
   // Trigger header streak icon animation only when the streak increases
   useEffect(() => {
@@ -1087,8 +1305,21 @@ export default function App() {
         milestoneTitle = isUrduScriptOn ? "Master Class! 🎓" : "Mastery Rising! 💎";
         milestoneMsg = isUrduScriptOn ? "Ab lag rahe ho player. 😏" : "Flame Intensified! 🔥";
       } else if (nextStreak === 100) {
-        milestoneTitle = isUrduScriptOn ? "Centurion! 👑" : "New Streak Record! 🌟";
-        milestoneMsg = isUrduScriptOn ? "Aaj toh kamaal kar diya! 🌟" : "Next Milestone Awaits! 🚀";
+        if (!prev.hasCenturyCelebrated) {
+          const CENTURY_LINES = [
+            "Century! 👏",
+            "Bat utha lo... Century ho gayi! 🏏",
+            "Scoreboard dekho... Century!",
+            "Ye hui na batting! 🏏",
+            "Not out... Century complete! 😎"
+          ];
+          milestoneTitle = "Century Celebration! 💯";
+          const randomIndex = Math.floor(Math.random() * CENTURY_LINES.length);
+          milestoneMsg = CENTURY_LINES[randomIndex];
+        } else {
+          milestoneTitle = isUrduScriptOn ? "Centurion! 👑" : "New Streak Record! 🌟";
+          milestoneMsg = isUrduScriptOn ? "Aaj toh kamaal kar diya! 🌟" : "Next Milestone Awaits! 🚀";
+        }
       } else if (nextStreak === 150) {
         milestoneTitle = isUrduScriptOn ? "Incredible Run! 🚀" : "Milestone Unlocked! 🏅";
         milestoneMsg = isUrduScriptOn ? "Yeh hui na baat! 🎯" : "Momentum Rising! ⚡";
@@ -1126,6 +1357,7 @@ export default function App() {
       const updated = {
         ...prev,
         masteryStreak: nextStreak,
+        hasCenturyCelebrated: prev.hasCenturyCelebrated || (nextStreak === 100),
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       return updated;
@@ -1184,6 +1416,8 @@ export default function App() {
     const isStruggling = isSuggesting || hasMistakes;
     const isArcade = activeScreen === "arcade";
 
+    let badgeElement = null;
+
     if (isStruggling) {
       const btnStyle = isArcade
         ? "bg-emerald-950/80 hover:bg-emerald-900/80 border-emerald-900 text-emerald-300 ring-emerald-900/20"
@@ -1191,7 +1425,7 @@ export default function App() {
           ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300 ring-emerald-900/40" 
           : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800 ring-emerald-300/40";
 
-      return (
+      badgeElement = (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1210,27 +1444,46 @@ export default function App() {
           </span>
         </button>
       );
+    } else {
+      const btnStyle = isArcade
+        ? "bg-emerald-950/80 hover:bg-emerald-900/80 border-emerald-900/80 text-emerald-300"
+        : appState.isDarkMode 
+          ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300" 
+          : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800";
+
+      badgeElement = (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            playSoundSynth("click");
+            setMithuExplanationDigit(digit);
+          }}
+          className={`px-2.5 py-1 border rounded-full text-[10px] font-black flex items-center gap-1 cursor-pointer transition-all duration-100 hover:scale-105 active:scale-95 select-none shadow-xs ${btnStyle}`}
+          title="Need Help? Ask Mithu!"
+        >
+          <span className="text-xs">🦜</span>
+          <span>Help</span>
+        </button>
+      );
     }
 
-    const btnStyle = isArcade
-      ? "bg-emerald-950/80 hover:bg-emerald-900/80 border-emerald-900/80 text-emerald-300"
-      : appState.isDarkMode 
-        ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300" 
-        : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800";
-
     return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          playSoundSynth("click");
-          setMithuExplanationDigit(digit);
-        }}
-        className={`px-2.5 py-1 border rounded-full text-[10px] font-black flex items-center gap-1 cursor-pointer transition-all duration-100 hover:scale-105 active:scale-95 select-none shadow-xs ${btnStyle}`}
-        title="Need Help? Ask Mithu!"
-      >
-        <span className="text-xs">🦜</span>
-        <span>Help</span>
-      </button>
+      <div className="relative inline-block">
+        <AnimatePresence>
+          {digit === 67 && mithuEasterEggBubble && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              className="absolute bottom-full mb-3 right-0 bg-amber-400 border-2 border-amber-500 text-slate-950 px-3 py-1.5 rounded-2xl text-[10px] font-black whitespace-nowrap shadow-xl z-50 flex items-center gap-1.5"
+            >
+              <span>{mithuEasterEggBubble}</span>
+              <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-amber-400" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {badgeElement}
+      </div>
     );
   };
 
@@ -1257,7 +1510,7 @@ export default function App() {
     }
 
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = getSharedAudioContext();
       if (audioCtx.state === "suspended") {
         audioCtx.resume();
       }
@@ -1496,6 +1749,8 @@ export default function App() {
     const norm = word.trim().toLowerCase();
     if (!norm) return null;
 
+    if (["sifr", "zero", "0", "صفر"].includes(norm)) return 0;
+
     const multipliers = ["sau", "so", "soo", "سو", "hazaar", "hazar", "ہزار"];
     if (multipliers.includes(norm)) return null;
 
@@ -1544,7 +1799,7 @@ export default function App() {
 
     total += tempSum;
 
-    if (total > 0 && total <= 9999) {
+    if (total >= 0 && total <= 9999) {
       return total;
     }
     return null;
@@ -1554,7 +1809,17 @@ export default function App() {
     const exact = NUMBERS.find((n) => n.digit === digit);
     if (exact) return exact;
 
-    if (digit <= 0 || digit > 9999) return null;
+    if (digit === 0) {
+      return {
+        digit: 0,
+        romanUrdu: "Sifr",
+        nativeScript: "صفر",
+        unitId: "unit1",
+        searchKeys: ["sifr", "sifr", "zero", "0", "صفر"]
+      };
+    }
+
+    if (digit < 0 || digit > 9999) return null;
 
     const thousands = Math.floor(digit / 1000);
     const hundreds = Math.floor((digit % 1000) / 100);
@@ -1710,7 +1975,7 @@ export default function App() {
 
     let dynamicEntryAdded = false;
     let dynamicEntry: NumberEntry | null = null;
-    if (parsedNum !== null && parsedNum > 0 && parsedNum <= 9999) {
+    if (parsedNum !== null && parsedNum >= 0 && parsedNum <= 9999) {
       dynamicEntry = generateNumberEntry(parsedNum);
     }
 
@@ -2535,6 +2800,7 @@ export default function App() {
 
     const currQuestion = quizState.questions[quizState.currentIndex];
     const correct = choice === currQuestion.correctAnswer;
+    const previousStreak = appState.masteryStreak ?? 0;
 
     if (correct) {
       incrementMasteryStreak();
@@ -2600,7 +2866,7 @@ export default function App() {
       false,
       recentMithuMessagesRef.current
     );
-    const wFeedback = getMithuWrongFeedback(false, recentMithuMessagesRef.current);
+    const wFeedback = getMithuWrongFeedback(false, recentMithuMessagesRef.current, previousStreak);
     const chosenFeedback = correct ? cFeedback : wFeedback;
     trackMithuMessage(chosenFeedback.title);
 
@@ -2621,47 +2887,50 @@ export default function App() {
 
     const nextIndex = quizState.currentIndex + 1;
     if (nextIndex >= quizState.questions.length) {
-      if (stage5Mistakes.length > 0) {
-        const uId = quizState.unitId;
+      playSoundSynth("click");
+      setTimeout(() => {
+        if (stage5Mistakes.length > 0) {
+          const uId = quizState.unitId;
+          setQuizState(null);
+          setTimeout(() => {
+            startRecoveryRound("journey_stage5", stage5Mistakes, uId);
+          }, 50);
+          return;
+        }
+        // Completed full set! Save completion milestones
+        const isNewCompletion = !appState.completedUnits.includes(quizState.unitId);
+        const unitsArray = isNewCompletion
+          ? [...appState.completedUnits, quizState.unitId]
+          : appState.completedUnits;
+
+        const nextJourneyProgress = {
+          ...(appState.unitStagesProgress ?? {}),
+          [quizState.unitId]: 5,
+        };
+
+        const updated = {
+          ...appState,
+          completedUnits: unitsArray,
+          totalXP: appState.totalXP + 50, // Major completion reward!
+          unitStagesProgress: nextJourneyProgress,
+        };
+
+        saveState(updated);
+        playSoundSynth("levelUp");
+        
+        const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
+        trackMithuMessage(celebratoryMsg);
+        
+        if (quizState.isStage5Test) {
+          showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
+          setCompletedUnitPopup(quizState.unitId);
+        } else {
+          showToast(`${celebratoryMsg} Stage Completed! Awarded +50 Reward XP! 🎉`);
+        }
+        
         setQuizState(null);
-        setTimeout(() => {
-          startRecoveryRound("journey_stage5", stage5Mistakes, uId);
-        }, 50);
-        return;
-      }
-      // Completed full set! Save completion milestones
-      const isNewCompletion = !appState.completedUnits.includes(quizState.unitId);
-      const unitsArray = isNewCompletion
-        ? [...appState.completedUnits, quizState.unitId]
-        : appState.completedUnits;
-
-      const nextJourneyProgress = {
-        ...(appState.unitStagesProgress ?? {}),
-        [quizState.unitId]: 5,
-      };
-
-      const updated = {
-        ...appState,
-        completedUnits: unitsArray,
-        totalXP: appState.totalXP + 50, // Major completion reward!
-        unitStagesProgress: nextJourneyProgress,
-      };
-
-      saveState(updated);
-      playSoundSynth("levelUp");
-      
-      const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
-      trackMithuMessage(celebratoryMsg);
-      
-      if (quizState.isStage5Test) {
-        showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
-        setCompletedUnitPopup(quizState.unitId);
-      } else {
-        showToast(`${celebratoryMsg} Stage Completed! Awarded +50 Reward XP! 🎉`);
-      }
-      
-      setQuizState(null);
-      setActiveScreen("dashboard");
+        setActiveScreen("dashboard");
+      }, 180);
     } else {
       setQuizState({
         ...quizState,
@@ -2754,6 +3023,7 @@ export default function App() {
 
     const currentQ = recoveryState.questions[recoveryState.currentIndex];
     const correct = choice === currentQ.correctAnswer;
+    const previousStreak = appState.masteryStreak ?? 0;
 
     if (correct) {
       incrementMasteryStreak();
@@ -2810,7 +3080,7 @@ export default function App() {
       true,
       recentMithuMessagesRef.current
     );
-    const wFeedback = getMithuWrongFeedback(true, recentMithuMessagesRef.current);
+    const wFeedback = getMithuWrongFeedback(true, recentMithuMessagesRef.current, previousStreak);
     const chosenFeedback = correct ? cFeedback : wFeedback;
     trackMithuMessage(chosenFeedback.title);
 
@@ -2943,6 +3213,7 @@ export default function App() {
       isGameOver: false,
       totalAnswered: 0,
       wrongCount: 0,
+      consecutiveCorrect: 0,
     });
 
     setActiveScreen("arcade");
@@ -3002,6 +3273,33 @@ export default function App() {
     if (!currQ) return;
 
     const correctMatch = choiceSelected === currQ.correctAnswer;
+    const nextConsecutiveCorrect = correctMatch ? (arcadeState.consecutiveCorrect ?? 0) + 1 : 0;
+
+    if (nextConsecutiveCorrect === 10) {
+      const RAPID_LINES = [
+        "Bijli se tez! ⚡",
+        "Reaction time dekho zara!",
+        "Mithu ko bhi sochne ka time nahi mila!",
+        "Rapid? Aap to turbo nikle!"
+      ];
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * RAPID_LINES.length);
+        const milestoneMsg = RAPID_LINES[randomIndex];
+        setStreakCelebration({ 
+          title: "Rapid Intuition Master! ⚡", 
+          message: milestoneMsg, 
+          streak: 10 
+        });
+        playSoundSynth("levelUp", "milestone");
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+          setStreakCelebration(prevCel => {
+            if (prevCel?.title === "Rapid Intuition Master! ⚡") return null;
+            return prevCel;
+          });
+        }, 4000);
+      }, 300);
+    }
 
     if (correctMatch) {
       incrementMasteryStreak();
@@ -3051,6 +3349,7 @@ export default function App() {
           activeQuestion: makeArcadeQuestion(),
           selectedAnswer: null,
           isAnswered: false,
+          consecutiveCorrect: nextConsecutiveCorrect,
         };
       });
     }, 450);
@@ -3143,6 +3442,21 @@ export default function App() {
       }
     }
   }, [arenaActiveStage, arenaListIdx, arenaListQuestions]);
+
+  // Auto-play audio for auditory questions in Correction Round
+  useEffect(() => {
+    if (recoveryState && !recoveryState.isDone) {
+      const currentQ = recoveryState.questions[recoveryState.currentIndex];
+      if (currentQ && currentQ.entry && currentQ.promptType === "audio_to_digit") {
+        const questionKey = `recovery-${recoveryState.currentIndex}-${currentQ.entry.digit}`;
+        if (lastPlayedRecoveryQRef.current !== questionKey) {
+          lastPlayedRecoveryQRef.current = questionKey;
+          // Auto-play the word audio
+          playWordAudio(currentQ.entry);
+        }
+      }
+    }
+  }, [recoveryState, recoveryState?.currentIndex]);
 
   useEffect(() => {
     return () => {
@@ -3298,7 +3612,20 @@ export default function App() {
   const activeLevel = Math.max(1, Math.floor(appState.totalXP / 100) + 1);
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-between">
+    <motion.div 
+      className="min-h-screen relative flex flex-col justify-between"
+      animate={isWobbling ? {
+        rotate: [0, 4.5, -3.5, 2.5, -1.8, 1.2, -0.7, 0.4, -0.2, 0],
+        y: [0, -12, 10, -7, 5, -3.5, 2.2, -1.2, 0.5, 0],
+      } : { rotate: 0, y: 0 }}
+      transition={{
+        duration: 2.8,
+        ease: "easeInOut",
+      }}
+      onAnimationComplete={() => {
+        setIsWobbling(false);
+      }}
+    >
       
       {/* Visual Header System Notifications Toast */}
       <AnimatePresence>
@@ -3514,12 +3841,19 @@ export default function App() {
           }
 
           return (
-            <div id="streak-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+            <motion.div 
+              id="streak-popup-overlay" 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.20 }}
+              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+            >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.16 } }}
+                transition={{ duration: 0.20, ease: "easeOut" }}
                 className="relative w-full max-w-[365px] bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2rem] p-5 shadow-2xl overflow-hidden flex flex-col gap-4"
               >
                 {/* Premium Gradient Top-bar Accent */}
@@ -3542,7 +3876,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setShowStreakPopup(false);
+                      setTimeout(() => {
+                        setShowStreakPopup(false);
+                      }, 180);
                     }}
                     className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10 -mr-1 -mt-1"
                     aria-label="Close"
@@ -3565,7 +3901,7 @@ export default function App() {
                     <span className="text-[7.5px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest block mb-0.5">
                       Mithu says
                     </span>
-                    <p className="font-sans text-[11px] font-normal text-slate-800 dark:text-slate-100 leading-snug mb-0.5 italic whitespace-pre-line">
+                    <p className="font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 leading-snug mb-0.5 not-italic whitespace-pre-line">
                       "{mithuDialogueRoman}"
                     </p>
                     <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -3621,7 +3957,9 @@ export default function App() {
                 <button
                   onClick={() => {
                     playSoundSynth("click");
-                    setShowStreakPopup(false);
+                    setTimeout(() => {
+                      setShowStreakPopup(false);
+                    }, 180);
                   }}
                   className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-xl py-2.5 px-4 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
                     appState.isDarkMode 
@@ -3633,7 +3971,7 @@ export default function App() {
                 </button>
 
               </motion.div>
-            </div>
+            </motion.div>
           );
         })()}
       </AnimatePresence>
@@ -3775,14 +4113,16 @@ export default function App() {
                     <button
                       onClick={() => {
                         playSoundSynth("click");
-                        setCompletedUnitPopup(null);
-                        setActiveScreen("dashboard");
-                        if (nextUnitAvailable) {
-                          setNextUnitToFocus(nextUnitAvailable.id);
-                        } else {
-                          // Mastered everything! Scroll to Unit 5
-                          setNextUnitToFocus("unit5");
-                        }
+                        setTimeout(() => {
+                          setCompletedUnitPopup(null);
+                          setActiveScreen("dashboard");
+                          if (nextUnitAvailable) {
+                            setNextUnitToFocus(nextUnitAvailable.id);
+                          } else {
+                            // Mastered everything! Scroll to Unit 5
+                            setNextUnitToFocus("unit5");
+                          }
+                        }, 180);
                       }}
                       className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-emerald-950 border-2 border-amber-400 border-b-[6px] border-b-amber-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-2.5 sm:py-3 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none uppercase"
                     >
@@ -3799,9 +4139,27 @@ export default function App() {
       {/* Mithu Learning Assistant Explanation Overlay Card */}
       <AnimatePresence>
         {mithuExplanationDigit !== null && (() => {
-          const entry = NUMBERS.find(n => n.digit === mithuExplanationDigit);
+          let entry = NUMBERS.find(n => n.digit === mithuExplanationDigit);
+          if (!entry && mithuExplanationDigit === 0) {
+            entry = {
+              digit: 0,
+              romanUrdu: "Sifr",
+              nativeScript: "صفر",
+              unitId: "unit1",
+              searchKeys: ["sifr", "sifr", "zero", "0", "صفر"]
+            };
+          }
           if (!entry) return null;
-          const explanation = getNumberExplanation(mithuExplanationDigit, entry.romanUrdu);
+          const rawExplanation = getNumberExplanation(mithuExplanationDigit, entry.romanUrdu);
+          const explanation = {
+            ...rawExplanation,
+            simpleExplanation: (mithuExplanationDigit === 0 && !appState.hasEncounteredZero)
+              ? "Sab kuch isi se shuru hota hai."
+              : rawExplanation.simpleExplanation,
+            simpleExplanationEn: (mithuExplanationDigit === 0 && !appState.hasEncounteredZero)
+              ? "Everything begins from here."
+              : rawExplanation.simpleExplanationEn,
+          };
           const famStyle = FAMILY_STYLES[explanation.familyId] || FAMILY_STYLES.single;
 
           return (
@@ -4554,58 +4912,64 @@ export default function App() {
 
                     <button
                       onClick={() => {
-                        let leveledUp = false;
                         const mode = recoveryState.originalMode;
                         const uId = recoveryState.unitId;
 
-                        if (mode === "journey_stage2" && uId) {
-                          leveledUp = saveUnitStageProgress(uId, 2);
-                          setStageQuizIdx(5); // Show stage end screen
-                        } else if (mode === "journey_stage3" && uId) {
-                          leveledUp = saveUnitStageProgress(uId, 3);
-                          setStageListIdx(5); // Show stage end screen
-                        } else if (mode === "journey_stage5" && uId) {
-                          const isNewCompletion = !appState.completedUnits.includes(uId);
-                          const unitsArray = isNewCompletion
-                            ? [...appState.completedUnits, uId]
-                            : appState.completedUnits;
-
-                          const nextJourneyProgress = {
-                            ...(appState.unitStagesProgress ?? {}),
-                            [uId]: 5,
-                          };
-
-                          const updated = {
-                            ...appState,
-                            completedUnits: unitsArray,
-                            totalXP: appState.totalXP + 50,
-                            unitStagesProgress: nextJourneyProgress,
-                          };
-
-                          saveState(updated);
+                        // Determine and play audio feedback immediately on tap
+                        const isStage5JourneyLevelUp = (mode === "journey_stage5" && uId && !appState.completedUnits.includes(uId));
+                        if (isStage5JourneyLevelUp) {
                           playSoundSynth("levelUp");
-                          leveledUp = true;
-                          const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
-                          trackMithuMessage(celebratoryMsg);
-                          showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
-                          setCompletedUnitPopup(uId);
-                          setActiveScreen("dashboard");
-                        } else if (mode === "arena_stage2") {
-                          leveledUp = saveArenaStageProgress(2);
-                          setArenaQuizIdx(5); // Show stage end screen
-                        } else if (mode === "arena_stage3") {
-                          leveledUp = saveArenaStageProgress(3);
-                          setArenaListIdx(5); // Show stage end screen
-                        } else if (mode === "arena_stage5") {
-                          leveledUp = saveArenaStageProgress(5);
-                          setArenaQuizIdx(10); // Show stage end screen
-                        }
-
-                        if (!leveledUp) {
+                        } else {
                           playSoundSynth("click");
                         }
 
-                        setRecoveryState(null);
+                        // Delay the state updates and navigation slightly so the button has time to animate its physical press & return transition
+                        setTimeout(() => {
+                          let leveledUp = false;
+                          if (mode === "journey_stage2" && uId) {
+                            leveledUp = saveUnitStageProgress(uId, 2);
+                            setStageQuizIdx(5); // Show stage end screen
+                          } else if (mode === "journey_stage3" && uId) {
+                            leveledUp = saveUnitStageProgress(uId, 3);
+                            setStageListIdx(5); // Show stage end screen
+                          } else if (mode === "journey_stage5" && uId) {
+                            const isNewCompletion = !appState.completedUnits.includes(uId);
+                            const unitsArray = isNewCompletion
+                              ? [...appState.completedUnits, uId]
+                              : appState.completedUnits;
+
+                            const nextJourneyProgress = {
+                              ...(appState.unitStagesProgress ?? {}),
+                              [uId]: 5,
+                            };
+
+                            const updated = {
+                              ...appState,
+                              completedUnits: unitsArray,
+                              totalXP: appState.totalXP + 50,
+                              unitStagesProgress: nextJourneyProgress,
+                            };
+
+                            saveState(updated);
+                            leveledUp = true;
+                            const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
+                            trackMithuMessage(celebratoryMsg);
+                            showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
+                            setCompletedUnitPopup(uId);
+                            setActiveScreen("dashboard");
+                          } else if (mode === "arena_stage2") {
+                            leveledUp = saveArenaStageProgress(2);
+                            setArenaQuizIdx(5); // Show stage end screen
+                          } else if (mode === "arena_stage3") {
+                            leveledUp = saveArenaStageProgress(3);
+                            setArenaListIdx(5); // Show stage end screen
+                          } else if (mode === "arena_stage5") {
+                            leveledUp = saveArenaStageProgress(5);
+                            setArenaQuizIdx(10); // Show stage end screen
+                          }
+
+                          setRecoveryState(null);
+                        }, 180);
                       }}
                       className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all duration-150 ${
                         appState.isDarkMode 
@@ -4743,66 +5107,73 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Bottom: Feedback Footer */}
-                <div className="shrink-0 min-h-[70px] sm:min-h-[80px] flex flex-col justify-end">
-                  {recoveryState.isAnswered && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`p-2.5 sm:p-3 px-4 sm:px-5 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-3 ${
-                        recoveryState.userAnswer === currentQ.correctAnswer
-                          ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
-                          : "bg-rose-50 border-rose-300 text-rose-955 border-b-[5px] border-b-rose-450 shadow-sm"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-left w-full sm:w-auto">
-                        <div className="scale-[0.58] -my-5 -mx-2.5 select-none shrink-0" id="recovery-avatar">
-                          <MithuMascot mood={recoveryState.userAnswer === currentQ.correctAnswer ? "sparkly" : "sad"} />
-                        </div>
-                        
-                        {recoveryState.userAnswer === currentQ.correctAnswer ? (
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                              <span>{recoveryState.mithuFeedback?.title ?? "Correct Answer! Shabash!"}</span>
-                            </div>
-                            <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                              appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
-                            }`}>
-                              {recoveryState.mithuFeedback?.subtitle ?? "You corrected this mistake card successfully."}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[12.5px] font-black flex items-center gap-1 text-rose-900 leading-tight">
-                              <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-300 shrink-0" />
-                              <span>{recoveryState.mithuFeedback?.title ?? "Incorrect! Let's reinforce."}</span>
-                            </div>
-                            <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                              appState.isDarkMode ? "text-rose-300" : "text-rose-950"
-                            }`}>
-                              Correct answer:{" "}
-                              <span className={`font-extrabold rounded px-1 border ${
-                                appState.isDarkMode
-                                  ? "bg-rose-950 text-rose-200 border-rose-900/60"
-                                  : "bg-rose-100/70 text-rose-950 border-rose-200"
-                              }`}>
-                                {formatValueForDisplay(currentQ.correctAnswer)}
-                              </span>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={() => advanceRecoveryRound()}
-                        className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                {/* Bottom: Feedback Footer - Reserved height container to eliminate layout shift */}
+                <div className="shrink-0 min-h-[116px] sm:min-h-[68px] flex flex-col justify-center w-full">
+                  <AnimatePresence mode="wait">
+                    {recoveryState.isAnswered ? (
+                      <motion.div
+                        key="recovery-answered"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.2 }}
+                        className={`p-2.5 sm:p-3 px-4 sm:px-5 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-3 w-full ${
+                          recoveryState.userAnswer === currentQ.correctAnswer
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
+                            : "bg-rose-50 border-rose-300 text-rose-955 border-b-[5px] border-b-rose-450 shadow-sm"
+                        }`}
                       >
-                        <span>Continue</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </motion.div>
-                  )}
+                        <div className="flex items-center gap-2 text-left w-full sm:w-auto">
+                          <div className="scale-[0.58] -my-5 -mx-2.5 select-none shrink-0" id="recovery-avatar">
+                            <MithuMascot mood={recoveryState.userAnswer === currentQ.correctAnswer ? "sparkly" : "sad"} />
+                          </div>
+                          
+                          {recoveryState.userAnswer === currentQ.correctAnswer ? (
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                <span>{recoveryState.mithuFeedback?.title ?? "Correct Answer! Shabash!"}</span>
+                              </div>
+                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
+                              }`}>
+                                {recoveryState.mithuFeedback?.subtitle ?? "You corrected this mistake card successfully."}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[12.5px] font-black flex items-center gap-1 text-rose-900 leading-tight">
+                                <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-300 shrink-0" />
+                                <span>{recoveryState.mithuFeedback?.title ?? "Incorrect! Let's reinforce."}</span>
+                              </div>
+                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                appState.isDarkMode ? "text-rose-300" : "text-rose-950"
+                              }`}>
+                                Correct answer:{" "}
+                                <span className={`font-extrabold rounded px-1 border ${
+                                  appState.isDarkMode
+                                    ? "bg-rose-950 text-rose-200 border-rose-900/60"
+                                    : "bg-rose-100/70 text-rose-950 border-rose-200"
+                                }`}>
+                                  {formatValueForDisplay(currentQ.correctAnswer)}
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => advanceRecoveryRound()}
+                          className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                        >
+                          <span>Continue</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <div key="placeholder" className="h-[116px] sm:h-[68px] w-full" />
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             );
@@ -5277,6 +5648,16 @@ export default function App() {
                                     <div className="text-[9.5px] text-slate-450 leading-tight font-medium max-w-[170px] mx-auto">
                                       {selectedSearchEntry.context || "Standard counting vocabulary element."}
                                     </div>
+                                    <button
+                                      onClick={() => {
+                                        playSoundSynth("click");
+                                        setMithuExplanationDigit(selectedSearchEntry.digit);
+                                      }}
+                                      className="mt-2.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-800 rounded-full text-[10px] font-black flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs"
+                                    >
+                                      <span>🦜</span>
+                                      <span>View Clues</span>
+                                    </button>
                                   </motion.div>
                                 ) : (
                                   <div className="text-slate-400 text-[10px] flex flex-col items-center gap-2 py-3 text-center">
@@ -5925,68 +6306,77 @@ export default function App() {
                   })}
                 </div>
 
-                {/* RESULT PANEL FOOTER TRAY */}
-                {quizState.isAnswered && (
-                  <motion.div 
-                    id="practice-footer"
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-2 sm:p-2.5 px-3.5 sm:px-4 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3.5 ${
-                      quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer
-                        ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
-                        : "bg-rose-50 border-rose-300 text-rose-950 border-b-[5px] border-b-rose-400/90 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 text-left w-full sm:w-auto">
-                      {/* Reactive avatar response */}
-                      <div id="mithu-avatar" className={`scale-[0.58] -my-5 -mx-2.5 select-none shrink-0 ${mascotAnimation}`}>
-                        <MithuMascot mood={quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer ? "sparkly" : "sad"} />
-                      </div>
-                      
-                      {quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer ? (
-                        <div className="min-w-0 flex-1">
-                          <div id="answer-feedback-msg" className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                            <span>{quizState.mithuFeedback?.title ?? "Shabash!"}</span>
+                {/* RESULT PANEL FOOTER TRAY - Reserved height container to eliminate layout shift */}
+                <div className="mt-4 shrink-0 min-h-[116px] sm:min-h-[68px] flex flex-col justify-center w-full">
+                  <AnimatePresence mode="wait">
+                    {quizState.isAnswered ? (
+                      <motion.div 
+                        key="answered"
+                        id="practice-footer"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.2 }}
+                        className={`p-2 sm:p-2.5 px-3.5 sm:px-4 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3.5 w-full ${
+                          quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
+                            : "bg-rose-50 border-rose-300 text-rose-950 border-b-[5px] border-b-rose-400/90 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 text-left w-full sm:w-auto">
+                          {/* Reactive avatar response */}
+                          <div id="mithu-avatar" className={`scale-[0.58] -my-5 -mx-2.5 select-none shrink-0 ${mascotAnimation}`}>
+                            <MithuMascot mood={quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer ? "sparkly" : "sad"} />
                           </div>
-                          <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                            appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
-                          }`}>
-                            {quizState.mithuFeedback?.subtitle ?? "Your Urdu intuition is growing sharp!"}
-                          </span>
+                          
+                          {quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer ? (
+                            <div className="min-w-0 flex-1">
+                              <div id="answer-feedback-msg" className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                <span>{quizState.mithuFeedback?.title ?? "Shabash!"}</span>
+                              </div>
+                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
+                              }`}>
+                                {quizState.mithuFeedback?.subtitle ?? "Your Urdu intuition is growing sharp!"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="min-w-0 flex-1">
+                              <div id="answer-feedback-msg" className="text-[12.5px] font-black flex items-center gap-1 text-rose-950 leading-tight">
+                                <X className="w-3.5 h-3.5 text-rose-600 bg-rose-100 dark:text-rose-100 dark:bg-rose-900/80 rounded-full p-0.5 shrink-0" />
+                                <span>{quizState.mithuFeedback?.title ?? "Koi baat nahi."}</span>
+                              </div>
+                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                appState.isDarkMode ? "text-rose-300" : "text-rose-950"
+                              }`}>
+                                {quizState.mithuFeedback?.subtitle ?? "Correct answer:"}{" "}
+                                <strong className={`font-extrabold px-1 py-0.5 rounded shadow-xs border ${
+                                  appState.isDarkMode
+                                    ? "bg-rose-950 text-rose-200 border-rose-900/60"
+                                    : "bg-rose-100/70 text-rose-950 border-rose-200"
+                                }`}>
+                                  {formatValueForDisplay(quizState.questions[quizState.currentIndex].correctAnswer)}
+                                </strong>
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="min-w-0 flex-1">
-                          <div id="answer-feedback-msg" className="text-[12.5px] font-black flex items-center gap-1 text-rose-950 leading-tight">
-                            <X className="w-3.5 h-3.5 text-rose-600 bg-rose-100 dark:text-rose-100 dark:bg-rose-900/80 rounded-full p-0.5 shrink-0" />
-                            <span>{quizState.mithuFeedback?.title ?? "Koi baat nahi."}</span>
-                          </div>
-                          <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                            appState.isDarkMode ? "text-rose-300" : "text-rose-950"
-                          }`}>
-                            {quizState.mithuFeedback?.subtitle ?? "Correct answer:"}{" "}
-                            <strong className={`font-extrabold px-1 py-0.5 rounded shadow-xs border ${
-                              appState.isDarkMode
-                                ? "bg-rose-950 text-rose-200 border-rose-900/60"
-                                : "bg-rose-100/70 text-rose-950 border-rose-200"
-                            }`}>
-                              {formatValueForDisplay(quizState.questions[quizState.currentIndex].correctAnswer)}
-                            </strong>
-                          </span>
-                        </div>
-                      )}
-                    </div>
 
-                    <button
-                      id="next-question-btn"
-                      onClick={progressPractice}
-                      className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
-                    >
-                      <span>{quizState.currentIndex + 1 >= quizState.questions.length ? "Finish" : "Next Card"}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </motion.div>
-                )}
+                        <button
+                          id="next-question-btn"
+                          onClick={progressPractice}
+                          className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                        >
+                          <span>{quizState.currentIndex + 1 >= quizState.questions.length ? "Finish" : "Next Card"}</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <div key="placeholder" className="h-[116px] sm:h-[68px] w-full" />
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
             )}
 
@@ -6272,7 +6662,15 @@ export default function App() {
           // If activeStageIndex is null, we display the Journey Stages selection map
           if (activeStageIndex === null) {
             return (
-              <div id="screen-unit-journey" className="max-w-md mx-auto w-full p-4 flex flex-col gap-5 animate-fade-in">
+              <motion.div
+                key="unit-journey-map"
+                initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                id="screen-unit-journey"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-5"
+              >
                 {/* Header block */}
                 <div className="flex items-center gap-3">
                   <button
@@ -6465,7 +6863,7 @@ export default function App() {
                     Back to Main Roadmap
                   </button>
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
@@ -6598,9 +6996,11 @@ export default function App() {
                             if (!leveledUp) {
                               playSoundSynth("click");
                             }
-                            setJourneyStage1Finished(false);
-                            setNextStageToFocus(2);
-                            setActiveStageIndex(null);
+                            setTimeout(() => {
+                              setJourneyStage1Finished(false);
+                              setNextStageToFocus(2);
+                              setActiveStageIndex(null);
+                            }, 180);
                           }}
                           className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
                             appState.isDarkMode 
@@ -6615,10 +7015,12 @@ export default function App() {
                         <button
                           onClick={() => {
                             playSoundSynth("click");
-                            setJourneyStage1Finished(false);
-                            if (journeyStage1ScrollRef.current) {
-                              journeyStage1ScrollRef.current.scrollTop = 0;
-                            }
+                            setTimeout(() => {
+                              setJourneyStage1Finished(false);
+                              if (journeyStage1ScrollRef.current) {
+                                journeyStage1ScrollRef.current.scrollTop = 0;
+                              }
+                            }, 180);
                           }}
                           className="w-full bg-white hover:bg-slate-50 text-slate-700 rounded-2xl py-3.5 px-5 font-bold uppercase text-xs tracking-wider border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
                         >
@@ -6641,476 +7043,549 @@ export default function App() {
           // STAGE 2: MULTIPLE CHOICE RECOGNITION DECK
           if (activeStageIndex === 2) {
             const hasFinishedQuiz = stageQuizIdx >= stageQuizQuestions.length;
-            
-            if (hasFinishedQuiz) {
-              return (
-                <div id="screen-journey-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
-                  <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 border border-amber-200 mb-1 shadow-sm animate-bounce">
-                    <Star className="w-7 h-7 fill-amber-300" />
-                  </div>
-
-                  <h3 className="text-xl font-black text-slate-800 font-extrabold">Stage 2 Matches Completed!</h3>
-                  <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
-                    Splendid translation recognition matches! Your scorecard logged <span className="font-extrabold text-slate-800">{stageQuizScore} / {stageQuizQuestions.length} correct</span>.
-                  </p>
-
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    <button
-                      onClick={() => {
-                        saveUnitStageProgress(selectedJourneyUnitId, 2);
-                        setNextStageToFocus(3);
-                        setActiveStageIndex(null);
-                      }}
-                      className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black cursor-pointer shadow-md"
-                    >
-                      Unlock Stage 3: Listening (+15 XP) 🎉
-                    </button>
-                    <button
-                      onClick={() => setupStage2Quiz(selectedJourneyUnitId)}
-                      className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
-                    >
-                      Retry Recognition Match
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
             const currentQ = stageQuizQuestions[stageQuizIdx];
-            if (!currentQ) return null;
+            if (!hasFinishedQuiz && !currentQ) return null;
 
             return (
-              <div id="screen-journey-stage-2" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
-                {/* Header sub block */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage2-header">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setActiveStageIndex(null);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Exit Stage</span>
-                  </button>
-                  <div className="text-right">
-                    <span className="text-[9px] font-black text-amber-500 block">STAGE 2/5 • RECOGNITION</span>
-                    <span className="text-xs font-black text-slate-800">Question {stageQuizIdx + 1} of 5</span>
-                  </div>
-                </div>
+              <motion.div
+                key={`stage-2-deck-${hasFinishedQuiz ? "end" : stageQuizIdx}`}
+                initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="max-w-md mx-auto w-full"
+              >
+                {hasFinishedQuiz ? (
+                  <div id="screen-journey-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
+                    <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 border border-amber-200 mb-1 shadow-sm animate-bounce">
+                      <Star className="w-7 h-7 fill-amber-300" />
+                    </div>
 
-                {/* Progress bar line */}
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${((stageQuizIdx + 1) / 5) * 100}%` }}
-                  />
-                </div>
+                    <h3 className="text-xl font-black text-slate-800 font-extrabold">Stage 2 Matches Completed!</h3>
+                    <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                      Splendid translation recognition matches! Your scorecard logged <span className="font-extrabold text-slate-800">{stageQuizScore} / {stageQuizQuestions.length} correct</span>.
+                    </p>
 
-                {/* Question query box */}
-                <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
-                      Translate value:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
-                  </div>
-                  <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
-                    appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                  } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                    {formatValueForDisplay(getDisplayPromptValue(currentQ))}
-                  </div>
-                </div>
-
-                {/* Interactive choice grid list */}
-                <div className="grid grid-cols-2 gap-3 mt-2" id="stage2-choices-grid">
-                  {currentQ.choices.map((choice, index) => {
-                    const isSelected = stageQuizSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
-
-                    if (stageQuizAnswered) {
-                      if (isCorrectVal) {
-                        bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
-                      } else if (isSelected) {
-                        bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
-                      } else {
-                        bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
-                      }
-                    }
-
-                    return (
+                    <div className="flex flex-col gap-2.5 w-full mt-2">
                       <button
-                        key={index}
-                        disabled={stageQuizAnswered}
                         onClick={() => {
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
+                          const leveledUp = saveUnitStageProgress(selectedJourneyUnitId, 2);
+                          if (!leveledUp) {
+                            playSoundSynth("click");
                           } else {
-                            resetMasteryStreak(currentQ.entry.digit);
+                            playSoundSynth("levelUp");
                           }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setStageQuizSelected(choice);
-                          setStageQuizAnswered(true);
-                          
-                          if (isCorrect) {
-                            setStageQuizScore((s) => s + 1);
-                          } else {
-                            setStageQuizMistakes((prev) => [...prev, currentQ]);
-                          }
-
-                          // Auto advance after short timer frame
                           setTimeout(() => {
-                            setStageQuizSelected(null);
-                            setStageQuizAnswered(false);
-                            setStageQuizIdx((prev) => {
-                              const nextIdx = prev + 1;
-                              if (nextIdx >= stageQuizQuestions.length) {
-                                playSoundSynth("levelUp");
-                              }
-                              return nextIdx;
-                            });
-                          }, 1200);
+                            setNextStageToFocus(3);
+                            setActiveStageIndex(null);
+                          }, 180);
                         }}
-                        className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                        className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black cursor-pointer shadow-md"
                       >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
+                        Unlock Stage 3: Listening (+15 XP) 🎉
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setTimeout(() => {
+                            setupStage2Quiz(selectedJourneyUnitId);
+                          }, 180);
+                        }}
+                        className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
+                      >
+                        Retry Recognition Match
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div id="screen-journey-stage-2" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
+                    {/* Header sub block */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage2-header">
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setTimeout(() => {
+                            setActiveStageIndex(null);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }, 180);
+                        }}
+                        className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Exit Stage</span>
+                      </button>
+                      <div className="text-right">
+                        <span className="text-[9px] font-black text-amber-500 block">STAGE 2/5 • RECOGNITION</span>
+                        <span className="text-xs font-black text-slate-800">Question {stageQuizIdx + 1} of 5</span>
+                      </div>
+                    </div>
+
+                    {/* Progress bar line */}
+                    <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                      <div
+                        className="bg-emerald-600 h-full transition-all duration-300"
+                        style={{ width: `${((stageQuizIdx + 1) / 5) * 100}%` }}
+                      />
+                    </div>
+
+                    {/* Question query box */}
+                    <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
+                      <div className="flex items-center justify-between w-full mb-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
+                          Translate value:
+                        </span>
+                        {renderMithuHelpBadge(currentQ.entry.digit)}
+                      </div>
+                      <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
+                        appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
+                      } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
+                        {formatValueForDisplay(getDisplayPromptValue(currentQ))}
+                      </div>
+                    </div>
+
+                    {/* Interactive choice grid list */}
+                    <div className="grid grid-cols-2 gap-3 mt-2" id="stage2-choices-grid">
+                      {currentQ.choices.map((choice, index) => {
+                        const isSelected = stageQuizSelected === choice;
+                        const isCorrectVal = choice === currentQ.correctAnswer;
+                        let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
+
+                        if (stageQuizAnswered) {
+                          if (isCorrectVal) {
+                            bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
+                          } else if (isSelected) {
+                            bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
+                          } else {
+                            bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={index}
+                            disabled={stageQuizAnswered}
+                            onClick={() => {
+                              const isCorrect = choice === currentQ.correctAnswer;
+                              if (isCorrect) {
+                                incrementMasteryStreak();
+                              } else {
+                                resetMasteryStreak(currentQ.entry.digit);
+                              }
+                              playSoundSynth(isCorrect ? "correct" : "incorrect");
+                              setStageQuizSelected(choice);
+                              setStageQuizAnswered(true);
+                              
+                              if (isCorrect) {
+                                setStageQuizScore((s) => s + 1);
+                              } else {
+                                setStageQuizMistakes((prev) => [...prev, currentQ]);
+                              }
+
+                              // Auto advance after short timer frame
+                              setTimeout(() => {
+                                setStageQuizSelected(null);
+                                setStageQuizAnswered(false);
+                                setStageQuizIdx((prev) => {
+                                  const nextIdx = prev + 1;
+                                  if (nextIdx >= stageQuizQuestions.length) {
+                                    playSoundSynth("levelUp");
+                                  }
+                                  return nextIdx;
+                                });
+                              }, 1200);
+                            }}
+                            className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                          >
+                            <span className={appState.showScript && typeof choice === "string" && choice.match(/[\u0600-\u06FF]/) ? "text-2xl font-urdu select-none" : ""}>
+                              {formatValueForDisplay(choice)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             );
           }
 
           // STAGE 3: LISTENING PRONUNCIATION SELECTOR
           if (activeStageIndex === 3) {
             const hasFinishedListening = stageListIdx >= stageListQuestions.length;
-
-            if (hasFinishedListening) {
-              return (
-                <div id="screen-journey-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
-                  <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 border border-rose-200 mb-1 shadow-sm animate-bounce">
-                    <Star className="w-7 h-7 fill-rose-300" />
-                  </div>
-
-                  <h3 className="text-xl font-black text-slate-800 font-extrabold">Stage 3 Listening Cleared!</h3>
-                  <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
-                    Terrific dialect phonology matches! You parsed oral Urdu sounds like a real native!
-                  </p>
-
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    <button
-                      onClick={() => {
-                        saveUnitStageProgress(selectedJourneyUnitId, 3);
-                        setNextStageToFocus(4);
-                        setActiveStageIndex(null);
-                      }}
-                      className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black animate-pulse shadow-md cursor-pointer"
-                    >
-                      Unlock Stage 4: Arcade Blitz (+15 XP) 🎉
-                    </button>
-                    <button
-                      onClick={() => setupStage3Listening(selectedJourneyUnitId)}
-                      className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
-                    >
-                      Retry Sound Listening Loop
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
             const currentQ = stageListQuestions[stageListIdx];
-            if (!currentQ) return null;
+            if (!hasFinishedListening && !currentQ) return null;
 
             return (
-              <div id="screen-journey-stage-3" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
-                {/* Header sub block */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage3-header">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setActiveStageIndex(null);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Exit Stage</span>
-                  </button>
-                  <div className="text-right">
-                    <span className="text-[9px] font-black text-rose-600 block">STAGE 3/5 • LISTEN COMPREHENSION</span>
-                    <span className="text-xs font-black text-slate-800">Question {stageListIdx + 1} of 5</span>
-                  </div>
-                </div>
+              <motion.div
+                key={`stage-3-deck-${hasFinishedListening ? "end" : stageListIdx}`}
+                initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="max-w-md mx-auto w-full"
+              >
+                {hasFinishedListening ? (
+                  <div id="screen-journey-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
+                    <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 border border-rose-200 mb-1 shadow-sm animate-bounce">
+                      <Star className="w-7 h-7 fill-rose-300" />
+                    </div>
 
-                {/* Progress bar line */}
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${((stageListIdx + 1) / 5) * 100}%` }}
-                  />
-                </div>
+                    <h3 className="text-xl font-black text-slate-800 font-extrabold">Stage 3 Listening Cleared!</h3>
+                    <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
+                      Terrific dialect phonology matches! You parsed oral Urdu sounds like a real native!
+                    </p>
 
-                {/* Big speaker audio activator button box */}
-                <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-3">
-                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-left">
-                      Listen comprehension:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
-                  </div>
-                  
-                  {/* Clean layout container with outline removed as requested */}
-                  <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
-                    <button
-                      disabled={speechActive}
-                      onClick={() => {
-                        if (speechActive) return;
-                        playSoundSynth("click");
-                        playWordAudio(currentQ.entry);
-                        setStageListSpeakerAnimate(true);
-                        const timer = setTimeout(() => {
-                          setStageListSpeakerAnimate(false);
-                        }, 1200);
-                      }}
-                      className="w-20 h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center border-2 border-rose-500 border-b-[6px] border-b-rose-800 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
-                    >
-                      <PremiumSpeakerIcon className={`w-9 h-9 text-white ${stageListSpeakerAnimate ? 'animate-bounce' : ''}`} />
-                    </button>
-                  </div>
-
-                  <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 mt-4 uppercase tracking-widest animate-pulse">
-                    🔊 Tap speaker to vocalize sound
-                  </span>
-                </div>
-
-                {/* Option targets choice buttons */}
-                <div className="grid grid-cols-2 gap-3 mt-2" id="stage3-choices-grid">
-                  {currentQ.choices.map((choice: any, index: number) => {
-                    const isSelected = stageListSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
-
-                    if (stageListAnswered) {
-                      if (isCorrectVal) {
-                        bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
-                      } else if (isSelected) {
-                        bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-205 shadow-md";
-                      } else {
-                        bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
-                      }
-                    }
-
-                    return (
+                    <div className="flex flex-col gap-2.5 w-full mt-2">
                       <button
-                        key={index}
-                        disabled={stageListAnswered}
                         onClick={() => {
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
+                          const leveledUp = saveUnitStageProgress(selectedJourneyUnitId, 3);
+                          if (!leveledUp) {
+                            playSoundSynth("click");
                           } else {
-                            resetMasteryStreak();
+                            playSoundSynth("levelUp");
                           }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setStageListSelected(choice);
-                          setStageListAnswered(true);
-
-                          if (!isCorrect) {
-                            setStageListMistakes((prev) => [...prev, currentQ]);
-                          }
-
-                          // Advance state
                           setTimeout(() => {
-                            setStageListSelected(null);
-                            setStageListAnswered(false);
-                            setStageListIdx((prev) => {
-                              const nextIdx = prev + 1;
-                              if (nextIdx >= stageListQuestions.length) {
-                                playSoundSynth("levelUp");
-                              }
-                              return nextIdx;
-                            });
-                          }, 1200);
+                            setNextStageToFocus(4);
+                            setActiveStageIndex(null);
+                          }, 180);
                         }}
-                        className={`py-4 px-3 rounded-2xl border-2 text-center text-xl font-bold font-sans transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                        className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black animate-pulse shadow-md cursor-pointer"
                       >
-                        {choice}
+                        Unlock Stage 4: Arcade Blitz (+15 XP) 🎉
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setTimeout(() => {
+                            setupStage3Listening(selectedJourneyUnitId);
+                          }, 180);
+                        }}
+                        className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
+                      >
+                        Retry Sound Listening Loop
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div id="screen-journey-stage-3" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
+                    {/* Header sub block */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage3-header">
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setTimeout(() => {
+                            setActiveStageIndex(null);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }, 180);
+                        }}
+                        className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Exit Stage</span>
+                      </button>
+                      <div className="text-right">
+                        <span className="text-[9px] font-black text-rose-600 block">STAGE 3/5 • LISTEN COMPREHENSION</span>
+                        <span className="text-xs font-black text-slate-800">Question {stageListIdx + 1} of 5</span>
+                      </div>
+                    </div>
+
+                    {/* Progress bar line */}
+                    <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                      <div
+                        className="bg-emerald-600 h-full transition-all duration-300"
+                        style={{ width: `${((stageListIdx + 1) / 5) * 100}%` }}
+                      />
+                    </div>
+
+                    {/* Big speaker audio activator button box */}
+                    <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
+                      <div className="flex items-center justify-between w-full mb-3">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-left">
+                          Listen comprehension:
+                        </span>
+                        {renderMithuHelpBadge(currentQ.entry.digit)}
+                      </div>
+                      
+                      {/* Clean layout container with outline removed as requested */}
+                      <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
+                        <button
+                          disabled={speechActive}
+                          onClick={() => {
+                            if (speechActive) return;
+                            playSoundSynth("click");
+                            playWordAudio(currentQ.entry);
+                            setStageListSpeakerAnimate(true);
+                            const timer = setTimeout(() => {
+                              setStageListSpeakerAnimate(false);
+                            }, 1200);
+                          }}
+                          className="w-20 h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center border-2 border-rose-500 border-b-[6px] border-b-rose-800 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
+                        >
+                          <PremiumSpeakerIcon className={`w-9 h-9 text-white ${stageListSpeakerAnimate ? "animate-bounce" : ""}`} />
+                        </button>
+                      </div>
+
+                      <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 mt-4 uppercase tracking-widest animate-pulse">
+                        🔊 Tap speaker to vocalize sound
+                      </span>
+                    </div>
+
+                    {/* Option targets choice buttons */}
+                    <div className="grid grid-cols-2 gap-3 mt-2" id="stage3-choices-grid">
+                      {currentQ.choices.map((choice: any, index: number) => {
+                        const isSelected = stageListSelected === choice;
+                        const isCorrectVal = choice === currentQ.correctAnswer;
+                        let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
+
+                        if (stageListAnswered) {
+                          if (isCorrectVal) {
+                            bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
+                          } else if (isSelected) {
+                            bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-205 shadow-md";
+                          } else {
+                            bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={index}
+                            disabled={stageListAnswered}
+                            onClick={() => {
+                              const isCorrect = choice === currentQ.correctAnswer;
+                              if (isCorrect) {
+                                incrementMasteryStreak();
+                              } else {
+                                resetMasteryStreak();
+                              }
+                              playSoundSynth(isCorrect ? "correct" : "incorrect");
+                              setStageListSelected(choice);
+                              setStageListAnswered(true);
+
+                              if (!isCorrect) {
+                                setStageListMistakes((prev) => [...prev, currentQ]);
+                              }
+
+                              // Advance state
+                              setTimeout(() => {
+                                setStageListSelected(null);
+                                setStageListAnswered(false);
+                                setStageListIdx((prev) => {
+                                  const nextIdx = prev + 1;
+                                  if (nextIdx >= stageListQuestions.length) {
+                                    playSoundSynth("levelUp");
+                                  }
+                                  return nextIdx;
+                                });
+                              }, 1200);
+                            }}
+                            className={`py-4 px-3 rounded-2xl border-2 text-center text-xl font-bold font-sans transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                          >
+                            {choice}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             );
           }
 
           // STAGE 4: SPEED ARCADE BLITZ CHALLENGE
           if (activeStageIndex === 4) {
+            const currentQ = stageArcadeActiveQ;
             if (stageArcadeOver) {
               const pass = stageArcadeScore >= 3;
               return (
-                <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
-                  <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-200 mb-1 shadow-sm">
-                    {pass ? (
-                      <Star className="w-7 h-7 fill-indigo-300 text-indigo-500" />
-                    ) : (
-                      <Lock className="w-7 h-7 text-slate-400" />
-                    )}
-                  </div>
+                <motion.div
+                  key="stage-4-deck-end"
+                  initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="max-w-md mx-auto w-full"
+                >
+                  <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
+                    <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-200 mb-1 shadow-sm">
+                      {pass ? (
+                        <Star className="w-7 h-7 fill-indigo-300 text-indigo-500" />
+                      ) : (
+                        <Lock className="w-7 h-7 text-slate-400" />
+                      )}
+                    </div>
 
-                  <h3 className="text-xl font-black text-slate-800 font-extrabold">
-                    {pass ? "Stage 4 Blitz Completed!" : "Need 3 Hits to Clear!"}
-                  </h3>
-                  
-                  <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
-                    {pass 
-                      ? `Fantastic reaction reflexes! You completed the stopwatch run with a grand total of ${stageArcadeScore} correct matched parameters!`
-                      : `You finished with ${stageArcadeScore} matches. Keep practicing and aim for at least 3 correct matches to unlock the Final Mastery Test!`}
-                  </p>
+                    <h3 className="text-xl font-black text-slate-800 font-extrabold">
+                      {pass ? "Stage 4 Blitz Completed!" : "Need 3 Hits to Clear!"}
+                    </h3>
+                    
+                    <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
+                      {pass 
+                        ? `Fantastic reaction reflexes! You completed the stopwatch run with a grand total of ${stageArcadeScore} correct matched parameters!`
+                        : `You finished with ${stageArcadeScore} matches. Keep practicing and aim for at least 3 correct matches to unlock the Final Mastery Test!`}
+                    </p>
 
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    {pass ? (
+                    <div className="flex flex-col gap-2.5 w-full mt-2">
+                      {pass ? (
+                        <button
+                          onClick={() => {
+                            const leveledUp = saveUnitStageProgress(selectedJourneyUnitId, 4);
+                            if (!leveledUp) {
+                              playSoundSynth("click");
+                            } else {
+                              playSoundSynth("levelUp");
+                            }
+                            setTimeout(() => {
+                              setNextStageToFocus(5);
+                              setActiveStageIndex(null);
+                            }, 180);
+                          }}
+                          className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black uppercase shadow-md cursor-pointer animate-pulse"
+                        >
+                          Proceed to Stage 5: Mastery Test (+15 XP) 🎉
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            playSoundSynth("click");
+                            setTimeout(() => {
+                              startStage4Arcade();
+                            }, 180);
+                          }}
+                          className="w-full btn-gold py-3.5 px-5 rounded-2xl text-xs font-black uppercase cursor-pointer"
+                        >
+                          Play Blitz Stage Again
+                        </button>
+                      )}
                       <button
                         onClick={() => {
-                          saveUnitStageProgress(selectedJourneyUnitId, 4);
-                          setNextStageToFocus(5);
-                          setActiveStageIndex(null);
+                          playSoundSynth("click");
+                          setTimeout(() => {
+                            setActiveStageIndex(null);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }, 180);
                         }}
-                        className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black uppercase shadow-md cursor-pointer animate-pulse"
+                        className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
                       >
-                        Proceed to Stage 5: Mastery Test (+15 XP) 🎉
+                        Exit Speed Challenge
                       </button>
-                    ) : (
-                      <button
-                        onClick={startStage4Arcade}
-                        className="w-full btn-gold py-3.5 px-5 rounded-2xl text-xs font-black uppercase cursor-pointer"
-                      >
-                        Play Blitz Stage Again
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setActiveStageIndex(null);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
-                    >
-                      Exit Speed Challenge
-                    </button>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               );
             }
 
-            const currentQ = stageArcadeActiveQ;
             if (!currentQ) return null;
 
             return (
-              <div id="screen-journey-stage-4" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
-                {/* Header sub block */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage4-header">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setStageArcadeOver(true);
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Quit Match</span>
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
-                      ⏱️ <span className="font-mono text-indigo-700 font-extrabold">{stageArcadeTime}s</span>
-                    </span>
-                    <span className="text-xs font-black text-rose-900 bg-rose-50 rounded-full px-2.5 py-1 select-none">
-                      ⚡ <span className="font-semibold text-rose-700">{stageArcadeScore} hits</span>
-                    </span>
+              <motion.div
+                key={`stage-4-deck-${stageArcadeScore}`}
+                initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="max-w-md mx-auto w-full"
+              >
+                <div id="screen-journey-stage-4" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
+                  {/* Header sub block */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage4-header">
+                    <button
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setStageArcadeOver(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                    >
+                      <span>Quit Match</span>
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
+                        ⏱️ <span className="font-mono text-indigo-700 font-extrabold">{stageArcadeTime}s</span>
+                      </span>
+                      <span className="text-xs font-black text-rose-900 bg-rose-50 rounded-full px-2.5 py-1 select-none">
+                        ⚡ <span className="font-semibold text-rose-700">{stageArcadeScore} hits</span>
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Progress Visual Timer horizontal line bar */}
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${(stageArcadeTime / 30) * 100}%` }}
-                  />
-                </div>
-
-                {/* Active challenge focus question */}
-                <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
-                      Speedy translation:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
+                  {/* Progress Visual Timer horizontal line bar */}
+                  <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                    <div
+                      className="bg-emerald-600 h-full transition-all duration-300"
+                      style={{ width: `${(stageArcadeTime / 30) * 100}%` }}
+                    />
                   </div>
-                  <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
-                    appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                  } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                    {formatValueForDisplay(getDisplayPromptValue(currentQ))}
+
+                  {/* Active challenge focus question */}
+                  <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
+                        Speedy translation:
+                      </span>
+                      {renderMithuHelpBadge(currentQ.entry.digit)}
+                    </div>
+                    <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
+                      appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
+                    } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
+                      {formatValueForDisplay(getDisplayPromptValue(currentQ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Choices choices option grid container */}
-                <div className="grid grid-cols-2 gap-3 mt-2" id="stage4-choices-grid">
-                  {currentQ.choices.map((choice, index) => {
-                    const isSelected = stageArcadeSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
+                  {/* Choices choices option grid container */}
+                  <div className="grid grid-cols-2 gap-3 mt-2" id="stage4-choices-grid">
+                    {currentQ.choices.map((choice, index) => {
+                      const isSelected = stageArcadeSelected === choice;
+                      const isCorrectVal = choice === currentQ.correctAnswer;
+                      let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
 
-                    if (stageArcadeAnswered) {
-                      if (isCorrectVal) {
-                        bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
-                      } else if (isSelected) {
-                        bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
-                      } else {
-                        bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                      if (stageArcadeAnswered) {
+                        if (isCorrectVal) {
+                          bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
+                        } else if (isSelected) {
+                          bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
+                        } else {
+                          bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                        }
                       }
-                    }
 
-                    return (
-                      <button
-                        key={index}
-                        disabled={stageArcadeAnswered}
-                        onClick={() => {
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
-                          } else {
-                            resetMasteryStreak();
-                          }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setStageArcadeSelected(choice);
-                          setStageArcadeAnswered(true);
+                      return (
+                        <button
+                          key={index}
+                          disabled={stageArcadeAnswered}
+                          onClick={() => {
+                            const isCorrect = choice === currentQ.correctAnswer;
+                            if (isCorrect) {
+                              incrementMasteryStreak();
+                            } else {
+                              resetMasteryStreak();
+                            }
+                            playSoundSynth(isCorrect ? "correct" : "incorrect");
+                            setStageArcadeSelected(choice);
+                            setStageArcadeAnswered(true);
 
-                          if (isCorrect) {
-                            setStageArcadeScore((s) => s + 1);
-                          }
+                            if (isCorrect) {
+                              setStageArcadeScore((s) => s + 1);
+                            }
 
-                          // Rapid speed change mechanics (400ms flash gap)
-                          setTimeout(() => {
-                            setStageArcadeSelected(null);
-                            setStageArcadeAnswered(false);
-                            const nextQ = makeSingleUnitArcadeQuestion(selectedJourneyUnitId);
-                            setStageArcadeActiveQ(nextQ);
-                          }, 400);
-                        }}
-                        className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
-                    );
-                  })}
+                            // Rapid speed change mechanics (400ms flash gap)
+                            setTimeout(() => {
+                              setStageArcadeSelected(null);
+                              setStageArcadeAnswered(false);
+                              const nextQ = makeSingleUnitArcadeQuestion(selectedJourneyUnitId);
+                              setStageArcadeActiveQ(nextQ);
+                            }, 400);
+                          }}
+                          className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                        >
+                          <span className={appState.showScript && typeof choice === "string" && choice.match(/[\u0600-\u06FF]/) ? "text-2xl font-urdu select-none" : ""}>
+                            {formatValueForDisplay(choice)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
@@ -7122,7 +7597,8 @@ export default function App() {
             ============================================================================= */}
         {!recoveryState && activeScreen === "training-arena" && (
           <div className="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
-            {(() => {
+            <AnimatePresence mode="wait">
+              {(() => {
           const minRange = appState.arenaMin ?? 30;
           const maxRange = appState.arenaMax ?? 100;
           const stageProgress = appState.arenaStageProgress ?? 1;
@@ -7130,7 +7606,15 @@ export default function App() {
           // If stage selection mode
           if (arenaActiveStage === null) {
             return (
-              <div id="screen-training-arena" className="max-w-md mx-auto w-full p-4 flex flex-col gap-5 animate-fade-in text-slate-800">
+              <motion.div
+                key="arena-select"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                id="screen-training-arena"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-5 text-slate-800"
+              >
                 {/* Header block with elegant dark forest color theme */}
                 <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 p-6 rounded-[2rem] border-4 border-emerald-800 border-b-[10px] border-b-emerald-955 relative text-white shadow-xl overflow-hidden">
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-0" />
@@ -7352,7 +7836,7 @@ export default function App() {
                     Delete your current range to create a new one.
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
@@ -7361,14 +7845,24 @@ export default function App() {
             // Get list of entry records in the range pool
             const rangePool = getArenaNumbersPool();
             return (
-              <div id="screen-arena-stage-1" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in text-slate-800">
+              <motion.div
+                key="arena-stage-1"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                id="screen-arena-stage-1"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+              >
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setArenaActiveStage(null);
+                      setTimeout(() => {
+                        setArenaActiveStage(null);
+                      }, 180);
                     }}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 cursor-pointer transition flex items-center justify-center gap-1 whitespace-nowrap shrink-0"
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center justify-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
                     <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
                     <span>Back to Stages</span>
@@ -7505,7 +7999,7 @@ export default function App() {
                     </span>
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           }
 
@@ -7515,7 +8009,15 @@ export default function App() {
             if (arenaQuizIdx >= 5) {
               const pass = arenaQuizScore >= 3;
               return (
-                <div id="screen-arena-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
+                <motion.div
+                  key="arena-stage-2-end"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  id="screen-arena-stage-2-end"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                >
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md">
                     🏁
                   </div>
@@ -7554,13 +8056,18 @@ export default function App() {
                       </button>
                     )}
                     <button
-                      onClick={() => setArenaActiveStage(null)}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl py-3 px-5 text-xs font-bold border border-slate-200 cursor-pointer"
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setTimeout(() => {
+                          setArenaActiveStage(null);
+                        }, 180);
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
                       Exit to Stages Map
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             }
 
@@ -7568,14 +8075,24 @@ export default function App() {
             if (!currentQ) return null;
 
             return (
-              <div id="screen-arena-stage-2" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in text-slate-800 font-sans">
+              <motion.div
+                key="arena-stage-2-game"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                id="screen-arena-stage-2"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800 font-sans"
+              >
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setArenaActiveStage(null);
+                      setTimeout(() => {
+                        setArenaActiveStage(null);
+                      }, 180);
                     }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer hover:bg-slate-100"
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
                     <span>Quit Challenge</span>
                   </button>
@@ -7679,7 +8196,7 @@ export default function App() {
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
@@ -7689,7 +8206,15 @@ export default function App() {
             if (arenaListIdx >= 5) {
               const pass = arenaQuizScore >= 3;
               return (
-                <div id="screen-arena-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
+                <motion.div
+                  key="arena-stage-3-end"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  id="screen-arena-stage-3-end"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                >
                   <div className="w-12 h-12 bg-indigo-105 rounded-2xl flex items-center justify-center text-indigo-750 border border-indigo-200 mb-1 shadow-sm">
                     {pass ? (
                       <Star className="w-6 h-6 fill-indigo-300 text-indigo-600 animate-spin-once" />
@@ -7735,13 +8260,18 @@ export default function App() {
                       </button>
                     )}
                     <button
-                      onClick={() => setArenaActiveStage(null)}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl py-3 px-5 text-xs font-bold border border-slate-200 cursor-pointer"
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setTimeout(() => {
+                          setArenaActiveStage(null);
+                        }, 180);
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
                       Exit to Stages Map
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             }
 
@@ -7749,14 +8279,24 @@ export default function App() {
             if (!currentQ) return null;
 
             return (
-              <div id="screen-arena-stage-3" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in text-slate-800">
+              <motion.div
+                key="arena-stage-3-game"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                id="screen-arena-stage-3"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+              >
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setArenaActiveStage(null);
+                      setTimeout(() => {
+                        setArenaActiveStage(null);
+                      }, 180);
                     }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer hover:bg-slate-100"
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
                     <span>Quit Challenge</span>
                   </button>
@@ -7876,7 +8416,7 @@ export default function App() {
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
@@ -7885,7 +8425,15 @@ export default function App() {
             if (arenaArcadeOver) {
               const pass = arenaArcadeScore >= 3;
               return (
-                <div id="screen-arena-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
+                <motion.div
+                  key="arena-stage-4-end"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  id="screen-arena-stage-4-end"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                >
                   <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center text-white border-2 border-rose-455 border-b-4 border-b-rose-900 shadow-sm">
                     {pass ? (
                       <Star className="w-6 h-6 fill-rose-200 text-white animate-bounce" />
@@ -7928,13 +8476,18 @@ export default function App() {
                       </button>
                     )}
                     <button
-                      onClick={() => setArenaActiveStage(null)}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl py-3 px-5 text-xs font-bold border border-slate-200 cursor-pointer"
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setTimeout(() => {
+                          setArenaActiveStage(null);
+                        }, 180);
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
                       Exit to Stages Map
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             }
 
@@ -7942,14 +8495,24 @@ export default function App() {
             if (!currentQ) return null;
 
             return (
-              <div id="screen-arena-stage-4" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in text-slate-800">
+              <motion.div
+                key="arena-stage-4-game"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                id="screen-arena-stage-4"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+              >
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setArenaArcadeOver(true);
+                      setTimeout(() => {
+                        setArenaArcadeOver(true);
+                      }, 180);
                     }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer hover:bg-slate-100"
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
                     <span>Quit Match</span>
                   </button>
@@ -8039,7 +8602,7 @@ export default function App() {
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
@@ -8049,7 +8612,15 @@ export default function App() {
             if (arenaQuizIdx >= 10) {
               const pass = arenaQuizScore >= 7;
               return (
-                <div id="screen-arena-stage-5-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
+                <motion.div
+                  key="arena-stage-5-end"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  id="screen-arena-stage-5-end"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                >
                   <div className="w-14 h-14 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none animate-bounce">
                     🏆
                   </div>
@@ -8091,13 +8662,18 @@ export default function App() {
                       </button>
                     )}
                     <button
-                      onClick={() => setArenaActiveStage(null)}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl py-3 px-5 text-xs font-bold border border-slate-200 cursor-pointer"
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setTimeout(() => {
+                          setArenaActiveStage(null);
+                        }, 180);
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
                       Exit to Stages Map
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             }
 
@@ -8105,14 +8681,24 @@ export default function App() {
             if (!currentQ) return null;
 
             return (
-              <div id="screen-arena-stage-5" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in text-slate-800">
+              <motion.div
+                key="arena-stage-5-game"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                id="screen-arena-stage-5"
+                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+              >
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setArenaActiveStage(null);
+                      setTimeout(() => {
+                        setArenaActiveStage(null);
+                      }, 180);
                     }}
-                    className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer hover:bg-slate-100"
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
                     <span>Quit Challenge</span>
                   </button>
@@ -8216,12 +8802,13 @@ export default function App() {
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             );
           }
 
           return null;
         })()}
+            </AnimatePresence>
           </div>
         )}
 
@@ -8301,6 +8888,6 @@ export default function App() {
         </div>
       </footer>
 
-    </div>
+    </motion.div>
   );
 }

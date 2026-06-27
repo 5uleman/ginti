@@ -211,6 +211,24 @@ function getMithuHeaderEn(word: string, digit: number): string {
 
 // Algorithmic generator for any number 1-100 to make the feature 100% complete and future-proof!
 export function getNumberExplanation(digit: number, wordFromData?: string): NumberExplanation {
+  if (digit === 0) {
+    return {
+      digit: 0,
+      word: "Sifr",
+      prefix: "Sifr",
+      prefixMeaning: "Zero",
+      prefixMeaningEn: "Zero",
+      suffix: "Ginti",
+      suffixMeaning: "No family",
+      suffixMeaningEn: "No family",
+      familyId: "single",
+      simpleExplanation: "Sab kuch isi se shuru hota hai.",
+      simpleExplanationEn: "Everything begins from here.",
+      mithuHeader: "Sifr ka aghaaz! 🌱",
+      mithuHeaderEn: "The origin of Sifr! 🌱",
+    };
+  }
+
   const word = wordFromData || "Number";
   
   // Default base object
