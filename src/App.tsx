@@ -465,6 +465,66 @@ const getMithuUnitCompletionMessage = (recentMessages: string[]): string => {
 // MITHU MASCOT COMPONENT (Urdu Numeric Sage Companion)
 // =============================================================================
 const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" | "sparkly"; size?: number }) => {
+  const [isBlinking, setIsBlinking] = useState(false);
+  const [glanceDirection, setGlanceDirection] = useState<"normal" | "right" | "left">("normal");
+
+  useEffect(() => {
+    let blinkTimeout: any = null;
+    let glanceTimeout: any = null;
+
+    // Trigger an initial glance right on mount or mood change (acknowledging new context/bubble)
+    setGlanceDirection("right");
+    glanceTimeout = setTimeout(() => {
+      setGlanceDirection("normal");
+    }, 1800);
+
+    const runBlinkCycle = () => {
+      // Random delay between 5 and 8 seconds
+      const nextDelay = Math.random() * 3000 + 5000;
+
+      blinkTimeout = setTimeout(() => {
+        const isDouble = Math.random() < 0.12; // 12% chance of a double blink
+        if (isDouble) {
+          setIsBlinking(true);
+          setTimeout(() => {
+            setIsBlinking(false);
+            setTimeout(() => {
+              setIsBlinking(true);
+              setTimeout(() => {
+                setIsBlinking(false);
+              }, 80);
+            }, 120);
+          }, 80);
+        } else {
+          setIsBlinking(true);
+          setTimeout(() => {
+            setIsBlinking(false);
+          }, 100);
+        }
+
+        // 15% chance of doing a small side glance right after blinking
+        if (Math.random() < 0.15) {
+          const dir = Math.random() < 0.8 ? "right" : "left";
+          setTimeout(() => {
+            setGlanceDirection(dir);
+            setTimeout(() => {
+              setGlanceDirection("normal");
+            }, 1500);
+          }, 300);
+        }
+
+        runBlinkCycle();
+      }, nextDelay);
+    };
+
+    runBlinkCycle();
+
+    return () => {
+      if (blinkTimeout) clearTimeout(blinkTimeout);
+      if (glanceTimeout) clearTimeout(glanceTimeout);
+    };
+  }, [mood]);
+
   let eyes = (
     <>
       <circle cx="38" cy="42" r="6" fill="#1e293b" />
@@ -473,7 +533,15 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
       <circle cx="60" cy="40" r="2" fill="#ffffff" />
     </>
   );
-  if (mood === "sad") {
+
+  if (isBlinking) {
+    eyes = (
+      <>
+        <path d="M 32 42 Q 38 46 44 42" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M 56 42 Q 62 46 68 42" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
+      </>
+    );
+  } else if (mood === "sad") {
     eyes = (
       <>
         <path d="M 32 45 Q 38 39 44 45" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -481,24 +549,51 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
       </>
     );
   } else if (mood === "sparkly") {
+    let pupilOffset1 = { x: -3, y: -3 };
+    let pupilOffset2 = { x: -3, y: -3 };
+    if (glanceDirection === "right") {
+      pupilOffset1 = { x: 0.5, y: -2 };
+      pupilOffset2 = { x: 0.5, y: -2 };
+    } else if (glanceDirection === "left") {
+      pupilOffset1 = { x: -4.5, y: -2 };
+      pupilOffset2 = { x: -4.5, y: -2 };
+    }
     eyes = (
       <>
         <circle cx="38" cy="42" r="7.5" fill="#1e293b" />
-        <circle cx="35" cy="39" r="2.8" fill="#ffffff" />
-        <circle cx="41" cy="45" r="1.2" fill="#ffffff" />
+        <circle cx={38 + pupilOffset1.x} cy={42 + pupilOffset1.y} r="2.8" fill="#ffffff" />
+        <circle cx={38 - pupilOffset1.x} cy={42 - pupilOffset1.y} r="1.2" fill="#ffffff" />
         
         <circle cx="62" cy="42" r="7.5" fill="#1e293b" />
-        <circle cx="59" cy="39" r="2.8" fill="#ffffff" />
-        <circle cx="65" cy="45" r="1.2" fill="#ffffff" />
+        <circle cx={62 + pupilOffset2.x} cy={42 + pupilOffset2.y} r="2.8" fill="#ffffff" />
+        <circle cx={62 - pupilOffset2.x} cy={42 - pupilOffset2.y} r="1.2" fill="#ffffff" />
       </>
     );
-  } else if (mood === "thinking") {
+  } else {
+    // happy, thinking, or default
+    let pupilX1 = 36;
+    let pupilY1 = 40;
+    let pupilX2 = 60;
+    let pupilY2 = 40;
+
+    if (glanceDirection === "right") {
+      pupilX1 = 39.5;
+      pupilX2 = 63.5;
+      pupilY1 = 41;
+      pupilY2 = 41;
+    } else if (glanceDirection === "left") {
+      pupilX1 = 34.5;
+      pupilX2 = 58.5;
+      pupilY1 = 41;
+      pupilY2 = 41;
+    }
+
     eyes = (
       <>
         <circle cx="38" cy="42" r="6" fill="#1e293b" />
-        <circle cx="36" cy="40" r="2" fill="#ffffff" />
+        <circle cx={pupilX1} cy={pupilY1} r="2" fill="#ffffff" />
         <circle cx="62" cy="42" r="6" fill="#1e293b" />
-        <circle cx="60" cy="40" r="2" fill="#ffffff" />
+        <circle cx={pupilX2} cy={pupilY2} r="2" fill="#ffffff" />
       </>
     );
   }
@@ -508,8 +603,10 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
   const bellyColor = "#ecfdf5"; // Light Mint belly
   const beakColor = "#f59e0b";  // orange beak
 
+  const breatheClass = "ginti-mithu-breathe";
+
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className="drop-shadow-md select-none shrink-0 transform hover:scale-105 transition duration-200">
+    <svg width={size} height={size} viewBox="0 0 100 100" className={`drop-shadow-md select-none shrink-0 transform hover:scale-105 transition duration-200 ${breatheClass}`}>
       {/* Golden crest plumage */}
       <path d="M 50 25 Q 40 10 32 18 Q 41 24 50 32" fill={crestColor} />
       <path d="M 50 25 Q 60 10 68 18 Q 59 24 50 32" fill={crestColor} />
@@ -551,6 +648,164 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
   );
 };
 
+
+// =============================================================================
+// MASTERY STREAK FLAME COMPONENT (Tactile Dynamic Visuals)
+// =============================================================================
+interface MasteryFlameProps {
+  streak: number;
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlameProps) => {
+  const [celebrate, setCelebrate] = useState(false);
+  const prevStreakRef = useRef(streak);
+
+  useEffect(() => {
+    // Play first-time 100 streak celebration flourish
+    if (prevStreakRef.current < 100 && streak === 100) {
+      setCelebrate(true);
+      const timer = setTimeout(() => {
+        setCelebrate(false);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+    prevStreakRef.current = streak;
+  }, [streak]);
+
+  // Fallback to static grey icon when streak is zero
+  if (streak === 0) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`text-slate-300 dark:text-slate-650 opacity-75 select-none shrink-0 transition-all ${className}`}
+        style={style}
+      >
+        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+      </svg>
+    );
+  }
+
+  // Determine stage variables
+  let levelClass = "ginti-flame-1-9";
+  let outerGradientId = `gintiFlameOuter-${streak}-${size}`;
+  let innerGradientId = `gintiFlameInner-${streak}-${size}`;
+  let wingsGradientId = `gintiWings-${streak}-${size}`;
+  
+  let outerColors = { start: "#f97316", end: "#f59e0b" };
+  let innerColors = { start: "#fbbf24", end: "#fef3c7" };
+
+  if (streak >= 10 && streak <= 24) {
+    levelClass = "ginti-flame-10-24";
+    outerColors = { start: "#ef4444", end: "#f97316" };
+    innerColors = { start: "#fcd34d", end: "#fff7ed" };
+  } else if (streak >= 25 && streak <= 49) {
+    levelClass = "ginti-flame-25-49";
+    outerColors = { start: "#dc2626", end: "#ef4444" };
+    innerColors = { start: "#f97316", end: "#fde047" };
+  } else if (streak >= 50 && streak <= 99) {
+    levelClass = "ginti-flame-50-99";
+    outerColors = { start: "#b91c1c", end: "#ea580c" };
+    innerColors = { start: "#facc15", end: "#fef08a" };
+  } else if (streak >= 100) {
+    levelClass = "ginti-flame-100";
+    outerColors = { start: "#7c3aed", end: "#ec4899" };
+    innerColors = { start: "#fbbf24", end: "#ffffff" };
+  }
+
+  const flamePath = "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z";
+  const hasEmbers = streak >= 25;
+  const hasWings = streak >= 100;
+
+  return (
+    <div 
+      className={`relative inline-flex items-center justify-center shrink-0 select-none ${className}`} 
+      style={{ width: size, height: size, ...style }}
+    >
+      {/* Tiny organic rising embers (pure GPU CSS animated particles) */}
+      {hasEmbers && (
+        <div className="absolute inset-0 pointer-events-none overflow-visible">
+          <div className="absolute left-[25%] bottom-[15%] w-[3px] h-[3px] rounded-full bg-amber-400 opacity-0 ginti-ember-a" />
+          <div className="absolute left-[65%] bottom-[20%] w-[2.5px] h-[2.5px] rounded-full bg-orange-400 opacity-0 ginti-ember-b" />
+          <div className="absolute left-[45%] bottom-[10%] w-[2.2px] h-[2.2px] rounded-full bg-amber-300 opacity-0 ginti-ember-c" />
+        </div>
+      )}
+
+      {/* Main Vector SVG */}
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 24 24"
+        className={`overflow-visible ${levelClass} ${celebrate ? "ginti-flame-celebrate-effect" : ""}`}
+      >
+        <defs>
+          <linearGradient id={outerGradientId} x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor={outerColors.start} />
+            <stop offset="100%" stopColor={outerColors.end} />
+          </linearGradient>
+          <linearGradient id={innerGradientId} x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor={innerColors.start} />
+            <stop offset="100%" stopColor={innerColors.end} />
+          </linearGradient>
+          {hasWings && (
+            <linearGradient id={wingsGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#c084fc" />
+              <stop offset="50%" stopColor="#f472b6" />
+              <stop offset="100%" stopColor="#facc15" />
+            </linearGradient>
+          )}
+        </defs>
+
+        {/* Wings - only shown for Streak 100+ */}
+        {hasWings && (
+          <g className="ginti-wings-animate">
+            {/* Left Wing */}
+            <path 
+              d="M 6.5 14.5 C 3.5 11, 1 13.5, 0 17.5 C 2.5 18.5, 5 17, 6.5 15.2" 
+              fill={`url(#${wingsGradientId})`} 
+              opacity="0.85"
+            />
+            {/* Right Wing */}
+            <path 
+              d="M 17.5 14.5 C 20.5 11, 23 13.5, 24 17.5 C 21.5 18.5, 19 17, 17.5 15.2" 
+              fill={`url(#${wingsGradientId})`} 
+              opacity="0.85"
+            />
+            {/* Crown / Star Burst above the flame */}
+            <path 
+              d="M 12 1 L 12.5 3.5 L 15 4 L 12.8 4.8 L 13.5 7 L 12 5.5 L 10.5 7 L 11.2 4.8 L 9 4 L 11.5 3.5 Z" 
+              fill="#fbbf24" 
+              transform="translate(12, 1) scale(0.4) translate(-12, -1)" 
+            />
+          </g>
+        )}
+
+        {/* Outer Flame Path */}
+        <path
+          d={flamePath}
+          fill={`url(#${outerGradientId})`}
+        />
+
+        {/* Inner Core Path (Nested concentric copy with standard bottom center origin) */}
+        <path
+          d={flamePath}
+          fill={`url(#${innerGradientId})`}
+          transform="translate(12, 14.5) scale(0.64) translate(-12, -14.5)"
+          opacity="0.9"
+        />
+      </svg>
+    </div>
+  );
+};
 
 
 // Helper to select a random number from a pool while avoiding recently asked digits
@@ -703,6 +958,69 @@ const getSharedAudioContext = (): AudioContext => {
   throw new Error("AudioContext is only available in browser environments");
 };
 
+// =============================================================================
+// STREAK TRACKING HELPERS (DUOLINGO FUNCTIONALITY) - DEFINED TOP-LEVEL FOR SYNCHRONOUS APP INITIALIZATION
+// =============================================================================
+const getTodayString = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getYesterdayString = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const checkAndResetStreakOnStartup = (currentState: AppState): AppState => {
+  const today = getTodayString();
+  const yesterday = getYesterdayString();
+  const lastActive = currentState.lastActiveDate;
+
+  if (lastActive && lastActive !== today && lastActive !== yesterday) {
+    // Streak has broken because the last active date was older than yesterday.
+    return {
+      ...currentState,
+      streakDays: 0,
+    };
+  }
+  return currentState;
+};
+
+const markUserActive = (currentState: AppState): AppState => {
+  const today = getTodayString();
+  const yesterday = getYesterdayString();
+  const lastActive = currentState.lastActiveDate;
+
+  let newStreak = currentState.streakDays;
+
+  if (!lastActive) {
+    // First active practice: establish today's active date; preserve the initial starter streak.
+    newStreak = Math.max(3, currentState.streakDays);
+  } else if (lastActive === today) {
+    // Already active today; streak days unchanged
+    newStreak = currentState.streakDays;
+  } else if (lastActive === yesterday) {
+    // Consecutive active practice day! Streak increments!
+    newStreak = currentState.streakDays + 1;
+  } else {
+    // Streak was broken or skipped, started practicing today, set to 1
+    newStreak = 1;
+  }
+
+  return {
+    ...currentState,
+    streakDays: newStreak,
+    lastActiveDate: today,
+  };
+};
+
 export default function App() {
   const shouldReduceMotion = useReducedMotion();
 
@@ -715,35 +1033,112 @@ export default function App() {
     };
   }, []);
   // =============================================================================
-  // APP STATES
+  // APP STATES (SYNCHRONOUS SYNCHED STATE WITH LOCAL STORAGE PREVENTING FLASHES)
   // =============================================================================
-  const [appState, setAppState] = useState<AppState>({
-    totalXP: 0,
-    completedUnits: [],
-    weakAreas: [],
-    showScript: true,
-    highScore: 0,
-    masteryStreak: 0,
-    streakDays: 3, // Premium initial starter streak
-    lastActiveDate: undefined,
-    hasOnboarded: false,
-    unitStagesProgress: {},
-    arenaMin: 30,
-    arenaMax: 100,
-    arenaStageProgress: 1,
-    arenaWeakMap: {},
-    arenaSlowMap: {},
-    arenaCorrectMap: {},
-    arenaRangeHistory: [],
-    isDarkMode: getInitialDarkMode(),
-    arenaStarted: false,
-    arenaCompleted: false,
-    hasCenturyCelebrated: false,
-    hasEncounteredZero: false,
+  const [appState, setAppState] = useState<AppState>(() => {
+    const initialTheme = getInitialDarkMode();
+    const defaultState: AppState = {
+      totalXP: 0,
+      completedUnits: [],
+      weakAreas: [],
+      showScript: true,
+      highScore: 0,
+      masteryStreak: 0,
+      streakDays: 3, // Premium initial starter streak
+      lastActiveDate: undefined,
+      hasOnboarded: false,
+      unitStagesProgress: {},
+      arenaMin: 30,
+      arenaMax: 100,
+      arenaStageProgress: 1,
+      arenaWeakMap: {},
+      arenaSlowMap: {},
+      arenaCorrectMap: {},
+      arenaRangeHistory: [],
+      isDarkMode: initialTheme,
+      arenaStarted: false,
+      arenaCompleted: false,
+      hasCenturyCelebrated: false,
+      hasEncounteredZero: false,
+    };
+
+    try {
+      const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (rawData) {
+        const parsed = JSON.parse(rawData);
+        const hasThemePref = localStorage.getItem("ginti_theme_pref") !== null;
+        const finalDark = hasThemePref ? (localStorage.getItem("ginti_theme_pref") === "dark") : (parsed.isDarkMode ?? initialTheme);
+
+        const restored: AppState = {
+          totalXP: parsed.totalXP ?? 0,
+          completedUnits: parsed.completedUnits ?? [],
+          weakAreas: parsed.weakAreas ?? [],
+          showScript: parsed.showScript ?? true,
+          highScore: parsed.highScore ?? 0,
+          masteryStreak: parsed.masteryStreak ?? 0,
+          streakDays: parsed.streakDays ?? 3,
+          lastActiveDate: parsed.lastActiveDate,
+          hasOnboarded: parsed.hasOnboarded ?? false,
+          unitStagesProgress: parsed.unitStagesProgress ?? {},
+          arenaMin: parsed.arenaMin ?? 30,
+          arenaMax: parsed.arenaMax ?? 100,
+          arenaStageProgress: parsed.arenaStageProgress ?? 1,
+          arenaWeakMap: parsed.arenaWeakMap ?? {},
+          arenaSlowMap: parsed.arenaSlowMap ?? {},
+          arenaCorrectMap: parsed.arenaCorrectMap ?? {},
+          arenaRangeHistory: parsed.arenaRangeHistory ?? [],
+          isDarkMode: finalDark,
+          arenaStarted: parsed.arenaStarted ?? false,
+          arenaCompleted: parsed.arenaCompleted ?? false,
+          hasCenturyCelebrated: parsed.hasCenturyCelebrated ?? false,
+          hasEncounteredZero: parsed.hasEncounteredZero ?? false,
+        };
+        const checkedState = checkAndResetStreakOnStartup(restored);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(checkedState));
+
+        // Immediately synchronize document-level classes to prevent theme or script UI flashing
+        if (typeof document !== "undefined") {
+          if (checkedState.isDarkMode) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+          if (checkedState.showScript) {
+            document.documentElement.classList.remove("script-off");
+          } else {
+            document.documentElement.classList.add("script-off");
+          }
+        }
+
+        return checkedState;
+      }
+    } catch (err) {
+      console.error("Local Storage restoration error on init", err);
+    }
+
+    // Default first-time launch setup
+    if (typeof document !== "undefined") {
+      if (initialTheme) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+
+    return defaultState;
   });
 
   const [activeScreen, setActiveScreen] = useState<ScreenType>("dashboard");
-  const [onboardingActive, setOnboardingActive] = useState<boolean>(true);
+  const [onboardingActive, setOnboardingActive] = useState<boolean>(() => {
+    try {
+      const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (rawData) {
+        const parsed = JSON.parse(rawData);
+        return !parsed.hasOnboarded;
+      }
+    } catch (e) {}
+    return true;
+  });
   
   // Custom Unit Stages & Journey States
   const [selectedJourneyUnitId, setSelectedJourneyUnitId] = useState<string | null>(null);
@@ -756,7 +1151,7 @@ export default function App() {
 
   // Animate header streak icon only on increase
   const [triggerHeaderFlameAnimate, setTriggerHeaderFlameAnimate] = useState<boolean>(false);
-  const prevStreakRef = useRef<number>(-1);
+  const prevStreakRef = useRef<number>(appState.masteryStreak ?? 0);
 
   // Mithu Learning Assistant state
   const [digitMistakes, setDigitMistakes] = useState<Record<number, number>>({});
@@ -886,47 +1281,7 @@ export default function App() {
   ];
 
   const playWobbleSound = () => {
-    try {
-      triggerHaptic("complete");
-      const audioCtx = getSharedAudioContext();
-      if (audioCtx.state === "suspended") {
-        audioCtx.resume();
-      }
-      const now = audioCtx.currentTime;
-      
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      
-      osc1.type = "triangle";
-      osc2.type = "sine";
-      
-      osc1.frequency.setValueAtTime(220, now);
-      osc1.frequency.linearRampToValueAtTime(330, now + 0.15);
-      osc1.frequency.linearRampToValueAtTime(200, now + 0.3);
-      osc1.frequency.linearRampToValueAtTime(260, now + 0.45);
-      osc1.frequency.linearRampToValueAtTime(220, now + 0.6);
-      
-      osc2.frequency.setValueAtTime(225, now);
-      osc2.frequency.linearRampToValueAtTime(335, now + 0.15);
-      osc2.frequency.linearRampToValueAtTime(205, now + 0.3);
-      osc2.frequency.linearRampToValueAtTime(265, now + 0.45);
-      osc2.frequency.linearRampToValueAtTime(225, now + 0.6);
-      
-      gainNode.gain.setValueAtTime(0.06, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
-      
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 0.7);
-      osc2.stop(now + 0.7);
-    } catch (e) {
-      // Ignore audioContext errors silently
-    }
+    playSoundSynth("easterEgg");
   };
 
   useEffect(() => {
@@ -1034,16 +1389,20 @@ export default function App() {
         // Play subtle custom wobble sound
         playWobbleSound();
 
-        // Show Mithu reaction line
-        const randomLine = MITHU_EASTER_EGG_LINES[Math.floor(Math.random() * MITHU_EASTER_EGG_LINES.length)];
-        setMithuEasterEggBubble(randomLine);
+        // Delay Mithu reaction line until the wobble finishes (after 1800ms)
+        const delayMithuTimer = setTimeout(() => {
+          const randomLine = MITHU_EASTER_EGG_LINES[Math.floor(Math.random() * MITHU_EASTER_EGG_LINES.length)];
+          setMithuEasterEggBubble(randomLine);
 
-        // Hide bubble after 4.5 seconds
-        const timer = setTimeout(() => {
-          setMithuEasterEggBubble(null);
-        }, 4500);
+          // Hide bubble after 4.5 seconds
+          const hideTimer = setTimeout(() => {
+            setMithuEasterEggBubble(null);
+          }, 4500);
 
-        return () => clearTimeout(timer);
+          return () => clearTimeout(hideTimer);
+        }, 1800);
+
+        return () => clearTimeout(delayMithuTimer);
       }
     }
   }, [
@@ -1092,118 +1451,7 @@ export default function App() {
     }
   };
 
-  // =============================================================================
-  // STREAK TRACKING HELPERS (DUOLINGO FUNCTIONALITY)
-  // =============================================================================
-  const getTodayString = (): string => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const getYesterdayString = (): string => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const checkAndResetStreakOnStartup = (currentState: AppState): AppState => {
-    const today = getTodayString();
-    const yesterday = getYesterdayString();
-    const lastActive = currentState.lastActiveDate;
-
-    if (lastActive && lastActive !== today && lastActive !== yesterday) {
-      // Streak has broken because the last active date was older than yesterday.
-      return {
-        ...currentState,
-        streakDays: 0,
-      };
-    }
-    return currentState;
-  };
-
-  const markUserActive = (currentState: AppState): AppState => {
-    const today = getTodayString();
-    const yesterday = getYesterdayString();
-    const lastActive = currentState.lastActiveDate;
-
-    let newStreak = currentState.streakDays;
-
-    if (!lastActive) {
-      // First active practice: establish today's active date; preserve the initial starter streak.
-      newStreak = Math.max(3, currentState.streakDays);
-    } else if (lastActive === today) {
-      // Already active today; streak days unchanged
-      newStreak = currentState.streakDays;
-    } else if (lastActive === yesterday) {
-      // Consecutive active practice day! Streak increments!
-      newStreak = currentState.streakDays + 1;
-    } else {
-      // Streak was broken or skipped, started practicing today, set to 1
-      newStreak = 1;
-    }
-
-    return {
-      ...currentState,
-      streakDays: newStreak,
-      lastActiveDate: today,
-    };
-  };
-
-  // =============================================================================
-  // LIFE RECORD LOAD AND PERSISTENCE SYNC
-  // =============================================================================
-  useEffect(() => {
-    const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const initialTheme = getInitialDarkMode();
-    if (rawData) {
-      try {
-        const parsed = JSON.parse(rawData);
-        const hasThemePref = localStorage.getItem("ginti_theme_pref") !== null;
-        const finalDark = hasThemePref ? (localStorage.getItem("ginti_theme_pref") === "dark") : (parsed.isDarkMode ?? initialTheme);
-
-        const restored: AppState = {
-          totalXP: parsed.totalXP ?? 0,
-          completedUnits: parsed.completedUnits ?? [],
-          weakAreas: parsed.weakAreas ?? [],
-          showScript: parsed.showScript ?? true,
-          highScore: parsed.highScore ?? 0,
-          masteryStreak: parsed.masteryStreak ?? 0,
-          streakDays: parsed.streakDays ?? 3,
-          lastActiveDate: parsed.lastActiveDate,
-          hasOnboarded: parsed.hasOnboarded ?? false,
-          unitStagesProgress: parsed.unitStagesProgress ?? {},
-          arenaMin: parsed.arenaMin ?? 30,
-          arenaMax: parsed.arenaMax ?? 100,
-          arenaStageProgress: parsed.arenaStageProgress ?? 1,
-          arenaWeakMap: parsed.arenaWeakMap ?? {},
-          arenaSlowMap: parsed.arenaSlowMap ?? {},
-          arenaCorrectMap: parsed.arenaCorrectMap ?? {},
-          arenaRangeHistory: parsed.arenaRangeHistory ?? [],
-          isDarkMode: finalDark,
-          arenaStarted: parsed.arenaStarted ?? false,
-          arenaCompleted: parsed.arenaCompleted ?? false,
-          hasCenturyCelebrated: parsed.hasCenturyCelebrated ?? false,
-          hasEncounteredZero: parsed.hasEncounteredZero ?? false,
-        };
-        const checkedState = checkAndResetStreakOnStartup(restored);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(checkedState));
-        prevStreakRef.current = checkedState.masteryStreak ?? 0;
-        setAppState(checkedState);
-        setOnboardingActive(!parsed.hasOnboarded);
-      } catch (err) {
-        console.error("Local Storage restoration error. Restarting configuration.", err);
-      }
-    } else {
-      // First launch (no rawData), setAppState with getInitialDarkMode()
-      setAppState((prev) => ({ ...prev, isDarkMode: initialTheme }));
-    }
-  }, []);
+  // Synchronized state is restored synchronously during initialization to eliminate UI and theme flashing.
 
   // Trigger effect to record 0 encounter once the 0 clues are opened
   useEffect(() => {
@@ -1270,13 +1518,16 @@ export default function App() {
     }
   }, [appState.showScript]);
 
-  const saveState = (updated: AppState) => {
-    let finalState = updated;
-    if (updated.totalXP > appState.totalXP) {
-      finalState = markUserActive(updated);
-    }
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(finalState));
-    setAppState(finalState);
+  const saveState = (updater: AppState | ((prev: AppState) => AppState)) => {
+    setAppState((prev) => {
+      const updated = typeof updater === "function" ? updater(prev) : updater;
+      let finalState = updated;
+      if (updated.totalXP > prev.totalXP) {
+        finalState = markUserActive(updated);
+      }
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(finalState));
+      return finalState;
+    });
   };
 
   const incrementMasteryStreak = () => {
@@ -1343,7 +1594,7 @@ export default function App() {
       if (milestoneMsg) {
         setTimeout(() => {
           setStreakCelebration({ title: milestoneTitle, message: milestoneMsg, streak: nextStreak });
-          playSoundSynth("levelUp", "milestone");
+          playSoundSynth("milestone");
           // Auto-dismiss after 4 seconds
           setTimeout(() => {
             setStreakCelebration(prevCel => {
@@ -1491,7 +1742,7 @@ export default function App() {
   // NEOCLASSICAL SYNTH SOUNDS
   // =============================================================================
   const playSoundSynth = (
-    type: "correct" | "incorrect" | "click" | "levelUp",
+    type: "correct" | "incorrect" | "click" | "levelUp" | "navigation" | "toggle" | "milestone" | "easterEgg",
     hapticOverride?: "correct" | "incorrect" | "loseHeart" | "milestone" | "complete" | "theme" | "none"
   ) => {
     // Premium Mobile Haptic Integration
@@ -1504,7 +1755,7 @@ export default function App() {
         triggerHaptic("correct");
       } else if (type === "incorrect") {
         triggerHaptic("incorrect");
-      } else if (type === "levelUp") {
+      } else if (type === "levelUp" || type === "milestone") {
         triggerHaptic("complete");
       }
     }
@@ -1514,6 +1765,8 @@ export default function App() {
       if (audioCtx.state === "suspended") {
         audioCtx.resume();
       }
+
+      const now = audioCtx.currentTime;
 
       if (type === "correct") {
         // High-Fidelity spark bells arpeggio with warm triangle harmonic octave layer
@@ -1528,7 +1781,7 @@ export default function App() {
           harmonicsNode.type = "triangle";
           harmonicsNode.frequency.setValueAtTime(freq * 2, startTime);
           
-          gainNodeNode.gain.setValueAtTime(0.06, startTime);
+          gainNodeNode.gain.setValueAtTime(0.04, startTime);
           gainNodeNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
           
           oscNode.connect(gainNodeNode);
@@ -1541,74 +1794,202 @@ export default function App() {
           harmonicsNode.stop(startTime + duration + 0.1);
         };
 
-        const now = audioCtx.currentTime;
         // Ascent notes: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz) spaced 60ms apart
         playTone(523.25, now, 0.15);
         playTone(659.25, now + 0.06, 0.15);
         playTone(783.99, now + 0.12, 0.15);
         playTone(1046.50, now + 0.18, 0.35);
+
       } else if (type === "incorrect") {
-        // Dual discordant detuned waveforms descending pitch slide for rich buzzy game console feel
-        const osc = audioCtx.createOscillator();
-        const oscDetuned = audioCtx.createOscillator();
+        // Dual descending minor-third sliding tones - warm, informative, never harsh
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(240, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.35);
-
-        oscDetuned.type = "sawtooth";
-        oscDetuned.frequency.setValueAtTime(235, audioCtx.currentTime);
-        oscDetuned.frequency.exponentialRampToValueAtTime(105, audioCtx.currentTime + 0.35);
+        osc1.type = "triangle";
+        osc1.frequency.setValueAtTime(220, now); // A3
+        osc1.frequency.linearRampToValueAtTime(164.81, now + 0.3); // E3
         
-        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.37);
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(261.63, now); // C4 (minor third above A3)
+        osc2.frequency.linearRampToValueAtTime(196.00, now + 0.3); // G3
         
-        osc.connect(gainNode);
-        oscDetuned.connect(gainNode);
+        gainNode.gain.setValueAtTime(0.04, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         
-        osc.start();
-        oscDetuned.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-        oscDetuned.stop(audioCtx.currentTime + 0.4);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.4);
+        osc2.stop(now + 0.4);
+
       } else if (type === "levelUp") {
-        // Multi-level triumphant fanfare!
+        // Multi-level triumphant fanfare! (C4 -> G4 -> C5 -> E5 -> G5)
         const playTone = (freq: number, startTime: number, duration: number) => {
           const oscNode = audioCtx.createOscillator();
+          const subNode = audioCtx.createOscillator();
           const gainNodeNode = audioCtx.createGain();
           
           oscNode.type = "sine";
           oscNode.frequency.setValueAtTime(freq, startTime);
           
-          gainNodeNode.gain.setValueAtTime(0.06, startTime);
+          subNode.type = "triangle";
+          subNode.frequency.setValueAtTime(freq / 2, startTime);
+          
+          gainNodeNode.gain.setValueAtTime(0.04, startTime);
           gainNodeNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
           
           oscNode.connect(gainNodeNode);
+          subNode.connect(gainNodeNode);
           gainNodeNode.connect(audioCtx.destination);
           
           oscNode.start(startTime);
+          subNode.start(startTime);
           oscNode.stop(startTime + duration + 0.05);
+          subNode.stop(startTime + duration + 0.05);
         };
 
-        const t = audioCtx.currentTime;
-        playTone(261.63, t, 0.12);        // C4
-        playTone(329.63, t + 0.08, 0.12); // E4
-        playTone(392.00, t + 0.16, 0.12); // G4
-        playTone(523.25, t + 0.24, 0.4);  // C5
-        playTone(659.25, t + 0.32, 0.4);  // E5
+        playTone(261.63, now, 0.15);        // C4
+        playTone(392.00, now + 0.10, 0.15); // G4
+        playTone(523.25, now + 0.20, 0.20); // C5
+        playTone(659.25, now + 0.30, 0.25); // E5
+        playTone(783.99, now + 0.40, 0.50); // G5
+
+      } else if (type === "navigation") {
+        // Soft, elegant sweeping chime for screen/tab transition (non-intrusive)
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(440, now); // A4
+        osc1.frequency.exponentialRampToValueAtTime(554.37, now + 0.12); // C#5
+        
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(659.25, now); // E5
+        osc2.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5
+        
+        gainNode.gain.setValueAtTime(0.02, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.16);
+        osc2.stop(now + 0.16);
+
+      } else if (type === "toggle") {
+        // Quick subtle click-clack or plip-plop switches
+        const osc1 = audioCtx.createOscillator();
+        const gainNode1 = audioCtx.createGain();
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(600, now);
+        osc1.frequency.exponentialRampToValueAtTime(800, now + 0.03);
+        gainNode1.gain.setValueAtTime(0.02, now);
+        gainNode1.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        osc1.connect(gainNode1);
+        gainNode1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.04);
+
+        const osc2 = audioCtx.createOscillator();
+        const gainNode2 = audioCtx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(800, now + 0.04);
+        osc2.frequency.exponentialRampToValueAtTime(1000, now + 0.07);
+        gainNode2.gain.setValueAtTime(0.02, now + 0.04);
+        gainNode2.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc2.connect(gainNode2);
+        gainNode2.connect(audioCtx.destination);
+        osc2.start(now + 0.04);
+        osc2.stop(now + 0.08);
+
+      } else if (type === "milestone") {
+        // Beautiful sparkly bell chime for streak milestone celebration (D5 -> E5 -> A5 -> B5 -> E6)
+        const playBell = (freq: number, delay: number, dur: number) => {
+          const oscNode = audioCtx.createOscillator();
+          const modulatorNode = audioCtx.createOscillator();
+          const modGainNode = audioCtx.createGain();
+          const gainNodeNode = audioCtx.createGain();
+          
+          oscNode.type = "sine";
+          oscNode.frequency.setValueAtTime(freq, now + delay);
+          
+          modulatorNode.frequency.setValueAtTime(freq * 1.5, now + delay);
+          modGainNode.gain.setValueAtTime(80, now + delay);
+          
+          gainNodeNode.gain.setValueAtTime(0.03, now + delay);
+          gainNodeNode.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+          
+          modulatorNode.connect(modGainNode);
+          modGainNode.connect(oscNode.frequency);
+          oscNode.connect(gainNodeNode);
+          gainNodeNode.connect(audioCtx.destination);
+          
+          oscNode.start(now + delay);
+          modulatorNode.start(now + delay);
+          oscNode.stop(now + delay + dur + 0.1);
+          modulatorNode.stop(now + delay + dur + 0.1);
+        };
+        
+        playBell(587.33, 0, 0.3);      // D5
+        playBell(659.25, 0.08, 0.3);   // E5
+        playBell(880.00, 0.16, 0.4);   // A5
+        playBell(987.77, 0.24, 0.5);   // B5
+        playBell(1318.51, 0.32, 0.7);  // E6
+
+      } else if (type === "easterEgg") {
+        // Playful detuned spring-wobble chime for Mithu 67 or other special secrets
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        osc1.type = "triangle";
+        osc2.type = "sine";
+        
+        osc1.frequency.setValueAtTime(220, now);
+        osc1.frequency.linearRampToValueAtTime(330, now + 0.15);
+        osc1.frequency.linearRampToValueAtTime(200, now + 0.3);
+        osc1.frequency.linearRampToValueAtTime(260, now + 0.45);
+        osc1.frequency.linearRampToValueAtTime(220, now + 0.6);
+        
+        osc2.frequency.setValueAtTime(225, now);
+        osc2.frequency.linearRampToValueAtTime(335, now + 0.15);
+        osc2.frequency.linearRampToValueAtTime(205, now + 0.3);
+        osc2.frequency.linearRampToValueAtTime(265, now + 0.45);
+        osc2.frequency.linearRampToValueAtTime(225, now + 0.6);
+        
+        gainNode.gain.setValueAtTime(0.04, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.7);
+        osc2.stop(now + 0.7);
+
       } else {
-        // click
+        // Standard high-fidelity button click (subtle high-pitch pitch decay)
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(750, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.frequency.setValueAtTime(1000, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+        gainNode.gain.setValueAtTime(0.03, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.06);
       }
     } catch (e) {
       // Ignore browser policy roadblocks silently
@@ -2275,22 +2656,27 @@ export default function App() {
 
   const saveArenaStageProgress = (completedStage: number) => {
     const currentProgress = appState.arenaStageProgress ?? 1;
-    let nextProgress = currentProgress;
     let leveledUp = false;
     if (completedStage >= currentProgress) {
-      nextProgress = Math.min(5, completedStage + 1);
       leveledUp = true;
     }
-    const updated: AppState = {
-      ...appState,
-      arenaStageProgress: nextProgress,
-      totalXP: appState.totalXP + 25, // Generous XP award bounty
-    };
-    if (completedStage === 5) {
-      updated.arenaCompleted = true;
-      updated.arenaStarted = false;
-    }
-    saveState(updated);
+    saveState((prev) => {
+      const currentProgressPrev = prev.arenaStageProgress ?? 1;
+      const nextProgress = completedStage >= currentProgressPrev
+        ? Math.min(5, completedStage + 1)
+        : currentProgressPrev;
+
+      const updated: AppState = {
+        ...prev,
+        arenaStageProgress: nextProgress,
+        totalXP: prev.totalXP + 25, // Generous XP award bounty
+      };
+      if (completedStage === 5) {
+        updated.arenaCompleted = true;
+        updated.arenaStarted = false;
+      }
+      return updated;
+    });
     if (leveledUp) {
       playSoundSynth("levelUp");
     }
@@ -2300,38 +2686,39 @@ export default function App() {
   const recordArenaResponse = (digit: number, isCorrect: boolean, elapsedMs: number) => {
     const isSlow = !isCorrect ? false : elapsedMs > 4000;
     
-    const currentCorrects = appState.arenaCorrectMap ?? {};
-    const currentWrongs = appState.arenaWeakMap ?? {};
-    const currentSlows = appState.arenaSlowMap ?? {};
+    saveState((prev) => {
+      const currentCorrects = prev.arenaCorrectMap ?? {};
+      const currentWrongs = prev.arenaWeakMap ?? {};
+      const currentSlows = prev.arenaSlowMap ?? {};
 
-    const updatedCorrects = { ...currentCorrects };
-    const updatedWrongs = { ...currentWrongs };
-    const updatedSlows = { ...currentSlows };
+      const updatedCorrects = { ...currentCorrects };
+      const updatedWrongs = { ...currentWrongs };
+      const updatedSlows = { ...currentSlows };
 
-    if (isCorrect) {
-      updatedCorrects[digit] = (updatedCorrects[digit] ?? 0) + 1;
-      if (updatedWrongs[digit]) {
-        // Slowly decay weak score of digits on correct hits to maintain equilibrium
-        updatedWrongs[digit] = Math.max(0, updatedWrongs[digit] - 1);
+      if (isCorrect) {
+        updatedCorrects[digit] = (updatedCorrects[digit] ?? 0) + 1;
+        if (updatedWrongs[digit]) {
+          // Slowly decay weak score of digits on correct hits to maintain equilibrium
+          updatedWrongs[digit] = Math.max(0, updatedWrongs[digit] - 1);
+        }
+      } else {
+        updatedWrongs[digit] = (updatedWrongs[digit] ?? 0) + 1;
       }
-    } else {
-      updatedWrongs[digit] = (updatedWrongs[digit] ?? 0) + 1;
-    }
 
-    if (isSlow) {
-      updatedSlows[digit] = (updatedSlows[digit] ?? 0) + 1;
-    }
+      if (isSlow) {
+        updatedSlows[digit] = (updatedSlows[digit] ?? 0) + 1;
+      }
 
-    const updated = {
-      ...appState,
-      arenaCorrectMap: updatedCorrects,
-      arenaWeakMap: updatedWrongs,
-      arenaSlowMap: updatedSlows,
-      weakAreas: !isCorrect && !appState.weakAreas.includes(digit)
-        ? [...appState.weakAreas, digit]
-        : appState.weakAreas
-    };
-    saveState(updated);
+      return {
+        ...prev,
+        arenaCorrectMap: updatedCorrects,
+        arenaWeakMap: updatedWrongs,
+        arenaSlowMap: updatedSlows,
+        weakAreas: !isCorrect && !prev.weakAreas.includes(digit)
+          ? [...prev.weakAreas, digit]
+          : prev.weakAreas
+      };
+    });
   };
 
   const setupArenaStage2Quiz = () => {
@@ -2511,17 +2898,18 @@ export default function App() {
   const saveUnitStageProgress = (unitId: string, completedStage: number) => {
     const currentProgress = getUnitProgress(unitId);
     if (completedStage >= currentProgress) {
-      const nextProgress = Math.min(5, completedStage + 1);
-      const updatedProgress = {
-        ...(appState.unitStagesProgress ?? {}),
-        [unitId]: nextProgress,
-      };
-      const updated = {
-        ...appState,
-        unitStagesProgress: updatedProgress,
-        totalXP: appState.totalXP + 15, // Micro XP award for finishing a stage!
-      };
-      saveState(updated);
+      saveState((prev) => {
+        const nextProgress = Math.min(5, completedStage + 1);
+        const updatedProgress = {
+          ...(prev.unitStagesProgress ?? {}),
+          [unitId]: nextProgress,
+        };
+        return {
+          ...prev,
+          unitStagesProgress: updatedProgress,
+          totalXP: prev.totalXP + 15, // Micro XP award for finishing a stage!
+        };
+      });
       playSoundSynth("levelUp");
       return true;
     }
@@ -3290,7 +3678,7 @@ export default function App() {
           message: milestoneMsg, 
           streak: 10 
         });
-        playSoundSynth("levelUp", "milestone");
+        playSoundSynth("milestone");
         // Auto-dismiss after 4 seconds
         setTimeout(() => {
           setStreakCelebration(prevCel => {
@@ -3614,12 +4002,13 @@ export default function App() {
   return (
     <motion.div 
       className="min-h-screen relative flex flex-col justify-between"
+      style={{ transformOrigin: "center center" }}
       animate={isWobbling ? {
-        rotate: [0, 4.5, -3.5, 2.5, -1.8, 1.2, -0.7, 0.4, -0.2, 0],
-        y: [0, -12, 10, -7, 5, -3.5, 2.2, -1.2, 0.5, 0],
+        rotate: [0, 2.0, -1.4, 0.9, -0.5, 0.2, 0],
+        y: [0, 3, -2, 1.2, -0.6, 0.3, 0],
       } : { rotate: 0, y: 0 }}
       transition={{
-        duration: 2.8,
+        duration: 1.8,
         ease: "easeInOut",
       }}
       onAnimationComplete={() => {
@@ -3923,7 +4312,7 @@ export default function App() {
                   <div className="flex flex-col items-center text-center">
                     {/* Interactive Flame Container */}
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-1.5 border-2 shadow-xs bg-white dark:bg-slate-900 ${getStreakBadgeStyles()}`}>
-                      <Flame className={`w-6 h-6 ${getFlameIconStyles()}`} />
+                      <MasteryFlame streak={appState.masteryStreak ?? 0} size={24} />
                     </div>
 
                     <span className="text-[8.5px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-0.5">
@@ -3996,7 +4385,7 @@ export default function App() {
                 ? "shadow-[0_3px_15px_rgba(245,158,11,0.6)]"
                 : "shadow-[0_3px_12px_rgba(245,158,11,0.35)]"
             }`}>
-              <Flame className="w-5.5 h-5.5 text-white fill-amber-300 animate-pulse" />
+              <MasteryFlame streak={streakCelebration ? streakCelebration.streak : (appState.masteryStreak ?? 0)} size={22} />
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rotate-45 -translate-y-full animate-[shine_2s_infinite]" />
             </div>
 
@@ -4195,7 +4584,7 @@ export default function App() {
                         playSoundSynth("click");
                         setMithuLanguage(prev => prev === "ur" ? "en" : "ur");
                       }}
-                      className="px-2 py-1 text-[9px] font-extrabold rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 select-none cursor-pointer transition-all active:scale-95 shadow-xs"
+                      className="px-2 py-1 text-[9px] font-extrabold rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 select-none cursor-pointer transition-all active:scale-95 shadow-xs ginti-decoder-lang-btn"
                       title={mithuLanguage === "ur" ? "Switch to English explanation" : "Switch to Urdu explanation"}
                     >
                       <span className="text-[10px]">🌐</span>
@@ -4630,7 +5019,7 @@ export default function App() {
               <div className="border-t border-emerald-850 pt-3 mt-3 flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-center justify-between shrink-0 relative z-10">
                 <button
                   onClick={() => {
-                    playSoundSynth("click");
+                    playSoundSynth("navigation");
                     setIsArenaSetupOpen(false);
                   }}
                   className="w-full sm:w-auto px-4 py-2.5 rounded-xl sm:rounded-2xl border-2 border-emerald-850 hover:border-emerald-750 bg-transparent text-emerald-200 hover:text-white text-xs sm:text-sm uppercase font-black tracking-wider transition duration-100 cursor-pointer active:scale-95 select-none text-center"
@@ -4727,11 +5116,11 @@ export default function App() {
               className={`flex items-center justify-center gap-1 sm:gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] border-b-[3.5px] sm:border-b-[4.5px] ${getStreakBadgeStyles()}`}
               title="Mastery Streak - Click to view true value"
             >
-              <Flame className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 ${
-                appState.masteryStreak === 0 
-                  ? "text-slate-400 fill-none" 
-                  : `text-orange-500 fill-orange-400 ${triggerHeaderFlameAnimate ? "flame-pop-once" : ""}`
-              }`} />
+              <MasteryFlame 
+                streak={appState.masteryStreak ?? 0} 
+                size={16} 
+                className={triggerHeaderFlameAnimate ? "scale-125 transition-transform duration-150" : "transition-transform duration-150"} 
+              />
               <span className="font-mono font-black text-xs sm:text-sm leading-none translate-y-[-0.5px]">
                 {appState.masteryStreak > 99 ? "99+" : appState.masteryStreak || 0}
               </span>
@@ -4742,7 +5131,7 @@ export default function App() {
               <button
                 id="script-toggle"
                 onClick={() => {
-                  playSoundSynth("click");
+                  playSoundSynth("toggle");
                   const nextState = !appState.showScript;
                   const updated = { ...appState, showScript: nextState };
                   saveState(updated);
@@ -4789,7 +5178,7 @@ export default function App() {
               <button
                 id="theme-toggle"
                 onClick={() => {
-                  playSoundSynth("click", "theme");
+                  playSoundSynth("toggle", "theme");
                   const nextDark = !appState.isDarkMode;
                   localStorage.setItem("ginti_theme_pref", nextDark ? "dark" : "light");
                   const updated = { ...appState, isDarkMode: nextDark };
@@ -5871,15 +6260,24 @@ export default function App() {
                             </span>
 
                             {/* Status Overlay Badge on bottom-right of the circle node */}
-                            <span className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4.5 h-4.5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-[8.5px] sm:text-[10px] font-black border border-white shadow-xs ${
-                              isFinished
-                                ? "bg-emerald-700 text-amber-300"
-                                : isCurrent
-                                  ? "bg-amber-400 text-emerald-950 animate-bounce"
+                            {isCurrent ? (
+                              <span 
+                                className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-[20px] h-[20px] sm:w-[26px] sm:h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-[1.5px] sm:border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
+                                style={{
+                                  boxShadow: "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)"
+                                }}
+                              >
+                                <Zap className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-[#451a03] fill-[#451a03]" />
+                              </span>
+                            ) : (
+                              <span className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4.5 h-4.5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-[8.5px] sm:text-[10px] font-black border border-white shadow-xs ${
+                                isFinished
+                                  ? "bg-emerald-700 text-amber-300"
                                   : "bg-slate-250 text-slate-500 ginti-status-badge-locked"
-                            }`}>
-                              {isFinished ? "✓" : isCurrent ? "⚡" : "🔒"}
-                            </span>
+                              }`}>
+                                {isFinished ? "✓" : "🔒"}
+                              </span>
+                            )}
                           </button>
                         </div>
 
@@ -6013,7 +6411,7 @@ export default function App() {
                   className="flex items-center text-left gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-orange-500/30 hover:shadow-md transition-all duration-200 select-none cursor-pointer active:translate-y-[1px]"
                 >
                   <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shrink-0 shadow-xs ginti-stat-mastery-streak-box">
-                    <Flame className="w-5 h-5 fill-orange-400 text-orange-500" />
+                    <MasteryFlame streak={appState.masteryStreak ?? 0} size={20} />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">Mastery Streak</span>
@@ -6394,7 +6792,7 @@ export default function App() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -15 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="max-w-xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-3.5 sm:gap-4.5 text-center relative"
+            className={`max-w-xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-3.5 sm:gap-4.5 text-center relative ${arcadeState.isDone ? "min-h-[70vh] sm:min-h-[75vh] justify-center" : ""}`}
           >
             
             {/* PRESSURE HEADER CONTROLS */}
@@ -6796,15 +7194,24 @@ export default function App() {
                           <span className="text-2xl font-black mt-0.5 text-center w-full block tabular-nums m-0">{stg.id}</span>
 
                           {/* Status Overlay Badge on bottom-right of the circle node */}
-                          <span className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
-                            isDone
-                              ? "bg-emerald-700 text-amber-300"
-                              : isCurrent
-                                ? "bg-amber-400 text-emerald-950 animate-bounce"
+                          {isCurrent ? (
+                            <span 
+                              className="absolute -bottom-1 -right-1 w-[26px] h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
+                              style={{
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)"
+                              }}
+                            >
+                              <Zap className="w-3.5 h-3.5 text-[#451a03] fill-[#451a03]" />
+                            </span>
+                          ) : (
+                            <span className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
+                              isDone
+                                ? "bg-emerald-700 text-amber-300"
                                 : "bg-slate-300 text-slate-500 ginti-status-badge-locked"
-                          }`}>
-                            {isDone ? "✓" : isCurrent ? "⚡" : "🔒"}
-                          </span>
+                            }`}>
+                              {isDone ? "✓" : "🔒"}
+                            </span>
+                          )}
                         </motion.button>
 
                         {/* Description Card */}
@@ -6855,7 +7262,7 @@ export default function App() {
                 <div className="flex justify-center mt-6">
                   <button
                     onClick={() => {
-                      playSoundSynth("click");
+                      playSoundSynth("navigation");
                       setActiveScreen("dashboard");
                     }}
                     className="btn-secondary py-3 px-6 rounded-xl text-xs font-bold w-full cursor-pointer"
@@ -6885,7 +7292,7 @@ export default function App() {
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage1-header">
                     <button
                       onClick={() => {
-                        playSoundSynth("click");
+                        playSoundSynth("navigation");
                         setActiveStageIndex(null);
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
@@ -7048,12 +7455,12 @@ export default function App() {
 
             return (
               <motion.div
-                key={`stage-2-deck-${hasFinishedQuiz ? "end" : stageQuizIdx}`}
+                key={`stage-2-deck-${hasFinishedQuiz ? "end" : "gameplay"}`}
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="max-w-md mx-auto w-full"
+                className={`max-w-md mx-auto w-full ${hasFinishedQuiz ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
               >
                 {hasFinishedQuiz ? (
                   <div id="screen-journey-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
@@ -7148,15 +7555,15 @@ export default function App() {
                       {currentQ.choices.map((choice, index) => {
                         const isSelected = stageQuizSelected === choice;
                         const isCorrectVal = choice === currentQ.correctAnswer;
-                        let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
-
+                        
+                        let cardStyle = "ginti-choice-btn";
                         if (stageQuizAnswered) {
                           if (isCorrectVal) {
-                            bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
+                            cardStyle = "ginti-choice-btn-correct";
                           } else if (isSelected) {
-                            bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
+                            cardStyle = "ginti-choice-btn-incorrect";
                           } else {
-                            bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                            cardStyle = "ginti-choice-btn-dimmed";
                           }
                         }
 
@@ -7194,7 +7601,7 @@ export default function App() {
                                 });
                               }, 1200);
                             }}
-                            className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                            className={`choice-btn py-4 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs w-full ${cardStyle}`}
                           >
                             <span className={appState.showScript && typeof choice === "string" && choice.match(/[\u0600-\u06FF]/) ? "text-2xl font-urdu select-none" : ""}>
                               {formatValueForDisplay(choice)}
@@ -7217,12 +7624,12 @@ export default function App() {
 
             return (
               <motion.div
-                key={`stage-3-deck-${hasFinishedListening ? "end" : stageListIdx}`}
+                key={`stage-3-deck-${hasFinishedListening ? "end" : "gameplay"}`}
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="max-w-md mx-auto w-full"
+                className={`max-w-md mx-auto w-full ${hasFinishedListening ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
               >
                 {hasFinishedListening ? (
                   <div id="screen-journey-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
@@ -7335,15 +7742,15 @@ export default function App() {
                       {currentQ.choices.map((choice: any, index: number) => {
                         const isSelected = stageListSelected === choice;
                         const isCorrectVal = choice === currentQ.correctAnswer;
-                        let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
-
+                        
+                        let cardStyle = "ginti-choice-btn";
                         if (stageListAnswered) {
                           if (isCorrectVal) {
-                            bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
+                            cardStyle = "ginti-choice-btn-correct";
                           } else if (isSelected) {
-                            bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-205 shadow-md";
+                            cardStyle = "ginti-choice-btn-incorrect";
                           } else {
-                            bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                            cardStyle = "ginti-choice-btn-dimmed";
                           }
                         }
 
@@ -7379,7 +7786,7 @@ export default function App() {
                                 });
                               }, 1200);
                             }}
-                            className={`py-4 px-3 rounded-2xl border-2 text-center text-xl font-bold font-sans transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                            className={`choice-btn py-4 px-3 text-center text-xl font-bold font-sans transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs w-full ${cardStyle}`}
                           >
                             {choice}
                           </button>
@@ -7404,7 +7811,7 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: -15 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="max-w-md mx-auto w-full"
+                  className="max-w-md mx-auto w-full min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center"
                 >
                   <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
                     <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-200 mb-1 shadow-sm">
@@ -7479,7 +7886,7 @@ export default function App() {
 
             return (
               <motion.div
-                key={`stage-4-deck-${stageArcadeScore}`}
+                key="stage-4-deck-gameplay"
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
@@ -7622,7 +8029,7 @@ export default function App() {
                   <div className="flex items-center gap-3 relative z-10">
                     <button
                       onClick={() => {
-                        playSoundSynth("click");
+                        playSoundSynth("navigation");
                         setActiveScreen("dashboard");
                       }}
                       className="p-2 bg-emerald-950 hover:bg-emerald-800 border-2 border-emerald-700/80 rounded-2xl cursor-pointer transition active:scale-95 text-emerald-300"
@@ -7857,7 +8264,7 @@ export default function App() {
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
-                      playSoundSynth("click");
+                      playSoundSynth("navigation");
                       setTimeout(() => {
                         setArenaActiveStage(null);
                       }, 180);
@@ -8016,7 +8423,7 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.22, ease: "easeInOut" }}
                   id="screen-arena-stage-2-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md">
                     🏁
@@ -8127,18 +8534,15 @@ export default function App() {
                     const isSelected = arenaQuizSelected === choice;
                     const isCorrectVal = choice === currentQ.correctAnswer;
                     
-                    let buttonClass = "w-full py-4 px-3 border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all duration-150 flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ";
-
+                    let cardStyle = "ginti-choice-btn";
                     if (arenaQuizAnswered) {
                       if (isCorrectVal) {
-                        buttonClass += "bg-emerald-500 border-emerald-600 border-b-[2px] text-white shadow-emerald-250 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-correct";
                       } else if (isSelected) {
-                        buttonClass += "bg-rose-500 border-rose-600 border-b-[2px] text-white shadow-rose-250 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-incorrect";
                       } else {
-                        buttonClass += "bg-slate-50/50 border-slate-100/50 border-b-[2px] text-slate-400 opacity-50 rounded-xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-dimmed";
                       }
-                    } else {
-                      buttonClass += "bg-white border-slate-200 text-slate-800 border-b-[5px] border-b-slate-300 hover:border-b-[4px] hover:-translate-y-0.5 active:translate-y-0.5 active:border-b-[2px] active:scale-[0.98] rounded-xl";
                     }
 
                     return (
@@ -8187,7 +8591,7 @@ export default function App() {
                             }
                           }, 1200);
                         }}
-                        className={buttonClass}
+                        className={`choice-btn py-4 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs w-full ${cardStyle}`}
                       >
                         <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none' : ''}>
                           {formatValueForDisplay(choice)}
@@ -8213,7 +8617,7 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.22, ease: "easeInOut" }}
                   id="screen-arena-stage-3-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
                   <div className="w-12 h-12 bg-indigo-105 rounded-2xl flex items-center justify-center text-indigo-750 border border-indigo-200 mb-1 shadow-sm">
                     {pass ? (
@@ -8349,18 +8753,15 @@ export default function App() {
                     const isSelected = arenaListSelected === choice;
                     const isCorrectVal = choice === currentQ.correctAnswer;
                     
-                    let buttonClass = "w-full py-4.5 px-3 border-2 text-center text-lg font-mono font-black transition-all duration-150 flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ";
-
+                    let cardStyle = "ginti-choice-btn";
                     if (arenaListAnswered) {
                       if (isCorrectVal) {
-                        buttonClass += "bg-emerald-500 border-emerald-600 border-b-[2px] text-white shadow-emerald-250 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-correct";
                       } else if (isSelected) {
-                        buttonClass += "bg-rose-500 border-rose-600 border-b-[2px] text-white shadow-rose-250 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-incorrect";
                       } else {
-                        buttonClass += "bg-slate-50/50 border-slate-100/50 border-b-[2px] text-slate-400 opacity-50 rounded-xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-dimmed";
                       }
-                    } else {
-                      buttonClass += "bg-white border-slate-200 text-slate-800 border-b-[5px] border-b-slate-300 hover:border-b-[4px] hover:-translate-y-0.5 active:translate-y-0.5 active:border-b-[2px] active:scale-[0.98] rounded-xl";
                     }
 
                     return (
@@ -8409,7 +8810,7 @@ export default function App() {
                             }
                           }, 1200);
                         }}
-                        className={buttonClass}
+                        className={`choice-btn py-4.5 px-3 text-center text-lg font-mono font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs w-full ${cardStyle}`}
                       >
                         {choice}
                       </button>
@@ -8432,7 +8833,7 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.22, ease: "easeInOut" }}
                   id="screen-arena-stage-4-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center text-white border-2 border-rose-455 border-b-4 border-b-rose-900 shadow-sm">
                     {pass ? (
@@ -8552,18 +8953,15 @@ export default function App() {
                     const isSelected = arenaArcadeSelected === choice;
                     const isCorrectVal = choice === currentQ.correctAnswer;
                     
-                    let buttonClass = "w-full py-4 px-3 border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all duration-150 flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ";
-
+                    let cardStyle = "ginti-choice-btn";
                     if (arenaArcadeAnswered) {
                       if (isCorrectVal) {
-                        buttonClass += "bg-emerald-500 border-emerald-600 border-b-[2px] text-white shadow-emerald-200 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-correct";
                       } else if (isSelected) {
-                        buttonClass += "bg-rose-500 border-rose-600 border-b-[2px] text-white shadow-rose-200 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-incorrect";
                       } else {
-                        buttonClass += "bg-slate-50/50 border-slate-100/50 border-b-[2px] text-slate-400 opacity-50 rounded-xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-dimmed";
                       }
-                    } else {
-                      buttonClass += "bg-white border-slate-200 text-slate-800 border-b-[5px] border-b-slate-300 hover:border-b-[4px] hover:-translate-y-0.5 active:translate-y-0.5 active:border-b-[2px] active:scale-[0.98] rounded-xl";
                     }
 
                     return (
@@ -8593,7 +8991,7 @@ export default function App() {
                             setArenaArcadeActiveQ(nextQ);
                           }, 400);
                         }}
-                        className={buttonClass}
+                        className={`choice-btn py-4 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs w-full ${cardStyle}`}
                       >
                         <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none' : ''}>
                           {formatValueForDisplay(choice)}
@@ -8619,7 +9017,7 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.22, ease: "easeInOut" }}
                   id="screen-arena-stage-5-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800"
+                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
                   <div className="w-14 h-14 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none animate-bounce">
                     🏆
@@ -8733,18 +9131,15 @@ export default function App() {
                     const isSelected = arenaQuizSelected === choice;
                     const isCorrectVal = choice === currentQ.correctAnswer;
                     
-                    let buttonClass = "w-full py-4 px-3 border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all duration-150 flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ";
-
+                    let cardStyle = "ginti-choice-btn";
                     if (arenaQuizAnswered) {
                       if (isCorrectVal) {
-                        buttonClass += "bg-emerald-500 border-emerald-600 border-b-[2px] text-white shadow-emerald-250 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-correct";
                       } else if (isSelected) {
-                        buttonClass += "bg-rose-500 border-rose-600 border-b-[2px] text-white shadow-rose-250 shadow-md rounded-3xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-incorrect";
                       } else {
-                        buttonClass += "bg-slate-50/50 border-slate-100/50 border-b-[2px] text-slate-400 opacity-50 rounded-xl translate-y-0.5";
+                        cardStyle = "ginti-choice-btn-dimmed";
                       }
-                    } else {
-                      buttonClass += "bg-white border-slate-200 text-slate-800 border-b-[5px] border-b-slate-300 hover:border-b-[4px] hover:-translate-y-0.5 active:translate-y-0.5 active:border-b-[2px] active:scale-[0.98] rounded-xl";
                     }
 
                     return (
@@ -8793,7 +9188,7 @@ export default function App() {
                             }
                           }, 1200);
                         }}
-                        className={buttonClass}
+                        className={`choice-btn py-4 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs w-full ${cardStyle}`}
                       >
                         <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none' : ''}>
                           {formatValueForDisplay(choice)}
