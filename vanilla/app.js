@@ -2,6 +2,69 @@
 // GINTI - COMPLETE OFFLINE ENGINE DATASETS & STATES
 // =============================================================================
 
+const createSafeLocalStorage = () => {
+  const memStore = {};
+  
+  const isAvailable = () => {
+    if (typeof window === "undefined") return false;
+    try {
+      const testKey = "__test_local_storage_availability__";
+      window.localStorage.setItem(testKey, "1");
+      window.localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const hasStorage = isAvailable();
+
+  return {
+    getItem: (key) => {
+      if (hasStorage) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          return memStore[key] || null;
+        }
+      }
+      return memStore[key] || null;
+    },
+    setItem: (key, value) => {
+      if (hasStorage) {
+        try {
+          window.localStorage.setItem(key, value);
+          return;
+        } catch (e) {}
+      }
+      memStore[key] = value;
+    },
+    removeItem: (key) => {
+      if (hasStorage) {
+        try {
+          window.localStorage.removeItem(key);
+          return;
+        } catch (e) {}
+      }
+      delete memStore[key];
+    },
+    clear: () => {
+      if (hasStorage) {
+        try {
+          window.localStorage.clear();
+          return;
+        } catch (e) {}
+      }
+      for (const key in memStore) {
+        delete memStore[key];
+      }
+    }
+  };
+};
+
+const safeLocalStorage = createSafeLocalStorage();
+const localStorage = safeLocalStorage;
+
 const NUMBERS = [
   // --- Unit 1: Numbers 1 to 20 ---
   { digit: 1, romanUrdu: "Ek", nativeScript: "ایک", unitId: "unit1", searchKeys: ["1", "ek", "ik", "ایک"] },

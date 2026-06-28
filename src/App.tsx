@@ -34,12 +34,76 @@ import {
   ArrowRight,
   XCircle,
   Clock,
-  Info
+  Info,
+  Archive
 } from "lucide-react";
 import { NUMBERS, UNITS, NumberEntry, Unit } from "./data";
 import { speakNumberEntry } from "./audio";
 import { getNumberExplanation, FAMILY_STYLES } from "./explanations";
 import { triggerHaptic } from "./haptics";
+
+const createSafeLocalStorage = () => {
+  const memStore: Record<string, string> = {};
+  
+  const isAvailable = (): boolean => {
+    if (typeof window === "undefined") return false;
+    try {
+      const testKey = "__test_local_storage_availability__";
+      window.localStorage.setItem(testKey, "1");
+      window.localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const hasStorage = isAvailable();
+
+  return {
+    getItem: (key: string): string | null => {
+      if (hasStorage) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          return memStore[key] || null;
+        }
+      }
+      return memStore[key] || null;
+    },
+    setItem: (key: string, value: string): void => {
+      if (hasStorage) {
+        try {
+          window.localStorage.setItem(key, value);
+          return;
+        } catch (e) {}
+      }
+      memStore[key] = value;
+    },
+    removeItem: (key: string): void => {
+      if (hasStorage) {
+        try {
+          window.localStorage.removeItem(key);
+          return;
+        } catch (e) {}
+      }
+      delete memStore[key];
+    },
+    clear: (): void => {
+      if (hasStorage) {
+        try {
+          window.localStorage.clear();
+          return;
+        } catch (e) {}
+      }
+      for (const key in memStore) {
+        delete memStore[key];
+      }
+    }
+  };
+};
+
+const safeLocalStorage = createSafeLocalStorage();
+const localStorage = safeLocalStorage;
 
 // Premium Speaker Icon Component
 const PremiumSpeakerIcon = ({ 
@@ -90,7 +154,10 @@ interface AppState {
   arenaStarted?: boolean;
   arenaCompleted?: boolean;
   hasCenturyCelebrated?: boolean;
+  lastCelebratedMilestone?: number;
   hasEncounteredZero?: boolean;
+  completedArenaFields?: string[];
+  archivedArenaFields?: string[];
 }
 
 type ScreenType = "dashboard" | "practice" | "arcade" | "unit-journey" | "training-arena";
@@ -383,6 +450,349 @@ const selectMessageWithVariety = (pool: string[], recentMessages: string[]): str
     }
   }
   return available[Math.floor(Math.random() * available.length)];
+};
+
+// =============================================================================
+// MODERN GAME-STYLE CUTE 3D ARCHIVE BOX SVG ICON
+// =============================================================================
+const GintiArchiveBoxIcon = () => (
+  <svg viewBox="0 0 36 36" className="w-6 h-6 drop-shadow-md select-none pointer-events-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Front face of box */}
+    <rect x="5" y="14" width="26" height="17" rx="3" fill="#D97706" />
+    <rect x="5" y="14" width="26" height="17" rx="3" fill="url(#boxFrontGrad)" />
+    
+    {/* Lid of the box */}
+    <rect x="3" y="8" width="30" height="7" rx="2" fill="#F59E0B" />
+    <rect x="3" y="8" width="30" height="7" rx="2" fill="url(#boxLidGrad)" />
+    
+    {/* Lid's top highlight line */}
+    <path d="M 4 9 L 32 9" stroke="#FEF3C7" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+
+    {/* Front shadow under lid */}
+    <rect x="5" y="15" width="26" height="2" fill="#78350F" opacity="0.45" />
+
+    {/* Archive Label sheet on front */}
+    <rect x="11" y="18" width="14" height="9" rx="1.5" fill="#FFFBEB" stroke="#92400E" strokeWidth="1" />
+    {/* Cute stylized label text lines */}
+    <line x1="14" y1="21" x2="22" y2="21" stroke="#B45309" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="14" y1="24" x2="20" y2="24" stroke="#B45309" strokeWidth="1" strokeLinecap="round" />
+
+    {/* Cute folded document peaking out of the lid */}
+    <path d="M 12 11 L 12 5.5 C 12 5.0 12.5 4.5 13 4.5 L 19 4.5 L 23 8.5 L 23 11 Z" fill="#FFFFFF" />
+    <path d="M 19 4.5 L 19 7.5 C 19 8.0 19.5 8.5 20 8.5 L 23 8.5" fill="#E2E8F0" />
+    <line x1="14" y1="6.5" x2="17" y2="6.5" stroke="#38BDF8" strokeWidth="1" strokeLinecap="round" />
+    <line x1="14" y1="8.5" x2="21" y2="8.5" stroke="#E2E8F0" strokeWidth="1" strokeLinecap="round" />
+
+    {/* Vector Gradients */}
+    <defs>
+      <linearGradient id="boxFrontGrad" x1="18" y1="14" x2="18" y2="31" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#F59E0B" stopOpacity="0.2" />
+        <stop offset="1" stopColor="#78350F" stopOpacity="0.45" />
+      </linearGradient>
+      <linearGradient id="boxLidGrad" x1="18" y1="8" x2="18" y2="15" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#FBBF24" stopOpacity="0.3" />
+        <stop offset="1" stopColor="#78350F" stopOpacity="0.35" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+// =============================================================================
+// MULTI-VARIATION MASTERY STREAK CELEBRATIONS
+// =============================================================================
+interface MilestoneCelebration {
+  titles: string[];
+  messages: string[];
+}
+
+const MILESTONE_VARIATIONS: Record<number, { urdu: MilestoneCelebration; english: MilestoneCelebration }> = {
+  10: {
+    urdu: {
+      titles: ["Super Start! 🚀", "Kamaal Shuruat! 🌟", "Dhamaka Entry! 🔥", "Pehli Manzil! 🏅"],
+      messages: [
+        "Bas yehi pace chahiye! 😎",
+        "Shabash! Pehli manzil tai kar li aap ne! 🦜",
+        "Bohat khoob! Aage barhte jao! ✨",
+        "Aap toh shuru hote hi chha gaye! ⚡"
+      ]
+    },
+    english: {
+      titles: ["Milestone Unlocked! 🏅", "Super Start! 🚀", "Momentum Rising! ⚡", "First Step Achieved! 🌟"],
+      messages: [
+        "Momentum Rising! Keep it up! ⚡",
+        "Double digits! You're warming up nicely! 🏆",
+        "Fantastic start! Mithu is cheering for you! 🦜",
+        "10 correct in a row! Strong foundation built! ✨"
+      ]
+    }
+  },
+  20: {
+    urdu: {
+      titles: ["Awesome Progress! 🌟", "Double Dhamaka! ⚡", "Behtreen Raah! 🏆", "Mithu is Thrilled! 🦜"],
+      messages: [
+        "Haan ji! Aise hi! ✨",
+        "20 ki streak! Kamaal ki speed hai! 🚀",
+        "Mithu bohot khush hai aaj aap ki ginti se! 💚",
+        "Aap toh rukne ka naam hi nahi le rahe! 🔥"
+      ]
+    },
+    english: {
+      titles: ["Streak Milestone! 🔥", "Awesome Progress! 🌟", "Double Twenty! ⚡", "Unstoppable! 🏆"],
+      messages: [
+        "Streak Secured! You're on fire! 🏆",
+        "20 correct! You really know your stuff! ⚡",
+        "Flawless counting! Absolutely brilliant! ✨",
+        "Keep going, Mithu is super proud of you! 🦜"
+      ]
+    }
+  },
+  30: {
+    urdu: {
+      titles: ["Sizzling Streak! 🔥", "Tez Tarraar! ⚡", "Kamaal ki Counting! 👑", "Aag Laga Di! 🌠"],
+      messages: [
+        "Acha... ab baat ban rahi hai. 🔥",
+        "30 streak! Dil jeet liya aap ne! 💖",
+        "Mithu bhi hairan hai aap ki counting se! 🦜",
+        "Aap toh counting ke badshah ban gaye! 👑"
+      ]
+    },
+    english: {
+      titles: ["Momentum Master! 🌠", "Sizzling Streak! 🔥", "Count Champion! 👑", "Pure Mastery! ✨"],
+      messages: [
+        "Fire Growing! You're unstoppable! 🔥",
+        "30 streak! That's absolute perfection! 🏆",
+        "Your Urdu counting is flawless! 🌟",
+        "Mithu says: You are a genius! 🦜"
+      ]
+    }
+  },
+  40: {
+    urdu: {
+      titles: ["Brilliant Forties! 🌟", "Fortress Streak! 🏰", "Mascot's Appreciations! 🦜", "Sizzling Forty! 🔥"],
+      messages: [
+        "40 streak! Bemisaal ho gaya yeh kaam! ✨",
+        "Aap ki ginti to bemisaal ہوتی جا رہی ہے! 🚀",
+        "Mithu bol raha hai: Bas rukna nahi! 🦜",
+        "Chaalees correct! Bohat hi zabardast! 🏅"
+      ]
+    },
+    english: {
+      titles: ["Fabulous Forty! 🌟", "Fortress Streak! 🏰", "Incredible Focus! ⚡", "Mastery Rising! 🏆"],
+      messages: [
+        "40 correct! Your streak is absolutely rock-solid! 🏰",
+        "Fantastic focus! Next stop is 50! 🚀",
+        "Mithu is flying high in happiness! 🦜",
+        "You've got a formidable streak going! ✨"
+      ]
+    }
+  },
+  50: {
+    urdu: {
+      titles: ["Half Century! 🏏", "Pachaas Kamaal! 🌟", "Unstoppable Legend! 🧙‍♂️", "Golden Half-Century! ✨"],
+      messages: [
+        "Wah! Ab maza aa raha hai. 🦜",
+        "Bat utha lo, pachaas ho gaye! 🏏",
+        "50 ki streak! Aap ne toh kamaal hi kar diya! 💎",
+        "Mashallah! Mithu jhoom raha hai! 🦜"
+      ]
+    },
+    english: {
+      titles: ["Milestone Achieved! ✨", "Half Century! 🏏", "Supreme Mastery! 🌟", "Momentum Locked In! ⭐"],
+      messages: [
+        "Momentum Locked In! 50 streak! ⭐",
+        "Outstanding batting! Half century complete! 🏏",
+        "50 correct! Your memory is razor-sharp! ⚡",
+        "A legendary run! Keep pushing to 100! 🚀"
+      ]
+    }
+  },
+  75: {
+    urdu: {
+      titles: ["Master Class! 🎓", "Quarter to Century! 🚀", "Sitaron Se Aage! 🌠", "Diamond Streak! 💎"],
+      messages: [
+        "Ab lag rahe ho player. 😏",
+        "75! Century ke bohot kareeb hain aap! 🏏",
+        "Mithu khushi se pagal ho raha hai! 🦜",
+        "Aap ki ginti bemisaal hai! ✨"
+      ]
+    },
+    english: {
+      titles: ["Mastery Rising! 💎", "Master Class! 🎓", "Sensational Streak! 🌟", "Flame Intensified! 🔥"],
+      messages: [
+        "Flame Intensified! 75 correct! 🔥",
+        "Only 25 away from a Century! You've got this! 🏏",
+        "Incredible focus and dedication! 🎓",
+        "Mithu is singing a victory song for you! 🦜"
+      ]
+    }
+  },
+  100: {
+    urdu: {
+      titles: ["Centurion! 👑", "Century Celebration! 💯", "Mithu's King of Ginti! 👑", "Historic 100 Streak! 🏆"],
+      messages: [
+        "Bat utha lo... Century ho gayi! 🏏",
+        "Scoreboard dekho... Century! 🎉",
+        "Ye hui na batting! Century complete! 😎",
+        "Aaj toh kamaal kar diya... 100 streak! 🌟"
+      ]
+    },
+    english: {
+      titles: ["Century Celebration! 💯", "New Streak Record! 🌟", "Legendary Centurion! 👑", "Unbelievable 100! 🏆"],
+      messages: [
+        "Unbelievable! You just hit a Century! 💯",
+        "Not out... 100 streak complete! 🏏",
+        "Urdu Counting Legend! You're in the history books! 👑",
+        "Mithu is in absolute awe of you! 🦜"
+      ]
+    }
+  },
+  150: {
+    urdu: {
+      titles: ["Incredible Run! 🚀", "Deedhy Ginti! 🌟", "Mithu's Superhero! 🦸‍♂️", "Unmatched Power! ⚡"],
+      messages: [
+        "Yeh hui na baat! 150 streak! 🎯",
+        "Mithu bolta hai: Aap jin ho! 🧙‍♂️",
+        "Superb batting! 1.5 Century complete! 🏏",
+        "Aap ki ginti to aag ki tarah tezi se barh rahi hai! 🔥"
+      ]
+    },
+    english: {
+      titles: ["Milestone Unlocked! 🏅", "Incredible Run! 🚀", "Elite Mastery! 💎", "Superb Focus! ⚡"],
+      messages: [
+        "Momentum Rising! 150 correct in a row! ⚡",
+        "Mithu is speechless! This is pure wizardry! 🧙‍♂️",
+        "1.5 Century! Outstanding consistency! 🏆",
+        "You have officially conquered Urdu numbers! 🌟"
+      ]
+    }
+  },
+  200: {
+    urdu: {
+      titles: ["Double Century! 🏅", "200 Kamaal! 🔥", "Dohri Century! 🏏", "Ginti Ke Shehanshah! 👑"],
+      messages: [
+        "Shabash! Mithu khush hai. 💚",
+        "200 streak! Bat dobara utha lein! 🏏",
+        "Mithu khushi se mithe chawal khayega aaj! 🦜",
+        "Yeh toh be-misaal tareekhi run hai! 🌟"
+      ]
+    },
+    english: {
+      titles: ["Double Century! 🏅", "Streak Secured! 🏆", "Legend Status Unlocked! 👑", "Phenomenal 200! 🔥"],
+      messages: [
+        "Flame Intensified! Double Century complete! 🔥",
+        "200 correct! Mithu is throwing a party! 🦜",
+        "You are a master of Urdu numbers! 🎓",
+        "Unparalleled streak record! Pure gold! 🌟"
+      ]
+    }
+  },
+  300: {
+    urdu: {
+      titles: ["Unstoppable! ⚡", "Ginti Ke Devta! 🧙‍♂️", "Tariqee Run! 🌟", "Triple Century! 🏏"],
+      messages: [
+        "300 streak! Yeh toh mazaak nahi hai! 🔥",
+        "Mithu aap ke saamne jhukta hai! 🦜",
+        "Aap ko Urdu ginti ghol ke pila di gayi hai! 🧪",
+        "Bemisaal, la-jawab, tareekhi! 🏆"
+      ]
+    },
+    english: {
+      titles: ["Momentum Master! 🌠", "Unstoppable! ⚡", "Triple Century! 🏏", "God-Like Focus! 🏆"],
+      messages: [
+        "Fire Growing! 300 correct! 🔥",
+        "Triple Century complete! You're writing history! 🏏",
+        "Mithu says: I've never seen such genius! 🦜",
+        "Absolutely flawless mastery of Urdu counting! ✨"
+      ]
+    }
+  },
+  500: {
+    urdu: {
+      titles: ["Immortal Streak! 🧙‍♂️", "Paanch Sau Bemisaal! 👑", "Half-Thousand King! 🏆", "Mithu's Idol! 🦜"],
+      messages: [
+        "Bas yehi pace chahiye! 500 streak! 😎",
+        "Ginti Legend! Mithu ab aap ka chela hai. 🦜",
+        "500 correct! Aap insaan nahi lagte! 🤯",
+        "Behtareen! Mithu ne mithaas baant di! 🍬"
+      ]
+    },
+    english: {
+      titles: ["Milestone Achieved! ✨", "Immortal Streak! 🧙‍♂️", "Ginti Legend! 👑", "500 Streak Ultimate! 🏆"],
+      messages: [
+        "Ginti Legend! 500 streak reached! 👑",
+        "Half a thousand correct! Mind-blowing performance! 🤯",
+        "Mithu says: You are officially my idol! 🦜",
+        "This is a record that might never be broken! 🌟"
+      ]
+    }
+  },
+  750: {
+    urdu: {
+      titles: ["Grand Master! 🏆", "750 Ginti King! 👑", "Mithu's Ultimate Master! 🦜", "Unmatched Sitarah! 🌠"],
+      messages: [
+        "Yeh hui na baat! 750 ho gaye! 🎯",
+        "Mastery Rising! Mithu ab khushi se ro raha hai. 🦜",
+        "Aap ne Urdu counting ko fatah kar liya! 🚩",
+        "Aap ka dimaag super-computer se tez hai! 💻"
+      ]
+    },
+    english: {
+      titles: ["Level of Mastery Increased! 🎉", "Grand Master! 🏆", "Mastery Rising! 💎", "Ultimate Ginti Sage! 🧙‍♂️"],
+      messages: [
+        "Mastery Rising! 750 correct answers! 💎",
+        "Grand Master status confirmed by Mithu! 🏆",
+        "You have unlocked the inner secrets of Urdu numbers! 🎓",
+        "Unbelievable! 750 streak is simply divine! ✨"
+      ]
+    }
+  },
+  1000: {
+    urdu: {
+      titles: ["Ginti Legend! 👑", "One Thousand King! 💯", "Ultimate Immortal! 🧙‍♂️", "Mithu's God of Ginti! 🦜"],
+      messages: [
+        "Shabash! Mithu khush hai. 1000 complete! 💚",
+        "New Streak Record! One thousand in a row! 🌟",
+        "Mithu says: You are a pure God of Counting! 🦜",
+        "Tareekh bana di aap ne! 1000 streak! 🏆"
+      ]
+    },
+    english: {
+      titles: ["Ginti Legend! 👑", "Streak Secured! 🏆", "New Streak Record! 🌟", "God of Ginti! 💯"],
+      messages: [
+        "Unreal! You just completed a 1000 streak! 🏆",
+        "Mithu bowed down. You are the ultimate God of Ginti! 🦜",
+        "1000 correct in a row! Simply historic! 👑",
+        "You have absolute, flawless, supreme mastery! 🌟"
+      ]
+    }
+  }
+};
+
+const getMilestoneCelebration = (
+  milestone: number, 
+  isUrduScript: boolean,
+  lastTitle: string,
+  lastMessage: string
+): { title: string; message: string } => {
+  const milestoneData = MILESTONE_VARIATIONS[milestone];
+  if (!milestoneData) {
+    return {
+      title: isUrduScript ? "Kamaal! 🌟" : "Milestone Achieved! 🎉",
+      message: isUrduScript ? "Aise hi barhte jao! ✨" : "Keep up this amazing streak! 🚀"
+    };
+  }
+
+  const dataset = isUrduScript ? milestoneData.urdu : milestoneData.english;
+  
+  let availableTitles = dataset.titles.filter(t => t !== lastTitle);
+  if (availableTitles.length === 0) availableTitles = dataset.titles;
+  const title = availableTitles[Math.floor(Math.random() * availableTitles.length)];
+
+  let availableMessages = dataset.messages.filter(m => m !== lastMessage);
+  if (availableMessages.length === 0) availableMessages = dataset.messages;
+  const message = availableMessages[Math.floor(Math.random() * availableMessages.length)];
+
+  return { title, message };
 };
 
 const getMithuCorrectFeedback = (
@@ -1059,7 +1469,10 @@ export default function App() {
       arenaStarted: false,
       arenaCompleted: false,
       hasCenturyCelebrated: false,
+      lastCelebratedMilestone: 0,
       hasEncounteredZero: false,
+      completedArenaFields: [],
+      archivedArenaFields: [],
     };
 
     try {
@@ -1091,7 +1504,10 @@ export default function App() {
           arenaStarted: parsed.arenaStarted ?? false,
           arenaCompleted: parsed.arenaCompleted ?? false,
           hasCenturyCelebrated: parsed.hasCenturyCelebrated ?? false,
+          lastCelebratedMilestone: parsed.lastCelebratedMilestone ?? 0,
           hasEncounteredZero: parsed.hasEncounteredZero ?? false,
+          completedArenaFields: parsed.completedArenaFields ?? [],
+          archivedArenaFields: parsed.archivedArenaFields ?? [],
         };
         const checkedState = checkAndResetStreakOnStartup(restored);
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(checkedState));
@@ -1144,6 +1560,7 @@ export default function App() {
   const [selectedJourneyUnitId, setSelectedJourneyUnitId] = useState<string | null>(null);
   const [activeStageIndex, setActiveStageIndex] = useState<number | null>(null);
   const [nextStageToFocus, setNextStageToFocus] = useState<number | null>(null);
+  const [nextArenaStageToFocus, setNextArenaStageToFocus] = useState<number | null>(null);
   const [journeyStage1Finished, setJourneyStage1Finished] = useState<boolean>(false);
   const [arenaStage1Finished, setArenaStage1Finished] = useState<boolean>(false);
   const journeyStage1ScrollRef = useRef<HTMLDivElement | null>(null);
@@ -1267,22 +1684,7 @@ export default function App() {
     localStorage.removeItem("ginti_recent_searches");
   };
 
-  // Easter Egg "67" Wobble & Custom Reaction System
-  const [lastWobbledKey, setLastWobbledKey] = useState<string>("");
-  const [isWobbling, setIsWobbling] = useState<boolean>(false);
-  const [mithuEasterEggBubble, setMithuEasterEggBubble] = useState<string | null>(null);
 
-  const MITHU_EASTER_EGG_LINES = [
-    "🦜 Six Seven... 😭",
-    "🦜 Six Seven?! 💀",
-    "🦜 sigh... Six Seven.",
-    "🦜 No way... Six Seven.",
-    "🦜 Yup... Six Seven."
-  ];
-
-  const playWobbleSound = () => {
-    playSoundSynth("easterEgg");
-  };
 
   useEffect(() => {
     if (!searchQuery || !searchQuery.trim()) return;
@@ -1313,114 +1715,7 @@ export default function App() {
   const [arcadeState, setArcadeState] = useState<ArcadeState | null>(null);
   const arcadeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    let activeCardKey = "";
-    let activeCardDigit: number | null = null;
 
-    if (recoveryState && !recoveryState.isDone) {
-      const currentQ = recoveryState.questions[recoveryState.currentIndex];
-      if (currentQ) {
-        activeCardDigit = currentQ.entry.digit;
-        activeCardKey = `recovery-${recoveryState.currentIndex}-${activeCardDigit}`;
-      }
-    } else if (activeScreen === "practice" && quizState && !quizState.isDone) {
-      const currentQ = quizState.questions[quizState.currentIndex];
-      if (currentQ) {
-        activeCardDigit = currentQ.entry.digit;
-        activeCardKey = `practice-${quizState.currentIndex}-${activeCardDigit}`;
-      }
-    } else if (activeScreen === "arcade" && arcadeState && !arcadeState.isDone) {
-      const currentQ = arcadeState.activeQuestion;
-      if (currentQ) {
-        activeCardDigit = currentQ.entry.digit;
-        activeCardKey = `arcade-${arcadeState.score}-${activeCardDigit}`;
-      }
-    } else if (activeScreen === "unit-journey") {
-      const sQuizQ = stageQuizQuestions[stageQuizIdx];
-      const sListQ = stageListQuestions[stageListIdx];
-      if (sQuizQ) {
-        activeCardDigit = sQuizQ.entry.digit;
-        activeCardKey = `stagequiz-${stageQuizIdx}-${activeCardDigit}`;
-      } else if (sListQ) {
-        activeCardDigit = sListQ.entry.digit;
-        activeCardKey = `stagelist-${stageListIdx}-${activeCardDigit}`;
-      } else if (stageArcadeActiveQ) {
-        activeCardDigit = stageArcadeActiveQ.entry.digit;
-        activeCardKey = `stagearcade-${stageArcadeActiveQ.entry.digit}`;
-      }
-    } else if (activeScreen === "training-arena") {
-      if (arenaActiveStage === 2) {
-        const q = arenaQuizQuestions[arenaQuizIdx];
-        if (q) {
-          activeCardDigit = q.entry.digit;
-          activeCardKey = `arenaquiz-${arenaQuizIdx}-${activeCardDigit}`;
-        }
-      } else if (arenaActiveStage === 3) {
-        const q = arenaListQuestions[arenaListIdx];
-        if (q) {
-          activeCardDigit = q.entry.digit;
-          activeCardKey = `arenalist-${arenaListIdx}-${activeCardDigit}`;
-        }
-      } else if (arenaActiveStage === 4 && arenaArcadeActiveQ) {
-        activeCardDigit = arenaArcadeActiveQ.entry.digit;
-        activeCardKey = `arenaarcade-${activeCardDigit}`;
-      } else if (arenaActiveStage === 5) {
-        const q = arenaQuizQuestions[arenaQuizIdx];
-        if (q) {
-          activeCardDigit = q.entry.digit;
-          activeCardKey = `arenaultimate-${arenaQuizIdx}-${activeCardDigit}`;
-        }
-      }
-    }
-
-    if (mithuExplanationDigit !== null) {
-      activeCardDigit = mithuExplanationDigit;
-      activeCardKey = `explanation-${mithuExplanationDigit}`;
-    } else if (activeScreen === "dashboard" && selectedSearchEntry) {
-      activeCardDigit = selectedSearchEntry.digit;
-      activeCardKey = `search-${selectedSearchEntry.digit}`;
-    }
-
-    if (activeCardDigit === 67 && activeCardKey) {
-      if (activeCardKey !== lastWobbledKey) {
-        setLastWobbledKey(activeCardKey);
-        setIsWobbling(true);
-        
-        // Play subtle custom wobble sound
-        playWobbleSound();
-
-        // Delay Mithu reaction line until the wobble finishes (after 1800ms)
-        const delayMithuTimer = setTimeout(() => {
-          const randomLine = MITHU_EASTER_EGG_LINES[Math.floor(Math.random() * MITHU_EASTER_EGG_LINES.length)];
-          setMithuEasterEggBubble(randomLine);
-
-          // Hide bubble after 4.5 seconds
-          const hideTimer = setTimeout(() => {
-            setMithuEasterEggBubble(null);
-          }, 4500);
-
-          return () => clearTimeout(hideTimer);
-        }, 1800);
-
-        return () => clearTimeout(delayMithuTimer);
-      }
-    }
-  }, [
-    activeScreen,
-    recoveryState,
-    quizState,
-    arcadeState,
-    stageQuizIdx,
-    stageListIdx,
-    stageArcadeActiveQ,
-    arenaActiveStage,
-    arenaQuizIdx,
-    arenaListIdx,
-    arenaArcadeActiveQ,
-    mithuExplanationDigit,
-    selectedSearchEntry,
-    lastWobbledKey
-  ]);
 
   // Speech and Audio state
   const [speechActive, setSpeechActive] = useState<boolean>(false);
@@ -1438,6 +1733,7 @@ export default function App() {
   
   // Unit Completion states
   const [completedUnitPopup, setCompletedUnitPopup] = useState<string | null>(null);
+  const [completedArenaFieldPopup, setCompletedArenaFieldPopup] = useState<{ min: number; max: number } | null>(null);
   const [nextUnitToFocus, setNextUnitToFocus] = useState<string | null>(null);
   const [highlightedUnitId, setHighlightedUnitId] = useState<string | null>(null);
   
@@ -1450,6 +1746,9 @@ export default function App() {
       recentMithuMessagesRef.current.shift();
     }
   };
+
+  const lastCelebratedTitleRef = useRef<string>("");
+  const lastCelebratedMsgRef = useRef<string>("");
 
   // Synchronized state is restored synchronously during initialization to eliminate UI and theme flashing.
 
@@ -1534,61 +1833,39 @@ export default function App() {
     setAppState((prev) => {
       const nextStreak = (prev.masteryStreak ?? 0) + 1;
       
-      // Check milestones: 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000
+      // Determine the highest milestone reached by nextStreak
+      const milestones = [10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 500, 750, 1000];
+      let currentMilestone = 0;
+      for (const m of milestones) {
+        if (nextStreak >= m) {
+          currentMilestone = m;
+        } else {
+          break;
+        }
+      }
+
+      const prevCelebrated = prev.lastCelebratedMilestone ?? 0;
       let milestoneTitle = "";
       let milestoneMsg = "";
+      let newCelebratedMilestone = prevCelebrated;
 
-      const isUrduScriptOn = prev.showScript;
+      if (currentMilestone > prevCelebrated) {
+        newCelebratedMilestone = currentMilestone;
+        const isUrduScriptOn = prev.showScript;
 
-      if (nextStreak === 10) {
-        milestoneTitle = isUrduScriptOn ? "Super Start! 🚀" : "Milestone Unlocked! 🏅";
-        milestoneMsg = isUrduScriptOn ? "Bas yehi pace chahiye! 😎" : "Momentum Rising! ⚡";
-      } else if (nextStreak === 20) {
-        milestoneTitle = isUrduScriptOn ? "Awesome Progress! 🌟" : "Streak Milestone! 🔥";
-        milestoneMsg = isUrduScriptOn ? "Haan ji! Aise hi! ✨" : "Streak Secured! 🏆";
-      } else if (nextStreak === 30) {
-        milestoneTitle = isUrduScriptOn ? "Sizzling Streak! 🔥" : "Momentum Master! 🌠";
-        milestoneMsg = isUrduScriptOn ? "Acha... ab baat ban rahi hai. 🔥" : "Fire Growing! 🔥";
-      } else if (nextStreak === 50) {
-        milestoneTitle = isUrduScriptOn ? "Half Century! 🏏" : "Milestone Achieved! ✨";
-        milestoneMsg = isUrduScriptOn ? "Wah! Ab maza aa raha hai. 🦜" : "Momentum Locked In! ⭐";
-      } else if (nextStreak === 75) {
-        milestoneTitle = isUrduScriptOn ? "Master Class! 🎓" : "Mastery Rising! 💎";
-        milestoneMsg = isUrduScriptOn ? "Ab lag rahe ho player. 😏" : "Flame Intensified! 🔥";
-      } else if (nextStreak === 100) {
-        if (!prev.hasCenturyCelebrated) {
-          const CENTURY_LINES = [
-            "Century! 👏",
-            "Bat utha lo... Century ho gayi! 🏏",
-            "Scoreboard dekho... Century!",
-            "Ye hui na batting! 🏏",
-            "Not out... Century complete! 😎"
-          ];
-          milestoneTitle = "Century Celebration! 💯";
-          const randomIndex = Math.floor(Math.random() * CENTURY_LINES.length);
-          milestoneMsg = CENTURY_LINES[randomIndex];
-        } else {
-          milestoneTitle = isUrduScriptOn ? "Centurion! 👑" : "New Streak Record! 🌟";
-          milestoneMsg = isUrduScriptOn ? "Aaj toh kamaal kar diya! 🌟" : "Next Milestone Awaits! 🚀";
-        }
-      } else if (nextStreak === 150) {
-        milestoneTitle = isUrduScriptOn ? "Incredible Run! 🚀" : "Milestone Unlocked! 🏅";
-        milestoneMsg = isUrduScriptOn ? "Yeh hui na baat! 🎯" : "Momentum Rising! ⚡";
-      } else if (nextStreak === 200) {
-        milestoneTitle = isUrduScriptOn ? "Double Century! 🏅" : "Streak Secured! 🏆";
-        milestoneMsg = isUrduScriptOn ? "Shabash! Mithu khush hai. 💚" : "Flame Intensified! 🔥";
-      } else if (nextStreak === 300) {
-        milestoneTitle = isUrduScriptOn ? "Unstoppable! ⚡" : "Momentum Master! 🌠";
-        milestoneMsg = isUrduScriptOn ? "Acha... ab baat ban rahi hai. 🔥" : "Fire Growing! 🔥";
-      } else if (nextStreak === 500) {
-        milestoneTitle = isUrduScriptOn ? "Immortal Streak! 🧙‍♂️" : "Milestone Achieved! ✨";
-        milestoneMsg = isUrduScriptOn ? "Bas yehi pace chahiye! 😎" : "Ginti Legend! 👑";
-      } else if (nextStreak === 750) {
-        milestoneTitle = isUrduScriptOn ? "Grand Master! 🏆" : "Level of Mastery Increased! 🎉";
-        milestoneMsg = isUrduScriptOn ? "Yeh hui na baat! 🎯" : "Mastery Rising! 💎";
-      } else if (nextStreak === 1000) {
-        milestoneTitle = isUrduScriptOn ? "Ginti Legend! 👑" : "Streak Secured! 🏆";
-        milestoneMsg = isUrduScriptOn ? "Shabash! Mithu khush hai. 💚" : "New Streak Record! 🌟";
+        const celebration = getMilestoneCelebration(
+          currentMilestone, 
+          isUrduScriptOn, 
+          lastCelebratedTitleRef.current, 
+          lastCelebratedMsgRef.current
+        );
+
+        milestoneTitle = celebration.title;
+        milestoneMsg = celebration.message;
+
+        // Save reference to prevent consecutive repetition
+        lastCelebratedTitleRef.current = milestoneTitle;
+        lastCelebratedMsgRef.current = milestoneMsg;
       }
 
       if (milestoneMsg) {
@@ -1608,6 +1885,7 @@ export default function App() {
       const updated = {
         ...prev,
         masteryStreak: nextStreak,
+        lastCelebratedMilestone: newCelebratedMilestone,
         hasCenturyCelebrated: prev.hasCenturyCelebrated || (nextStreak === 100),
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
@@ -1621,6 +1899,7 @@ export default function App() {
       const updated = {
         ...prev,
         masteryStreak: 0,
+        lastCelebratedMilestone: 0,
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       return updated;
@@ -1720,19 +1999,6 @@ export default function App() {
 
     return (
       <div className="relative inline-block">
-        <AnimatePresence>
-          {digit === 67 && mithuEasterEggBubble && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className="absolute bottom-full mb-3 right-0 bg-amber-400 border-2 border-amber-500 text-slate-950 px-3 py-1.5 rounded-2xl text-[10px] font-black whitespace-nowrap shadow-xl z-50 flex items-center gap-1.5"
-            >
-              <span>{mithuEasterEggBubble}</span>
-              <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-amber-400" />
-            </motion.div>
-          )}
-        </AnimatePresence>
         {badgeElement}
       </div>
     );
@@ -1742,7 +2008,7 @@ export default function App() {
   // NEOCLASSICAL SYNTH SOUNDS
   // =============================================================================
   const playSoundSynth = (
-    type: "correct" | "incorrect" | "click" | "levelUp" | "navigation" | "toggle" | "milestone" | "easterEgg",
+    type: "correct" | "incorrect" | "click" | "levelUp" | "navigation" | "toggle" | "milestone",
     hapticOverride?: "correct" | "incorrect" | "loseHeart" | "milestone" | "complete" | "theme" | "none"
   ) => {
     // Premium Mobile Haptic Integration
@@ -1944,38 +2210,7 @@ export default function App() {
         playBell(987.77, 0.24, 0.5);   // B5
         playBell(1318.51, 0.32, 0.7);  // E6
 
-      } else if (type === "easterEgg") {
-        // Playful detuned spring-wobble chime for Mithu 67 or other special secrets
-        const osc1 = audioCtx.createOscillator();
-        const osc2 = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        
-        osc1.type = "triangle";
-        osc2.type = "sine";
-        
-        osc1.frequency.setValueAtTime(220, now);
-        osc1.frequency.linearRampToValueAtTime(330, now + 0.15);
-        osc1.frequency.linearRampToValueAtTime(200, now + 0.3);
-        osc1.frequency.linearRampToValueAtTime(260, now + 0.45);
-        osc1.frequency.linearRampToValueAtTime(220, now + 0.6);
-        
-        osc2.frequency.setValueAtTime(225, now);
-        osc2.frequency.linearRampToValueAtTime(335, now + 0.15);
-        osc2.frequency.linearRampToValueAtTime(205, now + 0.3);
-        osc2.frequency.linearRampToValueAtTime(265, now + 0.45);
-        osc2.frequency.linearRampToValueAtTime(225, now + 0.6);
-        
-        gainNode.gain.setValueAtTime(0.04, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
-        
-        osc1.connect(gainNode);
-        osc2.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        
-        osc1.start(now);
-        osc2.start(now);
-        osc1.stop(now + 0.7);
-        osc2.stop(now + 0.7);
+
 
       } else {
         // Standard high-fidelity button click (subtle high-pitch pitch decay)
@@ -2679,6 +2914,7 @@ export default function App() {
     });
     if (leveledUp) {
       playSoundSynth("levelUp");
+      setNextArenaStageToFocus(completedStage + 1);
     }
     return leveledUp;
   };
@@ -2932,6 +3168,23 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [activeScreen, activeStageIndex, selectedJourneyUnitId, nextStageToFocus]);
+
+  // Automatically scroll to the next unlocked stage in the Training Arena selection map when progressing
+  useEffect(() => {
+    if (activeScreen === "training-arena" && arenaActiveStage === null && nextArenaStageToFocus !== null) {
+      const timer = setTimeout(() => {
+        const nextStageElement = document.getElementById(`arena-stage-row-${nextArenaStageToFocus}`);
+        if (nextStageElement) {
+          nextStageElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+        setNextArenaStageToFocus(null); // Clear target after scrolling
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [activeScreen, arenaActiveStage, nextArenaStageToFocus]);
 
   // Automatically scroll to and highlight the next available unit card on returning to dashboard
   useEffect(() => {
@@ -3935,6 +4188,8 @@ export default function App() {
       arenaCorrectMap: {},
       arenaStarted: false,
       arenaCompleted: false,
+      completedArenaFields: [],
+      archivedArenaFields: [],
     };
     saveState(resetState);
     setOnboardingActive(true);
@@ -4002,18 +4257,6 @@ export default function App() {
   return (
     <motion.div 
       className="min-h-screen relative flex flex-col justify-between"
-      style={{ transformOrigin: "center center" }}
-      animate={isWobbling ? {
-        rotate: [0, 2.0, -1.4, 0.9, -0.5, 0.2, 0],
-        y: [0, 3, -2, 1.2, -0.6, 0.3, 0],
-      } : { rotate: 0, y: 0 }}
-      transition={{
-        duration: 1.8,
-        ease: "easeInOut",
-      }}
-      onAnimationComplete={() => {
-        setIsWobbling(false);
-      }}
     >
       
       {/* Visual Header System Notifications Toast */}
@@ -4523,6 +4766,134 @@ export default function App() {
             </div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Training Arena Mastered Completion Popup Modal */}
+      <AnimatePresence>
+        {completedArenaFieldPopup && (
+          <div id="arena-complete-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="relative w-full max-w-sm sm:max-w-[440px] bg-gradient-to-b from-amber-50/90 via-amber-50/20 to-white dark:from-[#3a2c0f] dark:via-[#1f1707] dark:to-[#0f0b03] border-[3px] border-amber-200 dark:border-[#523d14] border-b-[8px] border-b-amber-300 dark:border-b-[#1c1505] rounded-[2.25rem] p-4 sm:p-5 shadow-2xl overflow-hidden text-slate-800 dark:text-slate-200 text-center"
+            >
+              {/* Premium Gradient Top-bar Accent */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
+              
+              {/* Ambient glowing radial light background */}
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 rounded-full bg-gradient-to-br from-amber-400/10 to-transparent blur-2xl pointer-events-none" />
+
+              <button
+                onClick={() => {
+                  playSoundSynth("click");
+                  setCompletedArenaFieldPopup(null);
+                }}
+                className="absolute top-3 right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex flex-col items-center text-center gap-2.5 sm:gap-3">
+                {/* 3D Animated Graduation Badge (Warm Gold) - More compact */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-400 text-emerald-955 rounded-full flex items-center justify-center text-xl sm:text-2xl border-2 border-amber-200 border-b-4 border-b-amber-700 shadow-md transform rotate-3 select-none animate-bounce">
+                  🎓
+                </div>
+
+                <div>
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
+                    Arena Training Cleared
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
+                    🎉 Training Complete!
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-350 font-semibold leading-relaxed mt-0.5">
+                    You've mastered this Training Arena field.
+                  </p>
+                </div>
+
+                {/* Range Info Badge */}
+                <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 text-amber-800 dark:text-amber-300 font-extrabold text-[10px] sm:text-xs px-3.5 py-1 rounded-full shadow-xs">
+                  Range: {completedArenaFieldPopup.min} – {completedArenaFieldPopup.max} (Total Range Mastery)
+                </div>
+
+                {/* Character feedback box (Warm Amber Accents reverted to match Unit Completion's Premium Emerald) */}
+                <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-xl p-2.5 sm:p-3 flex gap-3 items-center text-left w-full">
+                  <MithuMascot mood="sparkly" />
+                  <div className="flex-1">
+                    <p className="text-[11px] sm:text-[12px] text-slate-700 dark:text-slate-300 font-extrabold leading-tight">
+                      "Mashallah! Aap ne kamaal kar diya!"
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1 leading-normal font-semibold">
+                      You completed all 5 custom stages for Urdu counting. Select an option below to define your next goal.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Two Clear Choices (Styled in beautiful premium 3D action buttons with rich tactile depth) */}
+                <div className="flex flex-col gap-2.5 w-full mt-1.5">
+                  {/* Continue Practicing */}
+                  <button
+                    onClick={() => {
+                      playSoundSynth("click");
+                      setCompletedArenaFieldPopup(null);
+                      showToast("Arena kept active. Revisit any stage anytime! ⚔️");
+                    }}
+                    className="w-full text-left p-3 rounded-2xl border-2 border-emerald-300 dark:border-emerald-800/80 border-b-[5px] border-b-emerald-500 dark:border-b-emerald-700 bg-emerald-50/75 dark:bg-[#122c1b]/30 hover:bg-emerald-100/90 dark:hover:bg-[#122c1b]/60 hover:border-emerald-400 dark:hover:border-emerald-700 hover:scale-[1.01] hover:shadow-md transition-all duration-100 cursor-pointer select-none active:translate-y-[2px] active:border-b-[3px]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500 dark:bg-emerald-600 text-white flex items-center justify-center shrink-0 border-2 border-emerald-400 dark:border-emerald-500 shadow-md">
+                        <Play className="w-4.5 h-4.5 fill-current text-white stroke-none" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs sm:text-sm font-black text-emerald-900 dark:text-emerald-100 leading-tight">Continue Practicing</h4>
+                        <p className="text-[10px] sm:text-[11px] text-emerald-700/80 dark:text-emerald-300/85 font-semibold leading-relaxed mt-0.5">
+                          Keep this field available so you can revisit it whenever you'd like.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Archive This Field */}
+                  <button
+                    onClick={() => {
+                      playSoundSynth("click");
+                      const fieldKey = `${completedArenaFieldPopup.min}-${completedArenaFieldPopup.max}`;
+                      saveState((prev) => {
+                        const existingArchived = prev.archivedArenaFields || [];
+                        const nextArchived = existingArchived.includes(fieldKey) ? existingArchived : [...existingArchived, fieldKey];
+                        return {
+                          ...prev,
+                          archivedArenaFields: nextArchived,
+                          arenaStarted: false,
+                          arenaCompleted: false,
+                          arenaStageProgress: 1,
+                        };
+                      });
+                      setCompletedArenaFieldPopup(null);
+                      setActiveScreen("dashboard");
+                      showToast("✅ Training field archived.");
+                    }}
+                    className="w-full text-left p-3 rounded-2xl border-2 border-amber-200 dark:border-amber-900/60 border-b-[5px] border-b-amber-400 dark:border-b-amber-700 bg-amber-50/75 dark:bg-[#251e0f]/40 hover:bg-amber-100/90 dark:hover:bg-[#251e0f]/75 hover:border-amber-300 dark:hover:border-amber-800 hover:scale-[1.01] hover:shadow-md transition-all duration-100 cursor-pointer select-none active:translate-y-[2px] active:border-b-[3px]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-amber-100/70 dark:bg-[#20170a]/80 flex items-center justify-center shrink-0 border-2 border-amber-200 dark:border-amber-900/60 shadow-sm">
+                        <GintiArchiveBoxIcon />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-100 leading-tight">Archive This Field</h4>
+                        <p className="text-[10px] sm:text-[11px] text-amber-700/80 dark:text-amber-300/85 font-semibold leading-relaxed mt-0.5">
+                          Hide this completed field from the Training Arena to keep your dashboard focused on new topics.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       {/* Mithu Learning Assistant Explanation Overlay Card */}
@@ -6150,7 +6521,7 @@ export default function App() {
                 </div>
 
                 <div className="relative z-10 w-full sm:w-auto shrink-0">
-                  {appState.arenaStarted && !appState.arenaCompleted ? (
+                  {appState.arenaStarted || appState.arenaCompleted ? (
                     <button
                       onClick={() => {
                         playSoundSynth("click");
@@ -6160,11 +6531,11 @@ export default function App() {
                       className="w-full sm:w-auto py-2.5 px-6 bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-black text-xs sm:text-sm rounded-2xl uppercase tracking-wider border-2 border-amber-300 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-[3px] cursor-pointer shadow-md transition-all duration-100 flex flex-col items-center justify-center select-none"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>Continue Arena</span>
+                        <span>{appState.arenaCompleted ? "Revisit Arena" : "Continue Arena"}</span>
                         <Play className="w-3.5 h-3.5 text-emerald-950 fill-emerald-950/20" />
                       </div>
                       <span className="text-[10px] text-emerald-950/80 font-bold tracking-tight normal-case mt-0.5">
-                        {(appState.arenaMin !== undefined ? appState.arenaMin : 30)}–{(appState.arenaMax !== undefined ? appState.arenaMax : 100)} • Stage {appState.arenaStageProgress ?? 1}
+                        {(appState.arenaMin !== undefined ? appState.arenaMin : 30)}–{(appState.arenaMax !== undefined ? appState.arenaMax : 100)} • {appState.arenaCompleted ? "Fully Mastered 🏆" : `Stage ${appState.arenaStageProgress ?? 1}`}
                       </span>
                     </button>
                   ) : (
@@ -6496,6 +6867,50 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* Archived Training Fields Section */}
+              {appState.archivedArenaFields && appState.archivedArenaFields.length > 0 && (
+                <div className="flex flex-col items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 w-full max-w-sm mx-auto">
+                  <h4 className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-slate-400 flex items-center gap-1.5 font-mono">
+                    <Archive className="w-3.5 h-3.5" />
+                    <span>Archived Training Fields</span>
+                  </h4>
+                  <div className="flex flex-wrap justify-center gap-2 mt-1">
+                    {appState.archivedArenaFields.map((fieldKey) => {
+                      const [minStr, maxStr] = fieldKey.split("-");
+                      const min = parseInt(minStr);
+                      const max = parseInt(maxStr);
+                      return (
+                        <button
+                          key={fieldKey}
+                          onClick={() => {
+                            playSoundSynth("click");
+                            saveState((prev) => {
+                              const existingArchived = prev.archivedArenaFields || [];
+                              const nextArchived = existingArchived.filter((f) => f !== fieldKey);
+                              return {
+                                ...prev,
+                                archivedArenaFields: nextArchived,
+                                arenaMin: min,
+                                arenaMax: max,
+                                arenaStarted: true,
+                                arenaCompleted: true,
+                                arenaStageProgress: 5,
+                              };
+                            });
+                            showToast(`Restored Training Arena range ${min}–${max}! ⚔️`);
+                          }}
+                          title="Click to restore this practice field"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 dark:bg-slate-900/60 dark:hover:bg-emerald-950/40 border border-slate-200 hover:border-emerald-300 dark:border-slate-800 dark:hover:border-emerald-900 rounded-xl text-[10.5px] font-black text-slate-600 hover:text-emerald-800 dark:text-slate-300 dark:hover:text-emerald-200 cursor-pointer active:scale-95 flex items-center gap-1 transition-all"
+                        >
+                          <span>{min}–{max}</span>
+                          <span className="text-[9px] opacity-70">↩️</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Reset progress options beautifully positioned at bottom scale link */}
               <div className="flex justify-center pt-1 pb-4">
@@ -8063,169 +8478,169 @@ export default function App() {
                 </div>
 
                 {/* Vertical Stage Maps or Timeline */}
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-xs uppercase font-black text-slate-400 tracking-wider font-mono">
-                    Training Stage progression
-                  </h3>
-
-                  {/* STAGE 1: EXP REINFORCEMEMT REVIEW */}
-                  <div className="bg-white border-2 border-slate-200 border-b-[6px] border-b-slate-350 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg select-none border ${
-                        appState.isDarkMode 
-                          ? "bg-amber-950/40 text-amber-300 border-amber-900/40" 
-                          : "bg-amber-100 text-amber-800 border-amber-200"
-                      }`}>
-                        1
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Stage 1: Soundboard Explore</h4>
-                        <p className="text-[11px] text-slate-500 font-semibold leading-none mt-1">Interactive range visualizer dictionary</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setArenaActiveStage(1);
-                      }}
-                      className={`py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all ${
-                        appState.isDarkMode 
-                          ? "border-2 border-emerald-800 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2" 
-                          : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                      }`}
-                    >
-                      EXPLORE
-                    </button>
+                <div className="relative flex flex-col gap-4 mt-2">
+                  {/* Visual central vertical path line matching dashboard roadmap */}
+                  <div className="absolute left-[39px] -translate-x-1/2 w-[10px] top-[39px] bottom-[39px] pointer-events-none z-0">
+                    {/* Muted outer track background */}
+                    <div className="w-full h-full ginti-roadmap-track-bg rounded-full" />
+                    {/* Emerald progress track fill */}
+                    <div
+                      className="absolute top-0 left-0 w-full ginti-roadmap-track-fill rounded-full transition-all duration-500"
+                      style={{ height: `${((stageProgress - 1) / 4) * 100}%` }}
+                    />
                   </div>
 
-                  {/* STAGE 2: TRANSLATION MCQ */}
-                  <div className="bg-white border-2 border-slate-200 border-b-[6px] border-b-slate-350 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg select-none border ${
-                        appState.isDarkMode 
-                          ? "bg-sky-950/40 text-sky-300 border-sky-900/40" 
-                          : "bg-sky-100 text-sky-800 border-sky-200"
-                      }`}>
-                        2
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Stage 2: MCQ Translation Duel</h4>
-                        <p className="text-[11px] text-slate-500 font-semibold leading-none mt-1">5 multiple-choice matching cards</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={setupArenaStage2Quiz}
-                      className="py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-black uppercase tracking-wider border-2 border-sky-500 border-b-4 border-b-sky-800 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
-                    >
-                      START
-                    </button>
-                  </div>
+                  {(() => {
+                    const stagesData = [
+                      {
+                        id: 1,
+                        title: "Stage 1: Soundboard Explore",
+                        desc: "Interactive range visualizer dictionary",
+                        buttonText: "EXPLORE",
+                        bgClass: "bg-emerald-600 hover:bg-emerald-500 border-emerald-500 border-b-emerald-800 text-white",
+                        launch: () => {
+                          playSoundSynth("click");
+                          setArenaActiveStage(1);
+                        }
+                      },
+                      {
+                        id: 2,
+                        title: "Stage 2: MCQ Translation Duel",
+                        desc: "5 multiple-choice matching cards",
+                        buttonText: "START",
+                        bgClass: "bg-sky-600 hover:bg-sky-500 border-sky-500 border-b-sky-800 text-white",
+                        launch: setupArenaStage2Quiz
+                      },
+                      {
+                        id: 3,
+                        title: "Stage 3: Ear Trainer Auditory Duel",
+                        desc: "Listen to numeral, select matching digit",
+                        buttonText: "START",
+                        bgClass: "bg-indigo-600 hover:bg-indigo-500 border-indigo-500 border-b-indigo-800 text-white",
+                        launch: () => {
+                          setArenaQuizScore(0);
+                          setupArenaStage3Listening();
+                        }
+                      },
+                      {
+                        id: 4,
+                        title: "Stage 4: Stopwatch Countdown Blitz",
+                        desc: "30 seconds speed reflex time trials",
+                        buttonText: "START",
+                        bgClass: "bg-rose-600 hover:bg-rose-500 border-rose-500 border-b-rose-800 text-white",
+                        launch: startArenaStage4Arcade
+                      },
+                      {
+                        id: 5,
+                        title: "Stage 5: Ultimate Mastery Battle",
+                        desc: "10 legendary mixed translation trials",
+                        buttonText: "START",
+                        bgClass: "bg-amber-500 hover:bg-amber-450 border-amber-400 border-b-amber-700 text-emerald-955",
+                        launch: setupArenaStage5Mastery
+                      }
+                    ];
 
-                  {/* STAGE 3: LISTENING AUDITOR */}
-                  <div className={`border-2 rounded-3xl p-4 flex items-center justify-between gap-3 transition-colors ${
-                    stageProgress >= 2 
-                      ? "bg-white border-slate-200 border-b-[6px] border-b-slate-350 shadow-xs" 
-                      : "bg-slate-50/70 border-slate-200/60 border-b-4 border-b-slate-200 opacity-65"
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg select-none border ${
-                        stageProgress >= 2 
-                          ? (appState.isDarkMode ? "bg-indigo-950/40 text-indigo-300 border-indigo-900/40" : "bg-indigo-100 text-indigo-800 border-indigo-200") 
-                          : "bg-slate-200 text-slate-400 border-slate-300"
-                      }`}>
-                        {stageProgress >= 2 ? "3" : <Lock className="w-4.5 h-4.5" />}
-                      </div>
-                      <div>
-                        <h4 className={`text-sm font-black uppercase tracking-tight ${stageProgress >= 2 ? "text-slate-800" : "text-slate-400"}`}>
-                          Stage 3: Ear Trainer Auditory Duel
-                        </h4>
-                        <p className="text-[11px] text-slate-500 font-semibold leading-none mt-1">Listen to numeral, select matching digit</p>
-                      </div>
-                    </div>
-                    <button
-                      disabled={stageProgress < 2}
-                      onClick={() => {
-                        setArenaQuizScore(0);
-                        setupArenaStage3Listening();
-                      }}
-                      className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border-2 transition-all ${
-                        stageProgress >= 2 
-                          ? "bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500 border-b-4 border-b-indigo-800 active:translate-y-[2px] active:border-b-2 cursor-pointer" 
-                          : "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-60"
-                      }`}
-                    >
-                      START
-                    </button>
-                  </div>
+                    return stagesData.map((stg) => {
+                      const isUnlocked = stg.id <= stageProgress;
+                      const isDone = stg.id < stageProgress;
+                      const isCurrent = stg.id === stageProgress;
 
-                  {/* STAGE 4: SPEED BLITZ ARCADE */}
-                  <div className={`border-2 rounded-3xl p-4 flex items-center justify-between gap-3 transition-colors ${
-                    stageProgress >= 3 
-                      ? "bg-white border-slate-200 border-b-[6px] border-b-slate-350 shadow-xs" 
-                      : "bg-slate-50/70 border-slate-200/60 border-b-4 border-b-slate-200 opacity-65"
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg select-none border ${
-                        stageProgress >= 3 
-                          ? (appState.isDarkMode ? "bg-rose-950/40 text-rose-300 border-rose-900/40" : "bg-rose-100 text-rose-800 border-rose-200") 
-                          : "bg-slate-200 text-slate-400 border-slate-300"
-                      }`}>
-                        {stageProgress >= 3 ? "4" : <Lock className="w-4.5 h-4.5" />}
-                      </div>
-                      <div>
-                        <h4 className={`text-sm font-black uppercase tracking-tight ${stageProgress >= 3 ? "text-slate-800" : "text-slate-400"}`}>
-                          Stage 4: Stopwatch Countdown Blitz
-                        </h4>
-                        <p className="text-[11px] text-slate-500 font-semibold leading-none mt-1">30 seconds speed reflex time trials</p>
-                      </div>
-                    </div>
-                    <button
-                      disabled={stageProgress < 3}
-                      onClick={startArenaStage4Arcade}
-                      className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border-2 transition-all ${
-                        stageProgress >= 3 
-                          ? "bg-rose-600 hover:bg-rose-500 text-white border-rose-500 border-b-4 border-b-rose-800 active:translate-y-[2px] active:border-b-2 cursor-pointer" 
-                          : "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-60"
-                      }`}
-                    >
-                      START
-                    </button>
-                  </div>
+                      let cardBg = "bg-slate-50/50 border-slate-200/50 opacity-60";
 
-                  {/* STAGE 5: MASTERY GRAND CHAMPIONSHIP */}
-                  <div className={`border-2 rounded-3xl p-4 flex items-center justify-between gap-3 transition-colors ${
-                    stageProgress >= 4 
-                      ? "bg-white border-slate-200 border-b-[6px] border-b-slate-350 shadow-xs" 
-                      : "bg-slate-50/70 border-slate-200/60 border-b-4 border-b-slate-200 opacity-65"
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg select-none border ${
-                        stageProgress >= 4 
-                          ? (appState.isDarkMode ? "bg-amber-950/40 text-amber-300 border-amber-900/40" : "bg-amber-100 text-amber-800 border-amber-200") 
-                          : "bg-slate-200 text-slate-400 border-slate-300"
-                      }`}>
-                        {stageProgress >= 4 ? "5" : <Lock className="w-4.5 h-4.5" />}
-                      </div>
-                      <div>
-                        <h4 className={`text-sm font-black uppercase tracking-tight ${stageProgress >= 4 ? "text-slate-800" : "text-slate-400"}`}>
-                          Stage 5: Ultimate Mastery Battle
-                        </h4>
-                        <p className="text-[11px] text-slate-500 font-semibold leading-none mt-1">10 legendary mixed translation trials</p>
-                      </div>
-                    </div>
-                    <button
-                      disabled={stageProgress < 4}
-                      onClick={setupArenaStage5Mastery}
-                      className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border-2 transition-all ${
-                        stageProgress >= 4 
-                          ? "bg-amber-500 hover:bg-amber-450 text-emerald-950 border-amber-400 border-b-4 border-b-amber-700 active:translate-y-[2px] active:border-b-2 cursor-pointer" 
-                          : "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-60"
-                      }`}
-                    >
-                      START
-                    </button>
-                  </div>
+                      if (isDone) {
+                        cardBg = "bg-white hover:bg-slate-50/50 border-slate-200 hover:border-slate-350 cursor-pointer shadow-xs transition-all";
+                      } else if (isCurrent) {
+                        cardBg = "bg-gradient-to-r from-amber-50/50 to-white hover:from-amber-50 hover:to-slate-50/50 border-amber-300 hover:border-amber-400 cursor-pointer shadow-sm active:scale-[0.98] transition-all";
+                      }
 
+                      return (
+                        <div key={stg.id} className="flex gap-4 items-center relative z-10 animate-fade-in" id={`arena-stage-row-${stg.id}`}>
+                          {/* Circular Milestone Node with 3D tactile design */}
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.94 }}
+                            onClick={() => {
+                              if (!isUnlocked) {
+                                playSoundSynth("incorrect");
+                                showToast(`Stage ${stg.id} is locked! Complete previous stages first. 🔒`);
+                                return;
+                              }
+                              stg.launch();
+                            }}
+                            className={`w-[78px] h-[78px] p-0 m-0 rounded-full flex flex-col items-center justify-center font-black text-center shrink-0 select-none transition relative z-10 cursor-pointer ${
+                              isDone
+                                ? "ginti-node-finished"
+                                : isCurrent
+                                  ? "ginti-node-current ginti-pulse-active"
+                                  : "ginti-node-locked cursor-not-allowed"
+                            }`}
+                          >
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-80 leading-none text-center w-full block pl-[0.05em] m-0">Stage</span>
+                            <span className="text-2xl font-black mt-0.5 text-center w-full block tabular-nums m-0">{stg.id}</span>
+
+                            {/* Status Overlay Badge on bottom-right of the circle node */}
+                            {isCurrent ? (
+                              <span 
+                                className="absolute -bottom-1 -right-1 w-[26px] h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
+                                style={{
+                                  boxShadow: "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)"
+                                }}
+                              >
+                                <Zap className="w-3.5 h-3.5 text-[#451a03] fill-[#451a03]" />
+                              </span>
+                            ) : (
+                              <span className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
+                                isDone
+                                  ? "bg-emerald-700 text-amber-300"
+                                  : "bg-slate-300 text-slate-500 ginti-status-badge-locked"
+                              }`}>
+                                {isDone ? "✓" : "🔒"}
+                              </span>
+                            )}
+                          </motion.button>
+
+                          {/* Description Card */}
+                          <div
+                            className={`flex-1 rounded-2xl border p-4 flex gap-3.5 items-center select-none ${cardBg}`}
+                            onClick={() => {
+                              if (!isUnlocked) {
+                                playSoundSynth("incorrect");
+                                showToast(`Stage ${stg.id} is locked! Complete previous stages first. 🔒`);
+                                return;
+                              }
+                              stg.launch();
+                            }}
+                          >
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center self-start shrink-0">
+                              {stg.id === 1 && <BookOpen className="w-5 h-5 text-emerald-600" />}
+                              {stg.id === 2 && <Zap className="w-5 h-5 text-sky-500" />}
+                              {stg.id === 3 && <PremiumSpeakerIcon className="w-5 h-5 text-rose-500" />}
+                              {stg.id === 4 && <Sparkles className="w-5 h-5 text-indigo-500" />}
+                              {stg.id === 5 && <Star className="w-5 h-5 text-amber-600" />}
+                            </div>
+                            <div>
+                              <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                                <span>{stg.title}</span>
+                                {isDone && (
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 dark:border dark:border-emerald-800/50 px-1.5 py-0.5 rounded-md font-bold leading-none">
+                                    Done
+                                  </span>
+                                )}
+                                {isCurrent && (
+                                  <span className="text-[9px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md font-black animate-pulse leading-none">
+                                    Play
+                                  </span>
+                                )}
+                              </h3>
+                              <p className="text-[10px] text-slate-500 leading-normal mt-1">
+                                {stg.desc}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
 
                 <div className="flex flex-col items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-emerald-950/20">
@@ -8491,7 +8906,7 @@ export default function App() {
                 id="screen-arena-stage-2"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800 font-sans"
               >
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
@@ -8501,6 +8916,7 @@ export default function App() {
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
+                    <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Quit Challenge</span>
                   </button>
                   <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
@@ -8692,7 +9108,7 @@ export default function App() {
                 id="screen-arena-stage-3"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
@@ -8702,6 +9118,7 @@ export default function App() {
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
+                    <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Quit Challenge</span>
                   </button>
                   <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
@@ -8905,7 +9322,7 @@ export default function App() {
                 id="screen-arena-stage-4"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
@@ -8915,9 +9332,10 @@ export default function App() {
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
+                    <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Quit Match</span>
                   </button>
-                  <div className="flex items-center gap-3 justify-center">
+                  <div className="flex items-center gap-3">
                     <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
                       ⏱️ <span className="font-mono text-rose-600 font-extrabold">{arenaArcadeTime}s</span>
                     </span>
@@ -9037,11 +9455,33 @@ export default function App() {
                     {pass ? (
                       <button
                         onClick={() => {
+                          const min = appState.arenaMin ?? 30;
+                          const max = appState.arenaMax ?? 100;
+                          const rangeKey = `${min}-${max}`;
+                          const isFirstTime = !appState.completedArenaFields?.includes(rangeKey);
+                          
+                          // Record completed field
+                          saveState((prev) => {
+                            const prevCompleted = prev.completedArenaFields || [];
+                            const nextCompleted = prevCompleted.includes(rangeKey) ? prevCompleted : [...prevCompleted, rangeKey];
+                            return {
+                              ...prev,
+                              completedArenaFields: nextCompleted,
+                            };
+                          });
+
                           const leveledUp = saveArenaStageProgress(5);
                           if (!leveledUp) {
                             playSoundSynth("click");
                           }
+                          
                           setArenaActiveStage(null);
+
+                          if (isFirstTime) {
+                            setCompletedArenaFieldPopup({ min, max });
+                          } else {
+                            showToast(`Mastery confirmed! You've previously completed the range ${min}–${max}! 🎉`);
+                          }
                         }}
                         className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all ${
                           appState.isDarkMode 
@@ -9088,7 +9528,7 @@ export default function App() {
                 id="screen-arena-stage-5"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
                   <button
                     onClick={() => {
                       playSoundSynth("click");
@@ -9098,6 +9538,7 @@ export default function App() {
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
+                    <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Quit Challenge</span>
                   </button>
                   <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">

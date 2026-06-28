@@ -786,21 +786,21 @@ export const UNITS: Unit[] = [
     id: "unit3",
     title: "Unit 3 — Numbers 51 to 75",
     description: "Intermediate challenges. Vital for intermediate street negotiations, weights, and measures.",
-    emoji: "🐦",
+    emoji: "🐥",
     numbersRange: "51–75"
   },
   {
     id: "unit4",
     title: "Unit 4 — Numbers 76 to 100",
     description: "Mastery scale. Includes tricky phonetics like 'Ninanwe' (99) and 'Satasi' (87).",
-    emoji: "🦜",
+    emoji: "🐦",
     numbersRange: "76–100"
   },
   {
     id: "unit5",
     title: "Unit 5 — Practical Market Numbers",
     description: "Real-world bulk indices. Hundreds, thousands, and market slang like 'Derh Sau' (150).",
-    emoji: "🦚",
+    emoji: "🦜",
     numbersRange: "100–5000"
   }
 ];
