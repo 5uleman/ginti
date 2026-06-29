@@ -4770,14 +4770,14 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.20 }}
+              transition={{ duration: 0.12 }}
               className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.16 } }}
-                transition={{ duration: 0.20, ease: "easeOut" }}
+                exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.10 } }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className="relative w-full max-w-[365px] bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2rem] p-5 shadow-2xl overflow-hidden flex flex-col gap-4"
               >
                 {/* Premium Gradient Top-bar Accent */}
@@ -4800,9 +4800,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("navigation");
-                      setTimeout(() => {
-                        setShowStreakPopup(false);
-                      }, 180);
+                      setShowStreakPopup(false);
                     }}
                     className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10 -mr-1 -mt-1"
                     aria-label="Close"
@@ -4881,9 +4879,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     playSoundSynth("navigation");
-                    setTimeout(() => {
-                      setShowStreakPopup(false);
-                    }, 180);
+                    setShowStreakPopup(false);
                   }}
                   className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-xl py-2.5 px-4 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
                     appState.isDarkMode 
@@ -4968,12 +4964,19 @@ export default function App() {
           const nextUnitAvailable = currentIndex !== -1 && currentIndex + 1 < UNITS.length ? UNITS[currentIndex + 1] : null;
 
           return (
-            <div id="unit-complete-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              id="unit-complete-popup-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+            >
               <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 15 }}
-                transition={{ type: "spring", duration: 0.4 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
                 className="relative w-full max-w-sm sm:max-w-lg bg-gradient-to-b from-amber-50/90 via-amber-50/20 to-white dark:from-[#3a2c0f] dark:via-[#1f1707] dark:to-[#0f0b03] border-[3px] border-amber-200 dark:border-[#523d14] border-b-[8px] border-b-amber-300 dark:border-b-[#1c1505] rounded-[2.5rem] p-4.5 sm:p-5.5 shadow-2xl overflow-hidden text-center text-slate-800 dark:text-slate-200"
               >
                 {/* Premium Gradient Top-bar Accent */}
@@ -5037,16 +5040,14 @@ export default function App() {
                     <button
                       onClick={() => {
                         playSoundSynth("navigation");
-                        setTimeout(() => {
-                          setCompletedUnitPopup(null);
-                          setActiveScreen("dashboard");
-                          if (nextUnitAvailable) {
-                            setNextUnitToFocus(nextUnitAvailable.id);
-                          } else {
-                            // Mastered everything! Scroll to Unit 5
-                            setNextUnitToFocus("unit5");
-                          }
-                        }, 180);
+                        setCompletedUnitPopup(null);
+                        setActiveScreen("dashboard");
+                        if (nextUnitAvailable) {
+                          setNextUnitToFocus(nextUnitAvailable.id);
+                        } else {
+                          // Mastered everything! Scroll to Unit 5
+                          setNextUnitToFocus("unit5");
+                        }
                       }}
                       className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-emerald-950 border-2 border-amber-400 border-b-[6px] border-b-amber-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-2.5 sm:py-3 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none uppercase"
                     >
@@ -5055,7 +5056,7 @@ export default function App() {
                   </div>
                 </div>
               </motion.div>
-            </div>
+            </motion.div>
           );
         })()}
       </AnimatePresence>
@@ -5070,12 +5071,19 @@ export default function App() {
           const hasFailedTwice = attemptCount >= 2;
 
           return (
-            <div id="placement-challenge-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              id="placement-challenge-popup-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+            >
               <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 15 }}
-                transition={{ type: "spring", duration: 0.4 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
                 className="relative w-full max-w-sm sm:max-w-md bg-gradient-to-b from-emerald-50/95 via-emerald-50/15 to-white dark:from-[#0c2e1b] dark:via-[#051c10] dark:to-[#03120a] border-[3px] border-emerald-300/85 dark:border-emerald-900/80 border-b-[8px] border-b-emerald-400 dark:border-b-[#021b0d] rounded-[2.5rem] p-5 sm:p-6 shadow-2xl overflow-hidden text-center text-slate-800 dark:text-slate-200"
               >
                 {/* Premium Gradient Top-bar Accent */}
@@ -5194,7 +5202,7 @@ export default function App() {
                   </div>
                 </div>
               </motion.div>
-            </div>
+            </motion.div>
           );
         })()}
       </AnimatePresence>
@@ -5202,12 +5210,19 @@ export default function App() {
       {/* Training Arena Mastered Completion Popup Modal */}
       <AnimatePresence>
         {completedArenaFieldPopup && (
-          <div id="arena-complete-popup-overlay" className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <motion.div
+            id="arena-complete-popup-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 15 }}
-              transition={{ type: "spring", duration: 0.4 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="relative w-full max-w-sm sm:max-w-[440px] bg-gradient-to-b from-amber-50/90 via-amber-50/20 to-white dark:from-[#3a2c0f] dark:via-[#1f1707] dark:to-[#0f0b03] border-[3px] border-amber-200 dark:border-[#523d14] border-b-[8px] border-b-amber-300 dark:border-b-[#1c1505] rounded-[2.25rem] p-4 sm:p-5 shadow-2xl overflow-hidden text-slate-800 dark:text-slate-200 text-center"
             >
               {/* Premium Gradient Top-bar Accent */}
@@ -5323,7 +5338,7 @@ export default function App() {
                 </div>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -6220,7 +6235,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col flex-1 gap-4 min-h-[78vh] sm:min-h-[82vh]"
               >
                 {/* Top Section: Header & Progress */}
@@ -6495,7 +6510,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className="max-w-xl md:max-w-2xl mx-auto w-full flex flex-col gap-4.5 sm:gap-6"
               >
               
@@ -7436,7 +7451,7 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.98, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -15 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
             className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col gap-2.5 sm:gap-3.5"
           >
             
@@ -7704,7 +7719,7 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.98, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -15 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
             className={`max-w-xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-3.5 sm:gap-4.5 text-center relative ${arcadeState.isDone ? "min-h-[70vh] sm:min-h-[75vh] justify-center" : ""}`}
           >
             
@@ -7751,7 +7766,7 @@ export default function App() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
                         className="absolute top-0 left-0 right-0 z-20 pointer-events-none"
                       >
                         <div className="animate-pulse text-rose-600 dark:text-rose-400 font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-widest bg-rose-50/95 dark:bg-rose-950/95 border-b border-rose-200/60 dark:border-rose-900/40 py-1.5 px-3 text-center shadow-xs">
@@ -7978,7 +7993,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-unit-journey"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-5"
               >
@@ -8203,7 +8218,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className="max-w-md mx-auto w-full"
               >
                 <div id="screen-journey-stage-1" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4">
@@ -8215,7 +8230,7 @@ export default function App() {
                         setActiveStageIndex(null);
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
-                      className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                      className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>Back to Stages</span>
@@ -8378,7 +8393,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className={`max-w-md mx-auto w-full ${hasFinishedQuiz ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
               >
                 {hasFinishedQuiz ? (
@@ -8547,7 +8562,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className={`max-w-md mx-auto w-full ${hasFinishedListening ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
               >
                 {hasFinishedListening ? (
@@ -8729,7 +8744,7 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.98, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
                   className="max-w-md mx-auto w-full min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center"
                 >
                   <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
@@ -8809,7 +8824,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 className="max-w-md mx-auto w-full"
               >
                 <div id="screen-journey-stage-4" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
@@ -8936,9 +8951,12 @@ export default function App() {
 
             return (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-md mx-auto p-4 flex flex-col gap-4 animate-fade-in"
+                key="placement-challenge-summary"
+                initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
+                className="w-full max-w-md mx-auto p-4 flex flex-col gap-4"
               >
                 <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-[2.25rem] p-6 shadow-xl text-center flex flex-col items-center gap-4">
                   <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950 rounded-full flex items-center justify-center border-2 border-amber-300 shadow-md">
@@ -9069,7 +9087,15 @@ export default function App() {
           const unitPercent = Math.round((placementState.currentIndex / 15) * 100);
 
           return (
-            <div id="screen-placement-challenge" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
+            <motion.div
+              id="screen-placement-challenge"
+              key="placement-challenge-questions"
+              initial={{ opacity: 0, scale: 0.98, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -15 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              className="max-w-md mx-auto w-full p-4 flex flex-col gap-4"
+            >
               {/* Header block */}
               <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="placement-header">
                 <button
@@ -9183,7 +9209,7 @@ export default function App() {
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           );
         })()}
 
@@ -9206,7 +9232,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-training-arena"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-5 text-slate-800"
               >
@@ -9445,7 +9471,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-arena-stage-1"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
@@ -9453,9 +9479,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("navigation");
-                      setTimeout(() => {
-                        setArenaActiveStage(null);
-                      }, 180);
+                      setArenaActiveStage(null);
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center justify-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
@@ -9609,7 +9633,7 @@ export default function App() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
                   id="screen-arena-stage-2-end"
                   className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
@@ -9653,9 +9677,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         playSoundSynth("click");
-                        setTimeout(() => {
-                          setArenaActiveStage(null);
-                        }, 180);
+                        setArenaActiveStage(null);
                       }}
                       className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
@@ -9675,7 +9697,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-arena-stage-2"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800 font-sans"
               >
@@ -9683,9 +9705,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setTimeout(() => {
-                        setArenaActiveStage(null);
-                      }, 180);
+                      setArenaActiveStage(null);
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
@@ -9804,7 +9824,7 @@ export default function App() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
                   id="screen-arena-stage-3-end"
                   className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
@@ -9820,7 +9840,7 @@ export default function App() {
                     {pass ? "Auditory Training Duel Complete!" : "Need 3 Hits to Clear!"}
                   </h3>
                   
-                  <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
+                  <p className="text-xs text-slate-555 max-w-xs leading-relaxed font-semibold">
                     {pass 
                       ? `Fantastic matching reflexes! You correctly translated ${arenaQuizScore} spoken Urdu numerals and scored +25 XP!`
                       : `You finished with ${arenaQuizScore}/5 matches. Practice some more then retry the Listening Duel.`}
@@ -9855,9 +9875,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         playSoundSynth("click");
-                        setTimeout(() => {
-                          setArenaActiveStage(null);
-                        }, 180);
+                        setArenaActiveStage(null);
                       }}
                       className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
@@ -9877,7 +9895,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-arena-stage-3"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
@@ -9885,9 +9903,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setTimeout(() => {
-                        setArenaActiveStage(null);
-                      }, 180);
+                      setArenaActiveStage(null);
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
@@ -10021,7 +10037,7 @@ export default function App() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
                   id="screen-arena-stage-4-end"
                   className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
@@ -10069,9 +10085,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         playSoundSynth("click");
-                        setTimeout(() => {
-                          setArenaActiveStage(null);
-                        }, 180);
+                        setArenaActiveStage(null);
                       }}
                       className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
@@ -10091,7 +10105,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-arena-stage-4"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
@@ -10099,9 +10113,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setTimeout(() => {
-                        setArenaArcadeOver(true);
-                      }, 180);
+                      setArenaArcadeOver(true);
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
@@ -10206,7 +10218,7 @@ export default function App() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
                   id="screen-arena-stage-5-end"
                   className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
                 >
@@ -10267,7 +10279,7 @@ export default function App() {
                     ) : (
                       <button
                         onClick={setupArenaStage5Mastery}
-                        className="w-full bg-amber-500 hover:bg-amber-450 text-emerald-950 rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
+                        className="w-full bg-amber-500 hover:bg-amber-450 text-emerald-955 rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
                       >
                         Fight Final Battle Again
                       </button>
@@ -10275,9 +10287,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         playSoundSynth("click");
-                        setTimeout(() => {
-                          setArenaActiveStage(null);
-                        }, 180);
+                        setArenaActiveStage(null);
                       }}
                       className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
                     >
@@ -10297,7 +10307,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
                 id="screen-arena-stage-5"
                 className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
               >
@@ -10305,9 +10315,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       playSoundSynth("click");
-                      setTimeout(() => {
-                        setArenaActiveStage(null);
-                      }, 180);
+                      setArenaActiveStage(null);
                     }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                   >
