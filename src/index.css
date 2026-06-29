@@ -128,8 +128,7 @@ html, body {
   border: 2px solid #0b663b !important;
   border-bottom: 5.5px solid #064024 !important;
   box-shadow: 0 4px 12px -2px rgba(16, 126, 74, 0.2);
-  transition: all 0.1s ease !important;
-  border-radius: 9999px !important;
+  border-radius: 9999px;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -150,8 +149,7 @@ html, body {
   color: var(--btn-secondary-text) !important;
   border: 2.5px solid var(--btn-secondary-border) !important;
   border-bottom: 5.5px solid var(--btn-secondary-bottom) !important;
-  transition: all 0.1s ease !important;
-  border-radius: 9999px !important;
+  border-radius: 9999px;
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -172,8 +170,7 @@ html, body {
   border: 2px solid #ffbe00 !important;
   border-bottom: 5.5px solid #df9200 !important;
   box-shadow: 0 4px 12px -2px rgba(255, 200, 0, 0.28);
-  transition: all 0.1s ease !important;
-  border-radius: 9999px !important;
+  border-radius: 9999px;
 }
 
 .btn-gold:hover {
@@ -274,7 +271,6 @@ div.font-urdu {
   border-bottom: 6px solid var(--choice-btn-bottom);
   border-radius: 2rem;
   color: var(--choice-btn-text);
-  transition: all 0.1s ease !important;
 }
 
 .choice-btn:hover:not(:disabled) {
@@ -293,7 +289,6 @@ div.font-urdu {
   border-bottom: 6px solid var(--choice-btn-bottom);
   color: var(--choice-btn-text);
   border-radius: 2rem;
-  transition: all 0.1s ease !important;
 }
 
 .arcade-btn:hover:not(:disabled) {
@@ -319,8 +314,7 @@ div.font-urdu {
 
 /* Unit Action Buttons / Navigation Buttons styling */
 .unit-action-btn {
-  border-radius: 9999px !important;
-  transition: all 0.1s ease !important;
+  border-radius: 9999px;
 }
 
 /* Hover and active handlers for cards and choice inputs */
@@ -408,7 +402,6 @@ div.font-urdu {
               inset -2.5px -2.5px 5px rgba(0, 0, 0, 0.2),
               0 4px 0 #045f43 !important;
   color: #ffffff !important;
-  transition: all 0.15s ease-in-out !important;
 }
 .ginti-node-finished:hover {
   background: linear-gradient(135deg, #34d399 0%, #059669 100%) !important;
@@ -428,7 +421,6 @@ div.font-urdu {
               inset -2.5px -2.5px 5px rgba(0, 0, 0, 0.18),
               0 4px 0 #92400e !important;
   color: #064e3b !important;
-  transition: all 0.15s ease-in-out !important;
 }
 .dark .ginti-node-current {
   color: #1b0d00 !important; /* Premium rich warm deep espresso brown for superb readability and softer eye strain on the golden gradient in dark mode */
@@ -466,7 +458,6 @@ div.font-urdu {
   color: var(--choice-btn-text) !important;
   border: 2px solid var(--choice-btn-border) !important;
   border-bottom: 4.5px solid var(--choice-btn-bottom) !important;
-  transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   border-radius: 1.25rem !important;
 }
 
@@ -1386,30 +1377,35 @@ html:not(.dark) .destructive-tactile-link:active {
   border-bottom-color: #1a3527 !important;
 }
 
-/* Smooth color-only transition for theme switching, respecting prefers-reduced-motion */
+/* Smooth color and background transitions for theme switching, respecting prefers-reduced-motion */
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transitioning,
   html.theme-transitioning body,
-  html.theme-transitioning div,
+  html.theme-transitioning .modern-card,
+  html.theme-transitioning #global-header,
+  html.theme-transitioning .choice-btn,
+  html.theme-transitioning .arcade-btn,
+  html.theme-transitioning .ginti-choice-btn,
+  html.theme-transitioning .btn-primary,
+  html.theme-transitioning .btn-secondary,
+  html.theme-transitioning .btn-gold,
+  html.theme-transitioning .tactile-badge,
+  html.theme-transitioning p,
   html.theme-transitioning span,
   html.theme-transitioning h1,
   html.theme-transitioning h2,
   html.theme-transitioning h3,
   html.theme-transitioning h4,
-  html.theme-transitioning p,
-  html.theme-transitioning a,
-  html.theme-transitioning button,
   html.theme-transitioning input,
   html.theme-transitioning label,
-  html.theme-transitioning header,
-  html.theme-transitioning footer,
   html.theme-transitioning svg,
   html.theme-transitioning path {
     transition: background-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
                 color 220ms cubic-bezier(0.4, 0, 0.2, 1),
                 border-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
                 fill 220ms cubic-bezier(0.4, 0, 0.2, 1),
-                stroke 220ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+                stroke 220ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 }
 
@@ -1437,7 +1433,7 @@ body,
   scroll-behavior: smooth;
 }
 
-/* Micro-transition timing for immediate tap reaction and smooth release (120ms to 180ms) */
+/* Micro-transition timing for immediate tap reaction and smooth release (120ms) */
 .cursor-pointer,
 button,
 a,
@@ -1447,10 +1443,7 @@ a,
 .btn-primary,
 .btn-secondary,
 .btn-gold {
-  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-              border-color 120ms ease,
-              background-color 120ms ease,
-              box-shadow 120ms ease !important;
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
 }
 
 /* Touch targets optimization: give comfortable touch padding to small interactive icons */
