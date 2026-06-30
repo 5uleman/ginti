@@ -1,20 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  motion, 
-  AnimatePresence,
-  useReducedMotion
-} from "motion/react";
-import { 
-  Search, 
-  Flame, 
-  Award, 
-  BookOpen, 
-  CheckCircle2, 
-  X, 
-  Zap, 
-  Sparkles, 
-  SearchX, 
-  ChevronRight, 
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import {
+  Search,
+  Flame,
+  Award,
+  BookOpen,
+  CheckCircle2,
+  X,
+  Zap,
+  Sparkles,
+  SearchX,
+  ChevronRight,
   RotateCcw,
   BookMarked,
   VolumeX,
@@ -35,7 +31,7 @@ import {
   XCircle,
   Clock,
   Info,
-  Archive
+  Archive,
 } from "lucide-react";
 import { NUMBERS, UNITS, NumberEntry, Unit } from "./data";
 import { speakNumberEntry } from "./audio";
@@ -44,7 +40,7 @@ import { triggerHaptic } from "./haptics";
 
 const createSafeLocalStorage = () => {
   const memStore: Record<string, string> = {};
-  
+
   const isAvailable = (): boolean => {
     if (typeof window === "undefined") return false;
     try {
@@ -98,7 +94,7 @@ const createSafeLocalStorage = () => {
       for (const key in memStore) {
         delete memStore[key];
       }
-    }
+    },
   };
 };
 
@@ -106,24 +102,38 @@ const safeLocalStorage = createSafeLocalStorage();
 const localStorage = safeLocalStorage;
 
 // Premium Speaker Icon Component
-const PremiumSpeakerIcon = ({ 
+const PremiumSpeakerIcon = ({
   className = "w-full h-full text-emerald-800",
-  style 
-}: { 
-  className?: string; 
-  style?: React.CSSProperties; 
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
 }) => {
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="currentColor" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
       className={`${className} transition-transform duration-100 group-active:scale-90 active:scale-90`}
       style={style}
     >
       <path d="M13.5 4.06c0-.75-.74-1.24-1.42-.89l-4.66 2.33H4.5A2.25 2.25 0 0 0 2.25 7.75v8.5A2.25 2.25 0 0 0 4.5 18.5h2.92l4.66 2.33c.68.34 1.42-.15 1.42-.89V4.06Z" />
-      <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.8" d="M16.5 8.5c.6.9 1 2.1 1 3.5s-.4 2.6-1 3.5" />
-      <path stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.5" d="M19.5 5.5c1.2 1.8 2 4.1 2 6.5s-.8 4.7-2 6.5" />
+      <path
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.8"
+        d="M16.5 8.5c.6.9 1 2.1 1 3.5s-.4 2.6-1 3.5"
+      />
+      <path
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.5"
+        d="M19.5 5.5c1.2 1.8 2 4.1 2 6.5s-.8 4.7-2 6.5"
+      />
     </svg>
   );
 };
@@ -162,11 +172,22 @@ interface AppState {
   placementAttempts?: Record<string, number>;
 }
 
-type ScreenType = "dashboard" | "practice" | "arcade" | "unit-journey" | "training-arena" | "placement-challenge";
+type ScreenType =
+  | "dashboard"
+  | "practice"
+  | "arcade"
+  | "unit-journey"
+  | "training-arena"
+  | "placement-challenge";
 
 interface QuizQuestion {
   entry: NumberEntry;
-  promptType: "digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_roman" | "script_to_digit";
+  promptType:
+    | "digit_to_roman"
+    | "roman_to_digit"
+    | "digit_to_script"
+    | "script_to_roman"
+    | "script_to_digit";
   promptValue: string | number;
   correctAnswer: string | number;
   choices: (string | number)[];
@@ -199,7 +220,14 @@ interface ArcadeState {
 }
 
 interface RecoveryRoundState {
-  originalMode: "journey_stage2" | "journey_stage3" | "journey_stage5" | "arena_stage2" | "arena_stage3" | "arena_stage5" | "placement_challenge";
+  originalMode:
+    | "journey_stage2"
+    | "journey_stage3"
+    | "journey_stage5"
+    | "arena_stage2"
+    | "arena_stage3"
+    | "arena_stage5"
+    | "placement_challenge";
   unitId?: string;
   questions: any[];
   currentIndex: number;
@@ -221,16 +249,22 @@ const LOCAL_STORAGE_KEY = "ginti_emerald_gold_state";
 // =============================================================================
 export function getSmartDistractors(
   entry: NumberEntry,
-  pFormat: "digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_roman" | "script_to_digit",
-  pool?: NumberEntry[]
+  pFormat:
+    | "digit_to_roman"
+    | "roman_to_digit"
+    | "digit_to_script"
+    | "script_to_roman"
+    | "script_to_digit",
+  pool?: NumberEntry[],
 ): (string | number)[] {
-  const exactTypeGoal = pFormat === "roman_to_digit" || pFormat === "script_to_digit";
+  const exactTypeGoal =
+    pFormat === "roman_to_digit" || pFormat === "script_to_digit";
   const exactScriptGoal = pFormat === "digit_to_script";
 
-  const correctAnswer = exactTypeGoal 
-    ? entry.digit 
-    : exactScriptGoal 
-      ? entry.nativeScript 
+  const correctAnswer = exactTypeGoal
+    ? entry.digit
+    : exactScriptGoal
+      ? entry.nativeScript
       : entry.romanUrdu;
 
   const candidatesPool = pool && pool.length >= 4 ? pool : NUMBERS;
@@ -262,7 +296,11 @@ export function getSmartDistractors(
       score += 25;
     }
     // Tens digit match (e.g. 33 vs 31, 32, 35)
-    if (Math.floor(n.digit / 10) === Math.floor(entry.digit / 10) && n.digit < 100 && entry.digit < 100) {
+    if (
+      Math.floor(n.digit / 10) === Math.floor(entry.digit / 10) &&
+      n.digit < 100 &&
+      entry.digit < 100
+    ) {
       score += 25;
     }
     // For large numbers / Unit 5 compatibility (multiples of 50/100/1000)
@@ -276,9 +314,22 @@ export function getSmartDistractors(
     // 4. Phonetic / Roman Urdu Similarity (lowercase comparison)
     const r1 = entry.romanUrdu.toLowerCase();
     const r2 = n.romanUrdu.toLowerCase();
-    
+
     // Shared suffix (e.g. "tees", "alees", "asi", "wan", "sath", "ttar", "rah", "dah")
-    const commonSuffixes = ["tees", "alees", "asi", "wan", "sath", "ttar", "rah", "dah", "ees", "un", "sau", "hazaar"];
+    const commonSuffixes = [
+      "tees",
+      "alees",
+      "asi",
+      "wan",
+      "sath",
+      "ttar",
+      "rah",
+      "dah",
+      "ees",
+      "un",
+      "sau",
+      "hazaar",
+    ];
     for (const suffix of commonSuffixes) {
       if (r1.endsWith(suffix) && r2.endsWith(suffix)) {
         score += 35;
@@ -287,7 +338,19 @@ export function getSmartDistractors(
     }
 
     // Shared prefix (e.g. "tain", "baye", "chha", "sata", "atha")
-    const commonPrefixes = ["tain", "baye", "chha", "sata", "atha", "pan", "cha", "ik", "ba", "te", "sa"];
+    const commonPrefixes = [
+      "tain",
+      "baye",
+      "chha",
+      "sata",
+      "atha",
+      "pan",
+      "cha",
+      "ik",
+      "ba",
+      "te",
+      "sa",
+    ];
     for (const prefix of commonPrefixes) {
       if (r1.startsWith(prefix) && r2.startsWith(prefix)) {
         score += 25;
@@ -304,7 +367,17 @@ export function getSmartDistractors(
     const s1 = entry.nativeScript;
     const s2 = n.nativeScript;
     // Check if they share ending characters in Urdu (e.g., "تیس", "بیس", "اس", "ون", "تر", "سی", "وے", "سو")
-    const commonUrduSuffixes = ["تیس", "بیس", "چالیس", "ون", "تر", "سی", "وے", "سو", "ہزار"];
+    const commonUrduSuffixes = [
+      "تیس",
+      "بیس",
+      "چالیس",
+      "ون",
+      "تر",
+      "سی",
+      "وے",
+      "سو",
+      "ہزار",
+    ];
     for (const uSuffix of commonUrduSuffixes) {
       if (s1.endsWith(uSuffix) && s2.endsWith(uSuffix)) {
         score += 35;
@@ -325,12 +398,12 @@ export function getSmartDistractors(
   const distractors: (string | number)[] = [];
   for (const item of sorted) {
     if (distractors.length >= 3) break;
-    const cVal = exactTypeGoal 
-      ? item.candidate.digit 
-      : exactScriptGoal 
-        ? item.candidate.nativeScript 
+    const cVal = exactTypeGoal
+      ? item.candidate.digit
+      : exactScriptGoal
+        ? item.candidate.nativeScript
         : item.candidate.romanUrdu;
-    
+
     if (cVal !== correctAnswer && !distractors.includes(cVal)) {
       distractors.push(cVal);
     }
@@ -339,13 +412,14 @@ export function getSmartDistractors(
   // Safe fallback if we can't get enough distractors
   while (distractors.length < 3) {
     const fallbackNum = Math.floor(Math.random() * 100) + 1;
-    const fallbackEntry = NUMBERS.find((num) => num.digit === fallbackNum) || NUMBERS[0];
-    const cVal = exactTypeGoal 
-      ? fallbackEntry.digit 
-      : exactScriptGoal 
-        ? fallbackEntry.nativeScript 
+    const fallbackEntry =
+      NUMBERS.find((num) => num.digit === fallbackNum) || NUMBERS[0];
+    const cVal = exactTypeGoal
+      ? fallbackEntry.digit
+      : exactScriptGoal
+        ? fallbackEntry.nativeScript
         : fallbackEntry.romanUrdu;
-    
+
     if (cVal !== correctAnswer && !distractors.includes(cVal)) {
       distractors.push(cVal);
     }
@@ -370,7 +444,7 @@ const MITHU_CORRECT_POOL = [
   "Great job! ⭐",
   "Kya baat hai!",
   "Mashallah! 🙌",
-  "Sahi ja rahe!"
+  "Sahi ja rahe!",
 ];
 
 const MITHU_WRONG_POOL = [
@@ -381,7 +455,7 @@ const MITHU_WRONG_POOL = [
   "Dobara koshish!",
   "Aik aur try!",
   "Nazdeek thay!",
-  "Almost! 🔍"
+  "Almost! 🔍",
 ];
 
 const MITHU_PROGRESS_EARLY = [
@@ -389,35 +463,31 @@ const MITHU_PROGRESS_EARLY = [
   "Great start!",
   "Bohat acha!",
   "Nice start!",
-  "Sahi ja rahe!"
+  "Sahi ja rahe!",
 ];
 
 const MITHU_PROGRESS_MID = [
   "Zabardast! ⚡",
   "Halfway there!",
   "Keep on! 🏃",
-  "Great pace!"
+  "Great pace!",
 ];
 
 const MITHU_PROGRESS_NEAR = [
   "Almost there!",
   "Finish close!",
   "Last stretch!",
-  "Almost done!"
+  "Almost done!",
 ];
 
 const MITHU_PROGRESS_STELLAR = [
   "Perfect run!",
   "Flawless! 🎯",
   "Champion! 🏆",
-  "Unstoppable!"
+  "Unstoppable!",
 ];
 
-const MITHU_RECOVERY_POOL = [
-  "Focused!",
-  "Much better!",
-  "Getting there!"
-];
+const MITHU_RECOVERY_POOL = ["Focused!", "Much better!", "Getting there!"];
 
 const MITHU_UNIT_COMPLETION_POOL = [
   "Mubarak! 🎉",
@@ -426,7 +496,7 @@ const MITHU_UNIT_COMPLETION_POOL = [
   "Clear! ✨",
   "Kamyab! 🎖️",
   "Done! 🚀",
-  "Success! 👑"
+  "Success! 👑",
 ];
 
 const MITHU_CORRECT_SUBTITLE_POOL = [
@@ -439,14 +509,17 @@ const MITHU_CORRECT_SUBTITLE_POOL = [
   "You've got this!",
   "Excellent! 👍",
   "Bohat acha!",
-  "Brilliant!"
+  "Brilliant!",
 ];
 
-const selectMessageWithVariety = (pool: string[], recentMessages: string[]): string => {
-  let available = pool.filter(msg => !recentMessages.includes(msg));
+const selectMessageWithVariety = (
+  pool: string[],
+  recentMessages: string[],
+): string => {
+  let available = pool.filter((msg) => !recentMessages.includes(msg));
   if (available.length === 0) {
     const lastTwo = recentMessages.slice(-2);
-    available = pool.filter(msg => !lastTwo.includes(msg));
+    available = pool.filter((msg) => !lastTwo.includes(msg));
     if (available.length === 0) {
       available = pool;
     }
@@ -458,40 +531,119 @@ const selectMessageWithVariety = (pool: string[], recentMessages: string[]): str
 // MODERN GAME-STYLE CUTE 3D ARCHIVE BOX SVG ICON
 // =============================================================================
 const GintiArchiveBoxIcon = () => (
-  <svg viewBox="0 0 36 36" className="w-6 h-6 drop-shadow-md select-none pointer-events-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    viewBox="0 0 36 36"
+    className="w-6 h-6 drop-shadow-md select-none pointer-events-none"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     {/* Front face of box */}
     <rect x="5" y="14" width="26" height="17" rx="3" fill="#D97706" />
-    <rect x="5" y="14" width="26" height="17" rx="3" fill="url(#boxFrontGrad)" />
-    
+    <rect
+      x="5"
+      y="14"
+      width="26"
+      height="17"
+      rx="3"
+      fill="url(#boxFrontGrad)"
+    />
+
     {/* Lid of the box */}
     <rect x="3" y="8" width="30" height="7" rx="2" fill="#F59E0B" />
     <rect x="3" y="8" width="30" height="7" rx="2" fill="url(#boxLidGrad)" />
-    
+
     {/* Lid's top highlight line */}
-    <path d="M 4 9 L 32 9" stroke="#FEF3C7" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+    <path
+      d="M 4 9 L 32 9"
+      stroke="#FEF3C7"
+      strokeWidth="1"
+      strokeLinecap="round"
+      opacity="0.6"
+    />
 
     {/* Front shadow under lid */}
     <rect x="5" y="15" width="26" height="2" fill="#78350F" opacity="0.45" />
 
     {/* Archive Label sheet on front */}
-    <rect x="11" y="18" width="14" height="9" rx="1.5" fill="#FFFBEB" stroke="#92400E" strokeWidth="1" />
+    <rect
+      x="11"
+      y="18"
+      width="14"
+      height="9"
+      rx="1.5"
+      fill="#FFFBEB"
+      stroke="#92400E"
+      strokeWidth="1"
+    />
     {/* Cute stylized label text lines */}
-    <line x1="14" y1="21" x2="22" y2="21" stroke="#B45309" strokeWidth="1.5" strokeLinecap="round" />
-    <line x1="14" y1="24" x2="20" y2="24" stroke="#B45309" strokeWidth="1" strokeLinecap="round" />
+    <line
+      x1="14"
+      y1="21"
+      x2="22"
+      y2="21"
+      stroke="#B45309"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <line
+      x1="14"
+      y1="24"
+      x2="20"
+      y2="24"
+      stroke="#B45309"
+      strokeWidth="1"
+      strokeLinecap="round"
+    />
 
     {/* Cute folded document peaking out of the lid */}
-    <path d="M 12 11 L 12 5.5 C 12 5.0 12.5 4.5 13 4.5 L 19 4.5 L 23 8.5 L 23 11 Z" fill="#FFFFFF" />
-    <path d="M 19 4.5 L 19 7.5 C 19 8.0 19.5 8.5 20 8.5 L 23 8.5" fill="#E2E8F0" />
-    <line x1="14" y1="6.5" x2="17" y2="6.5" stroke="#38BDF8" strokeWidth="1" strokeLinecap="round" />
-    <line x1="14" y1="8.5" x2="21" y2="8.5" stroke="#E2E8F0" strokeWidth="1" strokeLinecap="round" />
+    <path
+      d="M 12 11 L 12 5.5 C 12 5.0 12.5 4.5 13 4.5 L 19 4.5 L 23 8.5 L 23 11 Z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M 19 4.5 L 19 7.5 C 19 8.0 19.5 8.5 20 8.5 L 23 8.5"
+      fill="#E2E8F0"
+    />
+    <line
+      x1="14"
+      y1="6.5"
+      x2="17"
+      y2="6.5"
+      stroke="#38BDF8"
+      strokeWidth="1"
+      strokeLinecap="round"
+    />
+    <line
+      x1="14"
+      y1="8.5"
+      x2="21"
+      y2="8.5"
+      stroke="#E2E8F0"
+      strokeWidth="1"
+      strokeLinecap="round"
+    />
 
     {/* Vector Gradients */}
     <defs>
-      <linearGradient id="boxFrontGrad" x1="18" y1="14" x2="18" y2="31" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="boxFrontGrad"
+        x1="18"
+        y1="14"
+        x2="18"
+        y2="31"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#F59E0B" stopOpacity="0.2" />
         <stop offset="1" stopColor="#78350F" stopOpacity="0.45" />
       </linearGradient>
-      <linearGradient id="boxLidGrad" x1="18" y1="8" x2="18" y2="15" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="boxLidGrad"
+        x1="18"
+        y1="8"
+        x2="18"
+        y2="15"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FBBF24" stopOpacity="0.3" />
         <stop offset="1" stopColor="#78350F" stopOpacity="0.35" />
       </linearGradient>
@@ -507,306 +659,443 @@ interface MilestoneCelebration {
   messages: string[];
 }
 
-const MILESTONE_VARIATIONS: Record<number, { urdu: MilestoneCelebration; english: MilestoneCelebration }> = {
+const MILESTONE_VARIATIONS: Record<
+  number,
+  { urdu: MilestoneCelebration; english: MilestoneCelebration }
+> = {
   10: {
     urdu: {
-      titles: ["Super Start! 🚀", "Kamaal Shuruat! 🌟", "Dhamaka Entry! 🔥", "Pehli Manzil! 🏅"],
+      titles: [
+        "Super Start! 🚀",
+        "Kamaal Shuruat! 🌟",
+        "Dhamaka Entry! 🔥",
+        "Pehli Manzil! 🏅",
+      ],
       messages: [
         "Bas yehi pace chahiye! 😎",
         "Shabash! Pehli manzil tai kar li aap ne! 🦜",
         "Bohat khoob! Aage barhte jao! ✨",
-        "Aap toh shuru hote hi chha gaye! ⚡"
-      ]
+        "Aap toh shuru hote hi chha gaye! ⚡",
+      ],
     },
     english: {
-      titles: ["Milestone Unlocked! 🏅", "Super Start! 🚀", "Momentum Rising! ⚡", "First Step Achieved! 🌟"],
+      titles: [
+        "Milestone Unlocked! 🏅",
+        "Super Start! 🚀",
+        "Momentum Rising! ⚡",
+        "First Step Achieved! 🌟",
+      ],
       messages: [
         "Momentum Rising! Keep it up! ⚡",
         "Double digits! You're warming up nicely! 🏆",
         "Fantastic start! Mithu is cheering for you! 🦜",
-        "10 correct in a row! Strong foundation built! ✨"
-      ]
-    }
+        "10 correct in a row! Strong foundation built! ✨",
+      ],
+    },
   },
   20: {
     urdu: {
-      titles: ["Awesome Progress! 🌟", "Double Dhamaka! ⚡", "Behtreen Raah! 🏆", "Mithu is Thrilled! 🦜"],
+      titles: [
+        "Awesome Progress! 🌟",
+        "Double Dhamaka! ⚡",
+        "Behtreen Raah! 🏆",
+        "Mithu is Thrilled! 🦜",
+      ],
       messages: [
         "Haan ji! Aise hi! ✨",
         "20 ki streak! Kamaal ki speed hai! 🚀",
         "Mithu bohot khush hai aaj aap ki ginti se! 💚",
-        "Aap toh rukne ka naam hi nahi le rahe! 🔥"
-      ]
+        "Aap toh rukne ka naam hi nahi le rahe! 🔥",
+      ],
     },
     english: {
-      titles: ["Streak Milestone! 🔥", "Awesome Progress! 🌟", "Double Twenty! ⚡", "Unstoppable! 🏆"],
+      titles: [
+        "Streak Milestone! 🔥",
+        "Awesome Progress! 🌟",
+        "Double Twenty! ⚡",
+        "Unstoppable! 🏆",
+      ],
       messages: [
         "Streak Secured! You're on fire! 🏆",
         "20 correct! You really know your stuff! ⚡",
         "Flawless counting! Absolutely brilliant! ✨",
-        "Keep going, Mithu is super proud of you! 🦜"
-      ]
-    }
+        "Keep going, Mithu is super proud of you! 🦜",
+      ],
+    },
   },
   30: {
     urdu: {
-      titles: ["Sizzling Streak! 🔥", "Tez Tarraar! ⚡", "Kamaal ki Counting! 👑", "Aag Laga Di! 🌠"],
+      titles: [
+        "Sizzling Streak! 🔥",
+        "Tez Tarraar! ⚡",
+        "Kamaal ki Counting! 👑",
+        "Aag Laga Di! 🌠",
+      ],
       messages: [
         "Acha... ab baat ban rahi hai. 🔥",
         "30 streak! Dil jeet liya aap ne! 💖",
         "Mithu bhi hairan hai aap ki counting se! 🦜",
-        "Aap toh counting ke badshah ban gaye! 👑"
-      ]
+        "Aap toh counting ke badshah ban gaye! 👑",
+      ],
     },
     english: {
-      titles: ["Momentum Master! 🌠", "Sizzling Streak! 🔥", "Count Champion! 👑", "Pure Mastery! ✨"],
+      titles: [
+        "Momentum Master! 🌠",
+        "Sizzling Streak! 🔥",
+        "Count Champion! 👑",
+        "Pure Mastery! ✨",
+      ],
       messages: [
         "Fire Growing! You're unstoppable! 🔥",
         "30 streak! That's absolute perfection! 🏆",
         "Your Urdu counting is flawless! 🌟",
-        "Mithu says: You are a genius! 🦜"
-      ]
-    }
+        "Mithu says: You are a genius! 🦜",
+      ],
+    },
   },
   40: {
     urdu: {
-      titles: ["Brilliant Forties! 🌟", "Fortress Streak! 🏰", "Mascot's Appreciations! 🦜", "Sizzling Forty! 🔥"],
+      titles: [
+        "Brilliant Forties! 🌟",
+        "Fortress Streak! 🏰",
+        "Mascot's Appreciations! 🦜",
+        "Sizzling Forty! 🔥",
+      ],
       messages: [
         "40 streak! Bemisaal ho gaya yeh kaam! ✨",
         "Aap ki ginti to bemisaal ہوتی جا رہی ہے! 🚀",
         "Mithu bol raha hai: Bas rukna nahi! 🦜",
-        "Chaalees correct! Bohat hi zabardast! 🏅"
-      ]
+        "Chaalees correct! Bohat hi zabardast! 🏅",
+      ],
     },
     english: {
-      titles: ["Fabulous Forty! 🌟", "Fortress Streak! 🏰", "Incredible Focus! ⚡", "Mastery Rising! 🏆"],
+      titles: [
+        "Fabulous Forty! 🌟",
+        "Fortress Streak! 🏰",
+        "Incredible Focus! ⚡",
+        "Mastery Rising! 🏆",
+      ],
       messages: [
         "40 correct! Your streak is absolutely rock-solid! 🏰",
         "Fantastic focus! Next stop is 50! 🚀",
         "Mithu is flying high in happiness! 🦜",
-        "You've got a formidable streak going! ✨"
-      ]
-    }
+        "You've got a formidable streak going! ✨",
+      ],
+    },
   },
   50: {
     urdu: {
-      titles: ["Half Century! 🏏", "Pachaas Kamaal! 🌟", "Unstoppable Legend! 🧙‍♂️", "Golden Half-Century! ✨"],
+      titles: [
+        "Half Century! 🏏",
+        "Pachaas Kamaal! 🌟",
+        "Unstoppable Legend! 🧙‍♂️",
+        "Golden Half-Century! ✨",
+      ],
       messages: [
         "Wah! Ab maza aa raha hai. 🦜",
         "Bat utha lo, pachaas ho gaye! 🏏",
         "50 ki streak! Aap ne toh kamaal hi kar diya! 💎",
-        "Mashallah! Mithu jhoom raha hai! 🦜"
-      ]
+        "Mashallah! Mithu jhoom raha hai! 🦜",
+      ],
     },
     english: {
-      titles: ["Milestone Achieved! ✨", "Half Century! 🏏", "Supreme Mastery! 🌟", "Momentum Locked In! ⭐"],
+      titles: [
+        "Milestone Achieved! ✨",
+        "Half Century! 🏏",
+        "Supreme Mastery! 🌟",
+        "Momentum Locked In! ⭐",
+      ],
       messages: [
         "Momentum Locked In! 50 streak! ⭐",
         "Outstanding batting! Half century complete! 🏏",
         "50 correct! Your memory is razor-sharp! ⚡",
-        "A legendary run! Keep pushing to 100! 🚀"
-      ]
-    }
+        "A legendary run! Keep pushing to 100! 🚀",
+      ],
+    },
   },
   75: {
     urdu: {
-      titles: ["Master Class! 🎓", "Quarter to Century! 🚀", "Sitaron Se Aage! 🌠", "Diamond Streak! 💎"],
+      titles: [
+        "Master Class! 🎓",
+        "Quarter to Century! 🚀",
+        "Sitaron Se Aage! 🌠",
+        "Diamond Streak! 💎",
+      ],
       messages: [
         "Ab lag rahe ho player. 😏",
         "75! Century ke bohot kareeb hain aap! 🏏",
         "Mithu khushi se pagal ho raha hai! 🦜",
-        "Aap ki ginti bemisaal hai! ✨"
-      ]
+        "Aap ki ginti bemisaal hai! ✨",
+      ],
     },
     english: {
-      titles: ["Mastery Rising! 💎", "Master Class! 🎓", "Sensational Streak! 🌟", "Flame Intensified! 🔥"],
+      titles: [
+        "Mastery Rising! 💎",
+        "Master Class! 🎓",
+        "Sensational Streak! 🌟",
+        "Flame Intensified! 🔥",
+      ],
       messages: [
         "Flame Intensified! 75 correct! 🔥",
         "Only 25 away from a Century! You've got this! 🏏",
         "Incredible focus and dedication! 🎓",
-        "Mithu is singing a victory song for you! 🦜"
-      ]
-    }
+        "Mithu is singing a victory song for you! 🦜",
+      ],
+    },
   },
   100: {
     urdu: {
-      titles: ["Centurion! 👑", "Century Celebration! 💯", "Mithu's King of Ginti! 👑", "Historic 100 Streak! 🏆"],
+      titles: [
+        "Centurion! 👑",
+        "Century Celebration! 💯",
+        "Mithu's King of Ginti! 👑",
+        "Historic 100 Streak! 🏆",
+      ],
       messages: [
         "Bat utha lo... Century ho gayi! 🏏",
         "Scoreboard dekho... Century! 🎉",
         "Ye hui na batting! Century complete! 😎",
-        "Aaj toh kamaal kar diya... 100 streak! 🌟"
-      ]
+        "Aaj toh kamaal kar diya... 100 streak! 🌟",
+      ],
     },
     english: {
-      titles: ["Century Celebration! 💯", "New Streak Record! 🌟", "Legendary Centurion! 👑", "Unbelievable 100! 🏆"],
+      titles: [
+        "Century Celebration! 💯",
+        "New Streak Record! 🌟",
+        "Legendary Centurion! 👑",
+        "Unbelievable 100! 🏆",
+      ],
       messages: [
         "Unbelievable! You just hit a Century! 💯",
         "Not out... 100 streak complete! 🏏",
         "Urdu Counting Legend! You're in the history books! 👑",
-        "Mithu is in absolute awe of you! 🦜"
-      ]
-    }
+        "Mithu is in absolute awe of you! 🦜",
+      ],
+    },
   },
   150: {
     urdu: {
-      titles: ["Incredible Run! 🚀", "Deedhy Ginti! 🌟", "Mithu's Superhero! 🦸‍♂️", "Unmatched Power! ⚡"],
+      titles: [
+        "Incredible Run! 🚀",
+        "Deedhy Ginti! 🌟",
+        "Mithu's Superhero! 🦸‍♂️",
+        "Unmatched Power! ⚡",
+      ],
       messages: [
         "Yeh hui na baat! 150 streak! 🎯",
         "Mithu bolta hai: Aap jin ho! 🧙‍♂️",
         "Superb batting! 1.5 Century complete! 🏏",
-        "Aap ki ginti to aag ki tarah tezi se barh rahi hai! 🔥"
-      ]
+        "Aap ki ginti to aag ki tarah tezi se barh rahi hai! 🔥",
+      ],
     },
     english: {
-      titles: ["Milestone Unlocked! 🏅", "Incredible Run! 🚀", "Elite Mastery! 💎", "Superb Focus! ⚡"],
+      titles: [
+        "Milestone Unlocked! 🏅",
+        "Incredible Run! 🚀",
+        "Elite Mastery! 💎",
+        "Superb Focus! ⚡",
+      ],
       messages: [
         "Momentum Rising! 150 correct in a row! ⚡",
         "Mithu is speechless! This is pure wizardry! 🧙‍♂️",
         "1.5 Century! Outstanding consistency! 🏆",
-        "You have officially conquered Urdu numbers! 🌟"
-      ]
-    }
+        "You have officially conquered Urdu numbers! 🌟",
+      ],
+    },
   },
   200: {
     urdu: {
-      titles: ["Double Century! 🏅", "200 Kamaal! 🔥", "Dohri Century! 🏏", "Ginti Ke Shehanshah! 👑"],
+      titles: [
+        "Double Century! 🏅",
+        "200 Kamaal! 🔥",
+        "Dohri Century! 🏏",
+        "Ginti Ke Shehanshah! 👑",
+      ],
       messages: [
         "Shabash! Mithu khush hai. 💚",
         "200 streak! Bat dobara utha lein! 🏏",
         "Mithu khushi se mithe chawal khayega aaj! 🦜",
-        "Yeh toh be-misaal tareekhi run hai! 🌟"
-      ]
+        "Yeh toh be-misaal tareekhi run hai! 🌟",
+      ],
     },
     english: {
-      titles: ["Double Century! 🏅", "Streak Secured! 🏆", "Legend Status Unlocked! 👑", "Phenomenal 200! 🔥"],
+      titles: [
+        "Double Century! 🏅",
+        "Streak Secured! 🏆",
+        "Legend Status Unlocked! 👑",
+        "Phenomenal 200! 🔥",
+      ],
       messages: [
         "Flame Intensified! Double Century complete! 🔥",
         "200 correct! Mithu is throwing a party! 🦜",
         "You are a master of Urdu numbers! 🎓",
-        "Unparalleled streak record! Pure gold! 🌟"
-      ]
-    }
+        "Unparalleled streak record! Pure gold! 🌟",
+      ],
+    },
   },
   300: {
     urdu: {
-      titles: ["Unstoppable! ⚡", "Ginti Ke Devta! 🧙‍♂️", "Tariqee Run! 🌟", "Triple Century! 🏏"],
+      titles: [
+        "Unstoppable! ⚡",
+        "Ginti Ke Devta! 🧙‍♂️",
+        "Tariqee Run! 🌟",
+        "Triple Century! 🏏",
+      ],
       messages: [
         "300 streak! Yeh toh mazaak nahi hai! 🔥",
         "Mithu aap ke saamne jhukta hai! 🦜",
         "Aap ko Urdu ginti ghol ke pila di gayi hai! 🧪",
-        "Bemisaal, la-jawab, tareekhi! 🏆"
-      ]
+        "Bemisaal, la-jawab, tareekhi! 🏆",
+      ],
     },
     english: {
-      titles: ["Momentum Master! 🌠", "Unstoppable! ⚡", "Triple Century! 🏏", "God-Like Focus! 🏆"],
+      titles: [
+        "Momentum Master! 🌠",
+        "Unstoppable! ⚡",
+        "Triple Century! 🏏",
+        "God-Like Focus! 🏆",
+      ],
       messages: [
         "Fire Growing! 300 correct! 🔥",
         "Triple Century complete! You're writing history! 🏏",
         "Mithu says: I've never seen such genius! 🦜",
-        "Absolutely flawless mastery of Urdu counting! ✨"
-      ]
-    }
+        "Absolutely flawless mastery of Urdu counting! ✨",
+      ],
+    },
   },
   500: {
     urdu: {
-      titles: ["Immortal Streak! 🧙‍♂️", "Paanch Sau Bemisaal! 👑", "Half-Thousand King! 🏆", "Mithu's Idol! 🦜"],
+      titles: [
+        "Immortal Streak! 🧙‍♂️",
+        "Paanch Sau Bemisaal! 👑",
+        "Half-Thousand King! 🏆",
+        "Mithu's Idol! 🦜",
+      ],
       messages: [
         "Bas yehi pace chahiye! 500 streak! 😎",
         "Ginti Legend! Mithu ab aap ka chela hai. 🦜",
         "500 correct! Aap insaan nahi lagte! 🤯",
-        "Behtareen! Mithu ne mithaas baant di! 🍬"
-      ]
+        "Behtareen! Mithu ne mithaas baant di! 🍬",
+      ],
     },
     english: {
-      titles: ["Milestone Achieved! ✨", "Immortal Streak! 🧙‍♂️", "Ginti Legend! 👑", "500 Streak Ultimate! 🏆"],
+      titles: [
+        "Milestone Achieved! ✨",
+        "Immortal Streak! 🧙‍♂️",
+        "Ginti Legend! 👑",
+        "500 Streak Ultimate! 🏆",
+      ],
       messages: [
         "Ginti Legend! 500 streak reached! 👑",
         "Half a thousand correct! Mind-blowing performance! 🤯",
         "Mithu says: You are officially my idol! 🦜",
-        "This is a record that might never be broken! 🌟"
-      ]
-    }
+        "This is a record that might never be broken! 🌟",
+      ],
+    },
   },
   750: {
     urdu: {
-      titles: ["Grand Master! 🏆", "750 Ginti King! 👑", "Mithu's Ultimate Master! 🦜", "Unmatched Sitarah! 🌠"],
+      titles: [
+        "Grand Master! 🏆",
+        "750 Ginti King! 👑",
+        "Mithu's Ultimate Master! 🦜",
+        "Unmatched Sitarah! 🌠",
+      ],
       messages: [
         "Yeh hui na baat! 750 ho gaye! 🎯",
         "Mastery Rising! Mithu ab khushi se ro raha hai. 🦜",
         "Aap ne Urdu counting ko fatah kar liya! 🚩",
-        "Aap ka dimaag super-computer se tez hai! 💻"
-      ]
+        "Aap ka dimaag super-computer se tez hai! 💻",
+      ],
     },
     english: {
-      titles: ["Level of Mastery Increased! 🎉", "Grand Master! 🏆", "Mastery Rising! 💎", "Ultimate Ginti Sage! 🧙‍♂️"],
+      titles: [
+        "Level of Mastery Increased! 🎉",
+        "Grand Master! 🏆",
+        "Mastery Rising! 💎",
+        "Ultimate Ginti Sage! 🧙‍♂️",
+      ],
       messages: [
         "Mastery Rising! 750 correct answers! 💎",
         "Grand Master status confirmed by Mithu! 🏆",
         "You have unlocked the inner secrets of Urdu numbers! 🎓",
-        "Unbelievable! 750 streak is simply divine! ✨"
-      ]
-    }
+        "Unbelievable! 750 streak is simply divine! ✨",
+      ],
+    },
   },
   1000: {
     urdu: {
-      titles: ["Ginti Legend! 👑", "One Thousand King! 💯", "Ultimate Immortal! 🧙‍♂️", "Mithu's God of Ginti! 🦜"],
+      titles: [
+        "Ginti Legend! 👑",
+        "One Thousand King! 💯",
+        "Ultimate Immortal! 🧙‍♂️",
+        "Mithu's God of Ginti! 🦜",
+      ],
       messages: [
         "Shabash! Mithu khush hai. 1000 complete! 💚",
         "New Streak Record! One thousand in a row! 🌟",
         "Mithu says: You are a pure God of Counting! 🦜",
-        "Tareekh bana di aap ne! 1000 streak! 🏆"
-      ]
+        "Tareekh bana di aap ne! 1000 streak! 🏆",
+      ],
     },
     english: {
-      titles: ["Ginti Legend! 👑", "Streak Secured! 🏆", "New Streak Record! 🌟", "God of Ginti! 💯"],
+      titles: [
+        "Ginti Legend! 👑",
+        "Streak Secured! 🏆",
+        "New Streak Record! 🌟",
+        "God of Ginti! 💯",
+      ],
       messages: [
         "Unreal! You just completed a 1000 streak! 🏆",
         "Mithu bowed down. You are the ultimate God of Ginti! 🦜",
         "1000 correct in a row! Simply historic! 👑",
-        "You have absolute, flawless, supreme mastery! 🌟"
-      ]
-    }
-  }
+        "You have absolute, flawless, supreme mastery! 🌟",
+      ],
+    },
+  },
 };
 
 const getMilestoneCelebration = (
-  milestone: number, 
+  milestone: number,
   isUrduScript: boolean,
   lastTitle: string,
-  lastMessage: string
+  lastMessage: string,
 ): { title: string; message: string } => {
   const milestoneData = MILESTONE_VARIATIONS[milestone];
   if (!milestoneData) {
     return {
       title: isUrduScript ? "Kamaal! 🌟" : "Milestone Achieved! 🎉",
-      message: isUrduScript ? "Aise hi barhte jao! ✨" : "Keep up this amazing streak! 🚀"
+      message: isUrduScript
+        ? "Aise hi barhte jao! ✨"
+        : "Keep up this amazing streak! 🚀",
     };
   }
 
   const dataset = isUrduScript ? milestoneData.urdu : milestoneData.english;
-  
-  let availableTitles = dataset.titles.filter(t => t !== lastTitle);
-  if (availableTitles.length === 0) availableTitles = dataset.titles;
-  const title = availableTitles[Math.floor(Math.random() * availableTitles.length)];
 
-  let availableMessages = dataset.messages.filter(m => m !== lastMessage);
+  let availableTitles = dataset.titles.filter((t) => t !== lastTitle);
+  if (availableTitles.length === 0) availableTitles = dataset.titles;
+  const title =
+    availableTitles[Math.floor(Math.random() * availableTitles.length)];
+
+  let availableMessages = dataset.messages.filter((m) => m !== lastMessage);
   if (availableMessages.length === 0) availableMessages = dataset.messages;
-  const message = availableMessages[Math.floor(Math.random() * availableMessages.length)];
+  const message =
+    availableMessages[Math.floor(Math.random() * availableMessages.length)];
 
   return { title, message };
 };
 
 const getMithuCorrectFeedback = (
-  currentIndex: number, 
-  totalQuestions: number, 
+  currentIndex: number,
+  totalQuestions: number,
   consecutiveCorrect: number,
   isRecovery: boolean,
-  recentMessages: string[]
+  recentMessages: string[],
 ): { title: string; subtitle: string } => {
   let pool: string[] = [];
   const remaining = totalQuestions - (currentIndex + 1);
-  
+
   if (isRecovery) {
     pool = MITHU_CORRECT_POOL;
   } else if (remaining > 0 && remaining <= 3) {
@@ -820,9 +1109,9 @@ const getMithuCorrectFeedback = (
   } else {
     pool = MITHU_CORRECT_POOL;
   }
-  
+
   const title = selectMessageWithVariety(pool, recentMessages);
-  
+
   let subtitle = "Urdu intuition growing!";
   if (isRecovery) {
     subtitle = "You corrected this card!";
@@ -832,23 +1121,26 @@ const getMithuCorrectFeedback = (
     subtitle = `${consecutiveCorrect} correct in a row! 🔥`;
   } else {
     // Select a randomized subtitle from correct subtitle pool
-    subtitle = MITHU_CORRECT_SUBTITLE_POOL[Math.floor(Math.random() * MITHU_CORRECT_SUBTITLE_POOL.length)];
+    subtitle =
+      MITHU_CORRECT_SUBTITLE_POOL[
+        Math.floor(Math.random() * MITHU_CORRECT_SUBTITLE_POOL.length)
+      ];
   }
-  
+
   return { title, subtitle };
 };
 
 const getMithuWrongFeedback = (
   isRecovery: boolean,
   recentMessages: string[],
-  previousStreak?: number
+  previousStreak?: number,
 ): { title: string; subtitle: string } => {
   if (previousStreak && previousStreak >= 100) {
     const RESPECT_LINES = [
       "Achi innings thi. 👏",
       "Flame bujhi... hausla nahi.",
       "Phir se bana lenge.",
-      "Ab nayi streak shuru!"
+      "Ab nayi streak shuru!",
     ];
     const randomIndex = Math.floor(Math.random() * RESPECT_LINES.length);
     const title = RESPECT_LINES[randomIndex];
@@ -858,14 +1150,14 @@ const getMithuWrongFeedback = (
 
   const pool = MITHU_WRONG_POOL;
   const title = selectMessageWithVariety(pool, recentMessages);
-  
+
   let subtitle = "Practice makes perfect!";
   if (isRecovery) {
     subtitle = "We will master this.";
   } else {
     subtitle = "A small mistake is a step forward.";
   }
-  
+
   return { title, subtitle };
 };
 
@@ -876,9 +1168,17 @@ const getMithuUnitCompletionMessage = (recentMessages: string[]): string => {
 // =============================================================================
 // MITHU MASCOT COMPONENT (Urdu Numeric Sage Companion)
 // =============================================================================
-const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" | "sparkly"; size?: number }) => {
+const MithuMascot = ({
+  mood,
+  size = 84,
+}: {
+  mood: "happy" | "thinking" | "sad" | "sparkly";
+  size?: number;
+}) => {
   const [isBlinking, setIsBlinking] = useState(false);
-  const [glanceDirection, setGlanceDirection] = useState<"normal" | "right" | "left">("normal");
+  const [glanceDirection, setGlanceDirection] = useState<
+    "normal" | "right" | "left"
+  >("normal");
 
   useEffect(() => {
     let blinkTimeout: any = null;
@@ -949,15 +1249,39 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
   if (isBlinking) {
     eyes = (
       <>
-        <path d="M 32 42 Q 38 46 44 42" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <path d="M 56 42 Q 62 46 68 42" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path
+          d="M 32 42 Q 38 46 44 42"
+          stroke="#1e293b"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 56 42 Q 62 46 68 42"
+          stroke="#1e293b"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
       </>
     );
   } else if (mood === "sad") {
     eyes = (
       <>
-        <path d="M 32 45 Q 38 39 44 45" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <path d="M 56 45 Q 62 39 68 45" stroke="#1e293b" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path
+          d="M 32 45 Q 38 39 44 45"
+          stroke="#1e293b"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 56 45 Q 62 39 68 45"
+          stroke="#1e293b"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
       </>
     );
   } else if (mood === "sparkly") {
@@ -973,12 +1297,32 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
     eyes = (
       <>
         <circle cx="38" cy="42" r="7.5" fill="#1e293b" />
-        <circle cx={38 + pupilOffset1.x} cy={42 + pupilOffset1.y} r="2.8" fill="#ffffff" />
-        <circle cx={38 - pupilOffset1.x} cy={42 - pupilOffset1.y} r="1.2" fill="#ffffff" />
-        
+        <circle
+          cx={38 + pupilOffset1.x}
+          cy={42 + pupilOffset1.y}
+          r="2.8"
+          fill="#ffffff"
+        />
+        <circle
+          cx={38 - pupilOffset1.x}
+          cy={42 - pupilOffset1.y}
+          r="1.2"
+          fill="#ffffff"
+        />
+
         <circle cx="62" cy="42" r="7.5" fill="#1e293b" />
-        <circle cx={62 + pupilOffset2.x} cy={42 + pupilOffset2.y} r="2.8" fill="#ffffff" />
-        <circle cx={62 - pupilOffset2.x} cy={42 - pupilOffset2.y} r="1.2" fill="#ffffff" />
+        <circle
+          cx={62 + pupilOffset2.x}
+          cy={42 + pupilOffset2.y}
+          r="2.8"
+          fill="#ffffff"
+        />
+        <circle
+          cx={62 - pupilOffset2.x}
+          cy={42 - pupilOffset2.y}
+          r="1.2"
+          fill="#ffffff"
+        />
       </>
     );
   } else {
@@ -1011,14 +1355,19 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
   }
 
   const crestColor = "#d4af37"; // Gold crest
-  const bodyColor = "#107e4a";  // Urdu Emerald body
+  const bodyColor = "#107e4a"; // Urdu Emerald body
   const bellyColor = "#ecfdf5"; // Light Mint belly
-  const beakColor = "#f59e0b";  // orange beak
+  const beakColor = "#f59e0b"; // orange beak
 
   const breatheClass = "ginti-mithu-breathe";
 
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className={`drop-shadow-md select-none shrink-0 transform hover:scale-105 transition duration-200 ${breatheClass}`}>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      className={`drop-shadow-md select-none shrink-0 transform hover:scale-105 transition duration-200 ${breatheClass}`}
+    >
       {/* Golden crest plumage */}
       <path d="M 50 25 Q 40 10 32 18 Q 41 24 50 32" fill={crestColor} />
       <path d="M 50 25 Q 60 10 68 18 Q 59 24 50 32" fill={crestColor} />
@@ -1026,7 +1375,7 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
 
       {/* Body */}
       <circle cx="50" cy="55" r="30" fill={bodyColor} />
-      
+
       {/* Side wings */}
       <ellipse cx="20" cy="55" rx="5" ry="11" fill="#046a38" />
       <ellipse cx="80" cy="55" rx="5" ry="11" fill="#046a38" />
@@ -1047,19 +1396,31 @@ const MithuMascot = ({ mood, size = 84 }: { mood: "happy" | "thinking" | "sad" |
 
       {/* Beak */}
       <path d="M 44 47 Q 50 41 56 47 Q 50 63 44 47" fill={beakColor} />
-      <path d="M 44 47 Q 50 50 56 47" stroke="#d97706" strokeWidth="1" fill="none" />
+      <path
+        d="M 44 47 Q 50 50 56 47"
+        stroke="#d97706"
+        strokeWidth="1"
+        fill="none"
+      />
 
       {/* Sparkling stars when sparkly mood */}
       {mood === "sparkly" && (
         <>
-          <path d="M 10 20 L 12 25 L 17 25 L 13 28 L 15 33 L 10 30 L 5 33 L 7 28 L 3 25 L 8 25 Z" fill="#fbbf24" transform="scale(0.65)" />
-          <path d="M 120 15 L 122 20 L 127 20 L 123 23 L 125 28 L 120 25 L 115 28 L 117 23 L 113 20 L 118 20 Z" fill="#fbbf24" transform="scale(0.65)" />
+          <path
+            d="M 10 20 L 12 25 L 17 25 L 13 28 L 15 33 L 10 30 L 5 33 L 7 28 L 3 25 L 8 25 Z"
+            fill="#fbbf24"
+            transform="scale(0.65)"
+          />
+          <path
+            d="M 120 15 L 122 20 L 127 20 L 123 23 L 125 28 L 120 25 L 115 28 L 117 23 L 113 20 L 118 20 Z"
+            fill="#fbbf24"
+            transform="scale(0.65)"
+          />
         </>
       )}
     </svg>
   );
 };
-
 
 // =============================================================================
 // MASTERY STREAK FLAME COMPONENT (Tactile Dynamic Visuals)
@@ -1071,7 +1432,12 @@ interface MasteryFlameProps {
   style?: React.CSSProperties;
 }
 
-const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlameProps) => {
+const MasteryFlame = ({
+  streak,
+  size = 18,
+  className = "",
+  style,
+}: MasteryFlameProps) => {
   const [celebrate, setCelebrate] = useState(false);
   const prevStreakRef = useRef(streak);
 
@@ -1112,7 +1478,7 @@ const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlame
   let outerGradientId = `gintiFlameOuter-${streak}-${size}`;
   let innerGradientId = `gintiFlameInner-${streak}-${size}`;
   let wingsGradientId = `gintiWings-${streak}-${size}`;
-  
+
   let outerColors = { start: "#f97316", end: "#f59e0b" };
   let innerColors = { start: "#fbbf24", end: "#fef3c7" };
 
@@ -1134,13 +1500,14 @@ const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlame
     innerColors = { start: "#fbbf24", end: "#ffffff" };
   }
 
-  const flamePath = "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z";
+  const flamePath =
+    "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z";
   const hasEmbers = streak >= 25;
   const hasWings = streak >= 100;
 
   return (
-    <div 
-      className={`relative inline-flex items-center justify-center shrink-0 select-none ${className}`} 
+    <div
+      className={`relative inline-flex items-center justify-center shrink-0 select-none ${className}`}
       style={{ width: size, height: size, ...style }}
     >
       {/* Tiny organic rising embers (pure GPU CSS animated particles) */}
@@ -1160,16 +1527,34 @@ const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlame
         className={`overflow-visible ${levelClass} ${celebrate ? "ginti-flame-celebrate-effect" : ""}`}
       >
         <defs>
-          <linearGradient id={outerGradientId} x1="0%" y1="100%" x2="0%" y2="0%">
+          <linearGradient
+            id={outerGradientId}
+            x1="0%"
+            y1="100%"
+            x2="0%"
+            y2="0%"
+          >
             <stop offset="0%" stopColor={outerColors.start} />
             <stop offset="100%" stopColor={outerColors.end} />
           </linearGradient>
-          <linearGradient id={innerGradientId} x1="0%" y1="100%" x2="0%" y2="0%">
+          <linearGradient
+            id={innerGradientId}
+            x1="0%"
+            y1="100%"
+            x2="0%"
+            y2="0%"
+          >
             <stop offset="0%" stopColor={innerColors.start} />
             <stop offset="100%" stopColor={innerColors.end} />
           </linearGradient>
           {hasWings && (
-            <linearGradient id={wingsGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient
+              id={wingsGradientId}
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor="#c084fc" />
               <stop offset="50%" stopColor="#f472b6" />
               <stop offset="100%" stopColor="#facc15" />
@@ -1181,31 +1566,28 @@ const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlame
         {hasWings && (
           <g className="ginti-wings-animate">
             {/* Left Wing */}
-            <path 
-              d="M 6.5 14.5 C 3.5 11, 1 13.5, 0 17.5 C 2.5 18.5, 5 17, 6.5 15.2" 
-              fill={`url(#${wingsGradientId})`} 
+            <path
+              d="M 6.5 14.5 C 3.5 11, 1 13.5, 0 17.5 C 2.5 18.5, 5 17, 6.5 15.2"
+              fill={`url(#${wingsGradientId})`}
               opacity="0.85"
             />
             {/* Right Wing */}
-            <path 
-              d="M 17.5 14.5 C 20.5 11, 23 13.5, 24 17.5 C 21.5 18.5, 19 17, 17.5 15.2" 
-              fill={`url(#${wingsGradientId})`} 
+            <path
+              d="M 17.5 14.5 C 20.5 11, 23 13.5, 24 17.5 C 21.5 18.5, 19 17, 17.5 15.2"
+              fill={`url(#${wingsGradientId})`}
               opacity="0.85"
             />
             {/* Crown / Star Burst above the flame */}
-            <path 
-              d="M 12 1 L 12.5 3.5 L 15 4 L 12.8 4.8 L 13.5 7 L 12 5.5 L 10.5 7 L 11.2 4.8 L 9 4 L 11.5 3.5 Z" 
-              fill="#fbbf24" 
-              transform="translate(12, 1) scale(0.4) translate(-12, -1)" 
+            <path
+              d="M 12 1 L 12.5 3.5 L 15 4 L 12.8 4.8 L 13.5 7 L 12 5.5 L 10.5 7 L 11.2 4.8 L 9 4 L 11.5 3.5 Z"
+              fill="#fbbf24"
+              transform="translate(12, 1) scale(0.4) translate(-12, -1)"
             />
           </g>
         )}
 
         {/* Outer Flame Path */}
-        <path
-          d={flamePath}
-          fill={`url(#${outerGradientId})`}
-        />
+        <path d={flamePath} fill={`url(#${outerGradientId})`} />
 
         {/* Inner Core Path (Nested concentric copy with standard bottom center origin) */}
         <path
@@ -1219,33 +1601,38 @@ const MasteryFlame = ({ streak, size = 18, className = "", style }: MasteryFlame
   );
 };
 
-
 // Helper to select a random number from a pool while avoiding recently asked digits
 const getRandomObjectAvoidingRecent = (
   pool: NumberEntry[],
   recentDigits: number[],
-  maxExclusionRatio: number = 0.5
+  maxExclusionRatio: number = 0.5,
 ): NumberEntry => {
   if (pool.length === 0) {
     return NUMBERS[Math.floor(Math.random() * NUMBERS.length)];
   }
-  
+
   // Calculate how many we can actually exclude based on pool size
   const maxToExclude = Math.floor(pool.length * maxExclusionRatio);
-  
+
   // Get the most recent exclusions (end of the array has the most recent items)
   const activeExclusions = recentDigits.slice(-Math.max(1, maxToExclude));
-  
+
   const filtered = pool.filter((n) => !activeExclusions.includes(n.digit));
   const finalPool = filtered.length > 0 ? filtered : pool;
-  
+
   return finalPool[Math.floor(Math.random() * finalPool.length)];
 };
 
 // =============================================================================
 // HEARTS DISPLAY WITH EVENT-DRIVEN ANIMATIONS
 // =============================================================================
-const HeartsDisplay = ({ hearts, isDarkMode }: { hearts: number; isDarkMode: boolean }) => {
+const HeartsDisplay = ({
+  hearts,
+  isDarkMode,
+}: {
+  hearts: number;
+  isDarkMode: boolean;
+}) => {
   const [prevHearts, setPrevHearts] = useState(hearts);
   const [lostIndexes, setLostIndexes] = useState<number[]>([]);
 
@@ -1255,10 +1642,12 @@ const HeartsDisplay = ({ hearts, isDarkMode }: { hearts: number; isDarkMode: boo
       for (let i = hearts; i < prevHearts; i++) {
         newlyLost.push(i);
       }
-      setLostIndexes(prev => [...prev, ...newlyLost]);
+      setLostIndexes((prev) => [...prev, ...newlyLost]);
 
       const timer = setTimeout(() => {
-        setLostIndexes(prev => prev.filter(idx => !newlyLost.includes(idx)));
+        setLostIndexes((prev) =>
+          prev.filter((idx) => !newlyLost.includes(idx)),
+        );
       }, 1000);
 
       setPrevHearts(hearts);
@@ -1348,7 +1737,7 @@ const getInitialDarkMode = (): boolean => {
   const manualPref = localStorage.getItem("ginti_theme_pref");
   if (manualPref === "dark") return true;
   if (manualPref === "light") return false;
-  
+
   // No theme preference exists in localStorage, default to dark mode for first-time users
   return true;
 };
@@ -1357,7 +1746,9 @@ let sharedAudioCtx: AudioContext | null = null;
 const getSharedAudioContext = (): AudioContext => {
   if (typeof window !== "undefined") {
     if (!sharedAudioCtx) {
-      sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      sharedAudioCtx = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
     }
     return sharedAudioCtx;
   }
@@ -1370,8 +1761,8 @@ const getSharedAudioContext = (): AudioContext => {
 const getTodayString = (): string => {
   const d = new Date();
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -1379,8 +1770,8 @@ const getYesterdayString = (): string => {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -1433,7 +1824,9 @@ export default function App() {
   // Instant Touch Feedback Activator for iOS & Mobile Browsers
   useEffect(() => {
     const handleTouchStart = () => {};
-    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
     return () => {
       document.removeEventListener("touchstart", handleTouchStart);
     };
@@ -1478,7 +1871,9 @@ export default function App() {
       if (rawData) {
         const parsed = JSON.parse(rawData);
         const hasThemePref = localStorage.getItem("ginti_theme_pref") !== null;
-        const finalDark = hasThemePref ? (localStorage.getItem("ginti_theme_pref") === "dark") : (parsed.isDarkMode ?? initialTheme);
+        const finalDark = hasThemePref
+          ? localStorage.getItem("ginti_theme_pref") === "dark"
+          : (parsed.isDarkMode ?? initialTheme);
 
         const restored: AppState = {
           totalXP: parsed.totalXP ?? 0,
@@ -1555,53 +1950,78 @@ export default function App() {
     } catch (e) {}
     return true;
   });
-  
+
   // Custom Unit Stages & Journey States
-  const [selectedJourneyUnitId, setSelectedJourneyUnitId] = useState<string | null>(null);
+  const [selectedJourneyUnitId, setSelectedJourneyUnitId] = useState<
+    string | null
+  >(null);
   const [activeStageIndex, setActiveStageIndex] = useState<number | null>(null);
   const [nextStageToFocus, setNextStageToFocus] = useState<number | null>(null);
-  const [nextArenaStageToFocus, setNextArenaStageToFocus] = useState<number | null>(null);
-  const [journeyStage1Finished, setJourneyStage1Finished] = useState<boolean>(false);
-  const [arenaStage1Finished, setArenaStage1Finished] = useState<boolean>(false);
+  const [nextArenaStageToFocus, setNextArenaStageToFocus] = useState<
+    number | null
+  >(null);
+  const [journeyStage1Finished, setJourneyStage1Finished] =
+    useState<boolean>(false);
+  const [arenaStage1Finished, setArenaStage1Finished] =
+    useState<boolean>(false);
   const journeyStage1ScrollRef = useRef<HTMLDivElement | null>(null);
   const arenaStage1ScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Animate header streak icon only on increase
-  const [triggerHeaderFlameAnimate, setTriggerHeaderFlameAnimate] = useState<boolean>(false);
+  const [triggerHeaderFlameAnimate, setTriggerHeaderFlameAnimate] =
+    useState<boolean>(false);
   const prevStreakRef = useRef<number>(appState.masteryStreak ?? 0);
 
   // Mithu Learning Assistant state
-  const [digitMistakes, setDigitMistakes] = useState<Record<number, number>>({});
-  const [mithuExplanationDigit, setMithuExplanationDigit] = useState<number | null>(null);
+  const [digitMistakes, setDigitMistakes] = useState<Record<number, number>>(
+    {},
+  );
+  const [mithuExplanationDigit, setMithuExplanationDigit] = useState<
+    number | null
+  >(null);
   const [mithuLanguage, setMithuLanguage] = useState<"ur" | "en">("ur");
   const mithuExplanationDigitRef = useRef<number | null>(null);
   useEffect(() => {
     mithuExplanationDigitRef.current = mithuExplanationDigit;
   }, [mithuExplanationDigit]);
-  const [showMithuSuggestDigit, setShowMithuSuggestDigit] = useState<number | null>(null);
+  const [showMithuSuggestDigit, setShowMithuSuggestDigit] = useState<
+    number | null
+  >(null);
 
   // Gameplay States for Stage 2 (Recognition Quiz)
   const [stageQuizIdx, setStageQuizIdx] = useState<number>(0);
   const [stageQuizScore, setStageQuizScore] = useState<number>(0);
-  const [stageQuizSelected, setStageQuizSelected] = useState<string | number | null>(null);
+  const [stageQuizSelected, setStageQuizSelected] = useState<
+    string | number | null
+  >(null);
   const [stageQuizAnswered, setStageQuizAnswered] = useState<boolean>(false);
-  const [stageQuizQuestions, setStageQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [stageQuizQuestions, setStageQuizQuestions] = useState<QuizQuestion[]>(
+    [],
+  );
 
   // Gameplay States for Stage 3 (Listening Selector)
   const [stageListIdx, setStageListIdx] = useState<number>(0);
-  const [stageListSelected, setStageListSelected] = useState<string | number | null>(null);
+  const [stageListSelected, setStageListSelected] = useState<
+    string | number | null
+  >(null);
   const [stageListAnswered, setStageListAnswered] = useState<boolean>(false);
   const [stageListQuestions, setStageListQuestions] = useState<any[]>([]);
-  const [stageListSpeakerAnimate, setStageListSpeakerAnimate] = useState<boolean>(false);
-  const [arenaListSpeakerAnimate, setArenaListSpeakerAnimate] = useState<boolean>(false);
+  const [stageListSpeakerAnimate, setStageListSpeakerAnimate] =
+    useState<boolean>(false);
+  const [arenaListSpeakerAnimate, setArenaListSpeakerAnimate] =
+    useState<boolean>(false);
 
   // Gameplay States for Stage 4 (Speedy Arcade Challenge)
   const [stageArcadeTime, setStageArcadeTime] = useState<number>(30);
   const [stageArcadeScore, setStageArcadeScore] = useState<number>(0);
-  const [stageArcadeActiveQ, setStageArcadeActiveQ] = useState<QuizQuestion | null>(null);
+  const [stageArcadeActiveQ, setStageArcadeActiveQ] =
+    useState<QuizQuestion | null>(null);
   const [stageArcadeOver, setStageArcadeOver] = useState<boolean>(false);
-  const [stageArcadeSelected, setStageArcadeSelected] = useState<string | number | null>(null);
-  const [stageArcadeAnswered, setStageArcadeAnswered] = useState<boolean>(false);
+  const [stageArcadeSelected, setStageArcadeSelected] = useState<
+    string | number | null
+  >(null);
+  const [stageArcadeAnswered, setStageArcadeAnswered] =
+    useState<boolean>(false);
   const stageArcadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs to track recently asked digits to prevent rapid repetition across game modes
@@ -1628,29 +2048,41 @@ export default function App() {
   // Training Arena Quiz & Auditory Progress states
   const [arenaQuizIdx, setArenaQuizIdx] = useState<number>(0);
   const [arenaQuizScore, setArenaQuizScore] = useState<number>(0);
-  const [arenaQuizSelected, setArenaQuizSelected] = useState<string | number | null>(null);
+  const [arenaQuizSelected, setArenaQuizSelected] = useState<
+    string | number | null
+  >(null);
   const [arenaQuizAnswered, setArenaQuizAnswered] = useState<boolean>(false);
-  const [arenaQuizQuestions, setArenaQuizQuestions] = useState<QuizQuestion[]>([]);
-  const [arenaQuestionStartTime, setArenaQuestionStartTime] = useState<number>(0);
+  const [arenaQuizQuestions, setArenaQuizQuestions] = useState<QuizQuestion[]>(
+    [],
+  );
+  const [arenaQuestionStartTime, setArenaQuestionStartTime] =
+    useState<number>(0);
 
   // Gameplay States for Training Arena Stage 3 (Listening)
   const [arenaListIdx, setArenaListIdx] = useState<number>(0);
-  const [arenaListSelected, setArenaListSelected] = useState<string | number | null>(null);
+  const [arenaListSelected, setArenaListSelected] = useState<
+    string | number | null
+  >(null);
   const [arenaListAnswered, setArenaListAnswered] = useState<boolean>(false);
   const [arenaListQuestions, setArenaListQuestions] = useState<any[]>([]);
 
   // Gameplay States for Training Arena Stage 4 (Arcade Speed Blitz)
   const [arenaArcadeTime, setArenaArcadeTime] = useState<number>(30);
   const [arenaArcadeScore, setArenaArcadeScore] = useState<number>(0);
-  const [arenaArcadeActiveQ, setArenaArcadeActiveQ] = useState<QuizQuestion | null>(null);
+  const [arenaArcadeActiveQ, setArenaArcadeActiveQ] =
+    useState<QuizQuestion | null>(null);
   const [arenaArcadeOver, setArenaArcadeOver] = useState<boolean>(false);
-  const [arenaArcadeSelected, setArenaArcadeSelected] = useState<string | number | null>(null);
-  const [arenaArcadeAnswered, setArenaArcadeAnswered] = useState<boolean>(false);
+  const [arenaArcadeSelected, setArenaArcadeSelected] = useState<
+    string | number | null
+  >(null);
+  const [arenaArcadeAnswered, setArenaArcadeAnswered] =
+    useState<boolean>(false);
   const arenaArcadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Search
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedSearchEntry, setSelectedSearchEntry] = useState<NumberEntry | null>(null);
+  const [selectedSearchEntry, setSelectedSearchEntry] =
+    useState<NumberEntry | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("ginti_recent_searches");
@@ -1663,8 +2095,10 @@ export default function App() {
   const saveSearchToHistory = (query: string) => {
     const trimmed = query.trim();
     if (!trimmed) return;
-    setRecentSearches(prev => {
-      const filtered = prev.filter(q => q.toLowerCase() !== trimmed.toLowerCase());
+    setRecentSearches((prev) => {
+      const filtered = prev.filter(
+        (q) => q.toLowerCase() !== trimmed.toLowerCase(),
+      );
       const updated = [trimmed, ...filtered].slice(0, 5);
       localStorage.setItem("ginti_recent_searches", JSON.stringify(updated));
       return updated;
@@ -1672,8 +2106,10 @@ export default function App() {
   };
 
   const removeSearchFromHistory = (query: string) => {
-    setRecentSearches(prev => {
-      const updated = prev.filter(q => q.toLowerCase() !== query.toLowerCase());
+    setRecentSearches((prev) => {
+      const updated = prev.filter(
+        (q) => q.toLowerCase() !== query.toLowerCase(),
+      );
       localStorage.setItem("ginti_recent_searches", JSON.stringify(updated));
       return updated;
     });
@@ -1683,8 +2119,6 @@ export default function App() {
     setRecentSearches([]);
     localStorage.removeItem("ginti_recent_searches");
   };
-
-
 
   useEffect(() => {
     if (!searchQuery || !searchQuery.trim()) return;
@@ -1704,42 +2138,63 @@ export default function App() {
   const [quizState, setQuizState] = useState<QuizState | null>(null);
 
   // Recovery systems state
-  const [recoveryState, setRecoveryState] = useState<RecoveryRoundState | null>(null);
-  const [stageQuizMistakes, setStageQuizMistakes] = useState<QuizQuestion[]>([]);
+  const [recoveryState, setRecoveryState] = useState<RecoveryRoundState | null>(
+    null,
+  );
+  const [stageQuizMistakes, setStageQuizMistakes] = useState<QuizQuestion[]>(
+    [],
+  );
   const [stageListMistakes, setStageListMistakes] = useState<any[]>([]);
   const [stage5Mistakes, setStage5Mistakes] = useState<QuizQuestion[]>([]);
-  const [arenaQuizMistakes, setArenaQuizMistakes] = useState<QuizQuestion[]>([]);
+  const [arenaQuizMistakes, setArenaQuizMistakes] = useState<QuizQuestion[]>(
+    [],
+  );
   const [arenaListMistakes, setArenaListMistakes] = useState<any[]>([]);
 
   // Arcade Blitz Arena
   const [arcadeState, setArcadeState] = useState<ArcadeState | null>(null);
   const arcadeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-
-
   // Speech and Audio state
   const [speechActive, setSpeechActive] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Mascot dynamic animations (jump, shake)
-  const [mascotAnimation, setMascotAnimation] = useState<"jump" | "shake" | "">("");
+  const [mascotAnimation, setMascotAnimation] = useState<"jump" | "shake" | "">(
+    "",
+  );
   const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
-  const [showDeleteArenaConfirm, setShowDeleteArenaConfirm] = useState<boolean>(false);
+  const [showDeleteArenaConfirm, setShowDeleteArenaConfirm] =
+    useState<boolean>(false);
   const [aboutExpanded, setAboutExpanded] = useState<boolean>(false);
-  
+
   // Mastery Streak states
   const [showStreakPopup, setShowStreakPopup] = useState<boolean>(false);
-  const [streakCelebration, setStreakCelebration] = useState<{ title: string; message: string; streak: number } | null>(null);
-  
+  const [streakCelebration, setStreakCelebration] = useState<{
+    title: string;
+    message: string;
+    streak: number;
+  } | null>(null);
+
   // Unit Completion states
-  const [completedUnitPopup, setCompletedUnitPopup] = useState<string | null>(null);
-  const [completedArenaFieldPopup, setCompletedArenaFieldPopup] = useState<{ min: number; max: number } | null>(null);
+  const [completedUnitPopup, setCompletedUnitPopup] = useState<string | null>(
+    null,
+  );
+  const [completedArenaFieldPopup, setCompletedArenaFieldPopup] = useState<{
+    min: number;
+    max: number;
+  } | null>(null);
   const [nextUnitToFocus, setNextUnitToFocus] = useState<string | null>(null);
-  const [highlightedUnitId, setHighlightedUnitId] = useState<string | null>(null);
+  const [highlightedUnitId, setHighlightedUnitId] = useState<string | null>(
+    null,
+  );
 
   // Placement Challenge states
-  const [placementChallengeUnitId, setPlacementChallengeUnitId] = useState<string | null>(null);
-  const [showPlacementChallengePopup, setShowPlacementChallengePopup] = useState<boolean>(false);
+  const [placementChallengeUnitId, setPlacementChallengeUnitId] = useState<
+    string | null
+  >(null);
+  const [showPlacementChallengePopup, setShowPlacementChallengePopup] =
+    useState<boolean>(false);
   const [placementState, setPlacementState] = useState<{
     unitId: string;
     questions: QuizQuestion[];
@@ -1750,7 +2205,7 @@ export default function App() {
     answers: boolean[];
     showResultPopup: boolean;
   } | null>(null);
-  
+
   // Mithu recent feedback texts to enforce the Variety Rule
   const recentMithuMessagesRef = useRef<string[]>([]);
   const trackMithuMessage = (msg: string) => {
@@ -1846,9 +2301,11 @@ export default function App() {
   const incrementMasteryStreak = () => {
     setAppState((prev) => {
       const nextStreak = (prev.masteryStreak ?? 0) + 1;
-      
+
       // Determine the highest milestone reached by nextStreak
-      const milestones = [10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 500, 750, 1000];
+      const milestones = [
+        10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 500, 750, 1000,
+      ];
       let currentMilestone = 0;
       for (const m of milestones) {
         if (nextStreak >= m) {
@@ -1868,10 +2325,10 @@ export default function App() {
         const isUrduScriptOn = prev.showScript;
 
         const celebration = getMilestoneCelebration(
-          currentMilestone, 
-          isUrduScriptOn, 
-          lastCelebratedTitleRef.current, 
-          lastCelebratedMsgRef.current
+          currentMilestone,
+          isUrduScriptOn,
+          lastCelebratedTitleRef.current,
+          lastCelebratedMsgRef.current,
         );
 
         milestoneTitle = celebration.title;
@@ -1884,11 +2341,15 @@ export default function App() {
 
       if (milestoneMsg) {
         setTimeout(() => {
-          setStreakCelebration({ title: milestoneTitle, message: milestoneMsg, streak: nextStreak });
+          setStreakCelebration({
+            title: milestoneTitle,
+            message: milestoneMsg,
+            streak: nextStreak,
+          });
           playSoundSynth("milestone");
           // Auto-dismiss after 4 seconds
           setTimeout(() => {
-            setStreakCelebration(prevCel => {
+            setStreakCelebration((prevCel) => {
               if (prevCel?.streak === nextStreak) return null;
               return prevCel;
             });
@@ -1900,7 +2361,7 @@ export default function App() {
         ...prev,
         masteryStreak: nextStreak,
         lastCelebratedMilestone: newCelebratedMilestone,
-        hasCenturyCelebrated: prev.hasCenturyCelebrated || (nextStreak === 100),
+        hasCenturyCelebrated: prev.hasCenturyCelebrated || nextStreak === 100,
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       return updated;
@@ -1965,8 +2426,8 @@ export default function App() {
     if (isStruggling) {
       const btnStyle = isArcade
         ? "bg-emerald-950/80 hover:bg-emerald-900/80 border-emerald-900 text-emerald-300 ring-emerald-900/20"
-        : appState.isDarkMode 
-          ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300 ring-emerald-900/40" 
+        : appState.isDarkMode
+          ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300 ring-emerald-900/40"
           : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800 ring-emerald-300/40";
 
       badgeElement = (
@@ -1991,8 +2452,8 @@ export default function App() {
     } else {
       const btnStyle = isArcade
         ? "bg-emerald-950/80 hover:bg-emerald-900/80 border-emerald-900/80 text-emerald-300"
-        : appState.isDarkMode 
-          ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300" 
+        : appState.isDarkMode
+          ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300"
           : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800";
 
       badgeElement = (
@@ -2011,19 +2472,32 @@ export default function App() {
       );
     }
 
-    return (
-      <div className="relative inline-block">
-        {badgeElement}
-      </div>
-    );
+    return <div className="relative inline-block">{badgeElement}</div>;
   };
 
   // =============================================================================
   // NEOCLASSICAL SYNTH SOUNDS
   // =============================================================================
   const playSoundSynth = (
-    type: "correct" | "incorrect" | "click" | "levelUp" | "navigation" | "toggle" | "milestone" | "progress" | "setback" | "destructive",
-    hapticOverride?: "correct" | "incorrect" | "loseHeart" | "milestone" | "complete" | "theme" | "none"
+    type:
+      | "correct"
+      | "incorrect"
+      | "click"
+      | "levelUp"
+      | "navigation"
+      | "toggle"
+      | "milestone"
+      | "progress"
+      | "setback"
+      | "destructive",
+    hapticOverride?:
+      | "correct"
+      | "incorrect"
+      | "loseHeart"
+      | "milestone"
+      | "complete"
+      | "theme"
+      | "none",
   ) => {
     // Premium Mobile Haptic Integration
     if (hapticOverride) {
@@ -2035,7 +2509,11 @@ export default function App() {
         triggerHaptic("correct");
       } else if (type === "incorrect" || type === "setback") {
         triggerHaptic("incorrect");
-      } else if (type === "levelUp" || type === "milestone" || type === "progress") {
+      } else if (
+        type === "levelUp" ||
+        type === "milestone" ||
+        type === "progress"
+      ) {
         triggerHaptic("complete");
       }
     }
@@ -2050,24 +2528,31 @@ export default function App() {
 
       if (type === "correct") {
         // High-Fidelity spark bells arpeggio with warm triangle harmonic octave layer
-        const playTone = (freq: number, startTime: number, duration: number) => {
+        const playTone = (
+          freq: number,
+          startTime: number,
+          duration: number,
+        ) => {
           const oscNode = audioCtx.createOscillator();
           const harmonicsNode = audioCtx.createOscillator();
           const gainNodeNode = audioCtx.createGain();
-          
+
           oscNode.type = "sine";
           oscNode.frequency.setValueAtTime(freq, startTime);
 
           harmonicsNode.type = "triangle";
           harmonicsNode.frequency.setValueAtTime(freq * 2, startTime);
-          
+
           gainNodeNode.gain.setValueAtTime(0.045, startTime);
-          gainNodeNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-          
+          gainNodeNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            startTime + duration,
+          );
+
           oscNode.connect(gainNodeNode);
           harmonicsNode.connect(gainNodeNode);
           gainNodeNode.connect(audioCtx.destination);
-          
+
           oscNode.start(startTime);
           harmonicsNode.start(startTime);
           oscNode.stop(startTime + duration + 0.1);
@@ -2078,92 +2563,95 @@ export default function App() {
         playTone(523.25, now, 0.15);
         playTone(659.25, now + 0.06, 0.15);
         playTone(783.99, now + 0.12, 0.15);
-        playTone(1046.50, now + 0.18, 0.35);
-
+        playTone(1046.5, now + 0.18, 0.35);
       } else if (type === "incorrect") {
         // Dual descending minor-third sliding tones - warm, informative, never harsh
         const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         osc1.type = "triangle";
         osc1.frequency.setValueAtTime(220, now); // A3
         osc1.frequency.linearRampToValueAtTime(164.81, now + 0.3); // E3
-        
+
         osc2.type = "sine";
         osc2.frequency.setValueAtTime(261.63, now); // C4 (minor third above A3)
-        osc2.frequency.linearRampToValueAtTime(196.00, now + 0.3); // G3
-        
+        osc2.frequency.linearRampToValueAtTime(196.0, now + 0.3); // G3
+
         gainNode.gain.setValueAtTime(0.045, now);
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        
+
         osc1.connect(gainNode);
         osc2.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         osc1.start(now);
         osc2.start(now);
         osc1.stop(now + 0.4);
         osc2.stop(now + 0.4);
-
       } else if (type === "levelUp") {
         // Multi-level triumphant fanfare! (C4 -> G4 -> C5 -> E5 -> G5)
-        const playTone = (freq: number, startTime: number, duration: number) => {
+        const playTone = (
+          freq: number,
+          startTime: number,
+          duration: number,
+        ) => {
           const oscNode = audioCtx.createOscillator();
           const subNode = audioCtx.createOscillator();
           const gainNodeNode = audioCtx.createGain();
-          
+
           oscNode.type = "sine";
           oscNode.frequency.setValueAtTime(freq, startTime);
-          
+
           subNode.type = "triangle";
           subNode.frequency.setValueAtTime(freq / 2, startTime);
-          
+
           gainNodeNode.gain.setValueAtTime(0.045, startTime);
-          gainNodeNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-          
+          gainNodeNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            startTime + duration,
+          );
+
           oscNode.connect(gainNodeNode);
           subNode.connect(gainNodeNode);
           gainNodeNode.connect(audioCtx.destination);
-          
+
           oscNode.start(startTime);
           subNode.start(startTime);
           oscNode.stop(startTime + duration + 0.05);
           subNode.stop(startTime + duration + 0.05);
         };
 
-        playTone(261.63, now, 0.15);        // C4
-        playTone(392.00, now + 0.10, 0.15); // G4
-        playTone(523.25, now + 0.20, 0.20); // C5
-        playTone(659.25, now + 0.30, 0.25); // E5
-        playTone(783.99, now + 0.40, 0.50); // G5
-
+        playTone(261.63, now, 0.15); // C4
+        playTone(392.0, now + 0.1, 0.15); // G4
+        playTone(523.25, now + 0.2, 0.2); // C5
+        playTone(659.25, now + 0.3, 0.25); // E5
+        playTone(783.99, now + 0.4, 0.5); // G5
       } else if (type === "navigation") {
         // Soft, elegant sweeping chime for screen/tab transition (non-intrusive)
         const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         osc1.type = "sine";
         osc1.frequency.setValueAtTime(440, now); // A4
         osc1.frequency.exponentialRampToValueAtTime(554.37, now + 0.12); // C#5
-        
+
         osc2.type = "sine";
         osc2.frequency.setValueAtTime(659.25, now); // E5
-        osc2.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5
-        
+        osc2.frequency.exponentialRampToValueAtTime(880.0, now + 0.12); // A5
+
         gainNode.gain.setValueAtTime(0.022, now);
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        
+
         osc1.connect(gainNode);
         osc2.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         osc1.start(now);
         osc2.start(now);
         osc1.stop(now + 0.16);
         osc2.stop(now + 0.16);
-
       } else if (type === "toggle") {
         // Quick subtle click-clack or plip-plop switches
         const osc1 = audioCtx.createOscillator();
@@ -2189,7 +2677,6 @@ export default function App() {
         gainNode2.connect(audioCtx.destination);
         osc2.start(now + 0.04);
         osc2.stop(now + 0.08);
-
       } else if (type === "milestone") {
         // Beautiful sparkly bell chime for streak milestone celebration (D5 -> E5 -> A5 -> B5 -> E6)
         const playBell = (freq: number, delay: number, dur: number) => {
@@ -2197,125 +2684,135 @@ export default function App() {
           const modulatorNode = audioCtx.createOscillator();
           const modGainNode = audioCtx.createGain();
           const gainNodeNode = audioCtx.createGain();
-          
+
           oscNode.type = "sine";
           oscNode.frequency.setValueAtTime(freq, now + delay);
-          
+
           modulatorNode.frequency.setValueAtTime(freq * 1.5, now + delay);
           modGainNode.gain.setValueAtTime(80, now + delay);
-          
+
           gainNodeNode.gain.setValueAtTime(0.034, now + delay);
-          gainNodeNode.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
-          
+          gainNodeNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            now + delay + dur,
+          );
+
           modulatorNode.connect(modGainNode);
           modGainNode.connect(oscNode.frequency);
           oscNode.connect(gainNodeNode);
           gainNodeNode.connect(audioCtx.destination);
-          
+
           oscNode.start(now + delay);
           modulatorNode.start(now + delay);
           oscNode.stop(now + delay + dur + 0.1);
           modulatorNode.stop(now + delay + dur + 0.1);
         };
-        
-        playBell(587.33, 0, 0.3);      // D5
-        playBell(659.25, 0.08, 0.3);   // E5
-        playBell(880.00, 0.16, 0.4);   // A5
-        playBell(987.77, 0.24, 0.5);   // B5
-        playBell(1318.51, 0.32, 0.7);  // E6
 
+        playBell(587.33, 0, 0.3); // D5
+        playBell(659.25, 0.08, 0.3); // E5
+        playBell(880.0, 0.16, 0.4); // A5
+        playBell(987.77, 0.24, 0.5); // B5
+        playBell(1318.51, 0.32, 0.7); // E6
       } else if (type === "progress") {
         // Soft encouraging rising major-third interval cascade for moving forward and milestones
-        const playTone = (freq: number, startTime: number, duration: number) => {
+        const playTone = (
+          freq: number,
+          startTime: number,
+          duration: number,
+        ) => {
           const oscNode = audioCtx.createOscillator();
           const gainNodeNode = audioCtx.createGain();
           oscNode.type = "sine";
           oscNode.frequency.setValueAtTime(freq, startTime);
           gainNodeNode.gain.setValueAtTime(0.028, startTime);
-          gainNodeNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          gainNodeNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            startTime + duration,
+          );
           oscNode.connect(gainNodeNode);
           gainNodeNode.connect(audioCtx.destination);
           oscNode.start(startTime);
           oscNode.stop(startTime + duration + 0.05);
         };
-        playTone(440.00, now, 0.15); // A4
+        playTone(440.0, now, 0.15); // A4
         playTone(554.37, now + 0.08, 0.15); // C#5
         playTone(659.25, now + 0.16, 0.25); // E5
-
       } else if (type === "setback") {
         // Soft, calm, and slightly subdued descending perfect-fourth interval ("let's try again")
         const osc = audioCtx.createOscillator();
         const sub = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         osc.type = "sine";
         osc.frequency.setValueAtTime(329.63, now); // E4
         osc.frequency.linearRampToValueAtTime(246.94, now + 0.35); // B3
-        
+
         sub.type = "sine";
-        sub.frequency.setValueAtTime(196.00, now); // G3
+        sub.frequency.setValueAtTime(196.0, now); // G3
         sub.frequency.linearRampToValueAtTime(146.83, now + 0.35); // D3
-        
+
         gainNode.gain.setValueAtTime(0.022, now);
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        
+
         osc.connect(gainNode);
         sub.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         osc.start(now);
         sub.start(now);
         osc.stop(now + 0.45);
         sub.stop(now + 0.45);
-
       } else if (type === "destructive") {
         // Soft descending "disappear" style sound with quiet dissolve noise whoosh
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         osc.type = "sine";
         osc.frequency.setValueAtTime(400, now);
         osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
-        
+
         gainNode.gain.setValueAtTime(0.022, now);
         gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
-        
+
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         osc.start(now);
         osc.stop(now + 0.45);
-        
+
         try {
           const bufferSize = audioCtx.sampleRate * 0.4;
-          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const buffer = audioCtx.createBuffer(
+            1,
+            bufferSize,
+            audioCtx.sampleRate,
+          );
           const data = buffer.getChannelData(0);
           for (let i = 0; i < bufferSize; i++) {
             data[i] = Math.random() * 2 - 1;
           }
           const noise = audioCtx.createBufferSource();
           noise.buffer = buffer;
-          
+
           const filter = audioCtx.createBiquadFilter();
           filter.type = "bandpass";
           filter.frequency.setValueAtTime(1000, now);
           filter.frequency.exponentialRampToValueAtTime(150, now + 0.4);
           filter.Q.setValueAtTime(2, now);
-          
+
           const noiseGain = audioCtx.createGain();
           noiseGain.gain.setValueAtTime(0.009, now);
           noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-          
+
           noise.connect(filter);
           filter.connect(noiseGain);
           noiseGain.connect(audioCtx.destination);
-          
+
           noise.start(now);
           noise.stop(now + 0.4);
         } catch (e) {
           // ignore
         }
-
       } else {
         // Standard high-fidelity button click (subtle high-pitch pitch decay)
         const osc = audioCtx.createOscillator();
@@ -2338,8 +2835,10 @@ export default function App() {
   // =============================================================================
   // WEB SPEECH SYNTHESIS ENGINE
   // =============================================================================
-  const playWordAudio = (entry: NumberEntry) => { speakNumberEntry(entry, setSpeechActive, showToast); };
-  
+  const playWordAudio = (entry: NumberEntry) => {
+    speakNumberEntry(entry, setSpeechActive, showToast);
+  };
+
   const formatValueForDisplay = (val: string | number): string | number => {
     if (typeof val !== "string") return val;
     if (!appState.showScript) {
@@ -2363,7 +2862,7 @@ export default function App() {
     const originalPrompt = question.promptValue;
     const formattedPrompt = formatValueForDisplay(originalPrompt);
     const formattedCorrect = formatValueForDisplay(question.correctAnswer);
-    
+
     if (formattedPrompt === formattedCorrect && question.entry) {
       return question.entry.digit;
     }
@@ -2379,7 +2878,7 @@ export default function App() {
 
     // Priority select regional voices (verified)
     const voices = window.speechSynthesis.getVoices();
-    
+
     // 1. Preferred regional Urdu voice (ur-PK)
     let targetVoice = voices.find((v) => {
       const l = v.lang.toLowerCase().replace("_", "-");
@@ -2396,26 +2895,37 @@ export default function App() {
 
     // 3. Fallback: Any voice containing 'ur' in name or lang
     if (!targetVoice) {
-      targetVoice = voices.find((v) => v.lang.toLowerCase().startsWith("ur") || v.name.toLowerCase().includes("urdu"));
+      targetVoice = voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith("ur") ||
+          v.name.toLowerCase().includes("urdu"),
+      );
     }
 
     // 4. Fallback: Any voice containing 'hi' in name or lang
     if (!targetVoice) {
-      targetVoice = voices.find((v) => v.lang.toLowerCase().startsWith("hi") || v.name.toLowerCase().includes("hindi"));
+      targetVoice = voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith("hi") ||
+          v.name.toLowerCase().includes("hindi"),
+      );
     }
 
     // Determine what text to speak.
     // If we have an Urdu or Hindi voice, we speak the nativeScript for maximum authentic pronunciation.
-    // Otherwise, speaking Arabic/Urdu characters on an English/Default voice results in complete silence or crash, 
+    // Otherwise, speaking Arabic/Urdu characters on an English/Default voice results in complete silence or crash,
     // so we fall back to the phonetic Roman spelling (romanUrdu).
-    const hasUrduOrHindiVoice = !!(targetVoice && (
-      targetVoice.lang.toLowerCase().startsWith("ur") ||
-      targetVoice.lang.toLowerCase().startsWith("hi") ||
-      targetVoice.name.toLowerCase().includes("urdu") ||
-      targetVoice.name.toLowerCase().includes("hindi")
-    ));
+    const hasUrduOrHindiVoice = !!(
+      targetVoice &&
+      (targetVoice.lang.toLowerCase().startsWith("ur") ||
+        targetVoice.lang.toLowerCase().startsWith("hi") ||
+        targetVoice.name.toLowerCase().includes("urdu") ||
+        targetVoice.name.toLowerCase().includes("hindi"))
+    );
 
-    const textToSpeak = hasUrduOrHindiVoice ? entry.nativeScript : entry.romanUrdu;
+    const textToSpeak = hasUrduOrHindiVoice
+      ? entry.nativeScript
+      : entry.romanUrdu;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
@@ -2425,12 +2935,14 @@ export default function App() {
     } else {
       // If no explicit voice object is found, try to hint the synthesis engine to use Urdu or Hindi language
       // But keep romanUrdu as the spoken text so it is legible for western TTS voices.
-      utterance.lang = "ur-PK"; 
-      console.warn("No Urdu (ur-PK) or Hindi (hi-IN) voice found in speechSynthesis.getVoices(). Falling back to system default.");
+      utterance.lang = "ur-PK";
+      console.warn(
+        "No Urdu (ur-PK) or Hindi (hi-IN) voice found in speechSynthesis.getVoices(). Falling back to system default.",
+      );
     }
 
     utterance.rate = 0.85; // Slower cadence for clear learning
-    utterance.pitch = 1.0;  // Standard warm pitch
+    utterance.pitch = 1.0; // Standard warm pitch
     utterance.volume = 1.0; // Max volume
 
     // Logging execution as requested
@@ -2479,7 +2991,7 @@ export default function App() {
         num.digit < 100 &&
         (num.romanUrdu.toLowerCase() === norm ||
           num.nativeScript === norm ||
-          num.searchKeys.map((k) => k.toLowerCase()).includes(norm))
+          num.searchKeys.map((k) => k.toLowerCase()).includes(norm)),
     );
 
     return match ? match.digit : null;
@@ -2493,12 +3005,18 @@ export default function App() {
 
     let total = 0;
     let tempSum = 0;
-    
+
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
       if (!token) continue;
 
-      const isThousand = ["hazaar", "hazar", "hazaars", "hazars", "ہزار"].includes(token);
+      const isThousand = [
+        "hazaar",
+        "hazar",
+        "hazaars",
+        "hazars",
+        "ہزار",
+      ].includes(token);
       const isHundred = ["sau", "so", "soo", "سو"].includes(token);
 
       if (isThousand) {
@@ -2535,7 +3053,7 @@ export default function App() {
         romanUrdu: "Sifr",
         nativeScript: "صفر",
         unitId: "unit1",
-        searchKeys: ["sifr", "sifr", "zero", "0", "صفر"]
+        searchKeys: ["sifr", "sifr", "zero", "0", "صفر"],
       };
     }
 
@@ -2602,7 +3120,7 @@ export default function App() {
       nativeScript,
       unitId: "unit5",
       searchKeys,
-      context: `Translation helper for ${digit}`
+      context: `Translation helper for ${digit}`,
     };
   };
 
@@ -2625,8 +3143,8 @@ export default function App() {
           Math.min(
             prevRow[j] + 1, // deletion
             currRow[j - 1] + 1, // insertion
-            prevRow[j - 1] + cost // substitution
-          )
+            prevRow[j - 1] + cost, // substitution
+          ),
         );
       }
       prevRow = currRow;
@@ -2637,7 +3155,7 @@ export default function App() {
   // Convert Roman Urdu terms to a standardized phonetic base key to cope with spelling inconsistencies
   const getPhoneticKey = (s: string): string => {
     let res = s.toLowerCase().trim();
-    
+
     // Replace double character sets with simple equivalents
     res = res.replace(/aa/g, "a");
     res = res.replace(/ee/g, "i");
@@ -2654,7 +3172,7 @@ export default function App() {
     res = res.replace(/ff/g, "f");
     res = res.replace(/cc/g, "c");
     res = res.replace(/yy/g, "y");
-    
+
     // Convert popular Urdu Romanization aspirate glyphs
     res = res.replace(/kh/g, "k");
     res = res.replace(/gh/g, "g");
@@ -2670,12 +3188,12 @@ export default function App() {
     res = res.replace(/ey/g, "e");
     res = res.replace(/v/g, "w");
     res = res.replace(/y/g, "i");
-    
+
     // Clean trailing voiceless breathings
     if (res.endsWith("ah")) {
       res = res.slice(0, -2) + "a";
     }
-    
+
     return res;
   };
 
@@ -2734,8 +3252,8 @@ export default function App() {
         isMatch = true;
         score += 6500;
       }
-      
-      const keysPhonetic = keysLower.map(k => getPhoneticKey(k));
+
+      const keysPhonetic = keysLower.map((k) => getPhoneticKey(k));
       if (keysPhonetic.includes(queryPhonetic)) {
         isMatch = true;
         score += 6000;
@@ -2750,7 +3268,10 @@ export default function App() {
         isMatch = true;
         score += 2000;
       }
-      if (romanPhonetic.startsWith(queryPhonetic) && queryPhonetic.length >= 3) {
+      if (
+        romanPhonetic.startsWith(queryPhonetic) &&
+        queryPhonetic.length >= 3
+      ) {
         isMatch = true;
         score += 1800;
       }
@@ -2777,9 +3298,10 @@ export default function App() {
       if (queryNormalized.length >= 3) {
         const romanDist = getLevenshteinDistance(queryNormalized, romanLower);
         const maxLenRoman = Math.max(queryNormalized.length, romanLower.length);
-        const romanSimilarity = maxLenRoman === 0 ? 1 : 1 - romanDist / maxLenRoman;
+        const romanSimilarity =
+          maxLenRoman === 0 ? 1 : 1 - romanDist / maxLenRoman;
 
-        if (romanSimilarity >= 0.70 || romanDist <= 2) {
+        if (romanSimilarity >= 0.7 || romanDist <= 2) {
           isMatch = true;
           score += Math.round(romanSimilarity * 1500);
         }
@@ -2791,7 +3313,7 @@ export default function App() {
             const maxLenKey = Math.max(queryNormalized.length, key.length);
             const keySimilarity = maxLenKey === 0 ? 1 : 1 - keyDist / maxLenKey;
 
-            if (keySimilarity >= 0.70 || keyDist <= 2) {
+            if (keySimilarity >= 0.7 || keyDist <= 2) {
               isMatch = true;
               score += Math.round(keySimilarity * 1200);
             }
@@ -2810,7 +3332,7 @@ export default function App() {
     if (dynamicEntry && !dynamicEntryAdded) {
       matchesList.push({
         entry: dynamicEntry,
-        score: 9500
+        score: 9500,
       });
     }
 
@@ -2829,20 +3351,20 @@ export default function App() {
 
     const shuffledUnitList = [...unitList].sort(() => 0.5 - Math.random());
     const queryDecks: QuizQuestion[] = [];
-    const promptFormats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
-      ? [
-          "digit_to_script",
-          "script_to_digit",
-        ]
-      : [
-          "digit_to_roman",
-          "roman_to_digit",
-        ];
+    const promptFormats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
+      ? ["digit_to_script", "script_to_digit"]
+      : ["digit_to_roman", "roman_to_digit"];
 
     // Build exactly 10 high-fidelity randomized questions with robust matching candidates
     for (let i = 0; i < 10; i++) {
       const entry = shuffledUnitList[i % shuffledUnitList.length];
-      const pFormat = promptFormats[Math.floor(Math.random() * promptFormats.length)];
+      const pFormat =
+        promptFormats[Math.floor(Math.random() * promptFormats.length)];
 
       let promptValue: string | number = "";
       let correctAnswer: string | number = "";
@@ -2867,7 +3389,9 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, NUMBERS);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
 
       queryDecks.push({
         entry,
@@ -2901,14 +3425,21 @@ export default function App() {
   const getArenaNumbersPool = (): NumberEntry[] => {
     const minVal = appState.arenaMin ?? 30;
     const maxVal = appState.arenaMax ?? 100;
-    const filtered = NUMBERS.filter((n) => n.digit >= Math.min(minVal, maxVal) && n.digit <= Math.max(minVal, maxVal));
+    const filtered = NUMBERS.filter(
+      (n) =>
+        n.digit >= Math.min(minVal, maxVal) &&
+        n.digit <= Math.max(minVal, maxVal),
+    );
     if (filtered.length === 0) {
       return NUMBERS; // Fallback to all entry records if filtered subset results in empty
     }
     return filtered;
   };
 
-  const getAdaptiveSortedList = (pool: NumberEntry[], count: number): NumberEntry[] => {
+  const getAdaptiveSortedList = (
+    pool: NumberEntry[],
+    count: number,
+  ): NumberEntry[] => {
     const weakMap = appState.arenaWeakMap ?? {};
     const slowMap = appState.arenaSlowMap ?? {};
     const correctMap = appState.arenaCorrectMap ?? {};
@@ -2964,7 +3495,7 @@ export default function App() {
     const sorted = [...scored].sort((a, b) => b.prScore - a.prScore);
 
     const result: NumberEntry[] = [];
-    
+
     // Pick unique values from sorted priority list
     for (const item of sorted) {
       if (result.length >= count) break;
@@ -2975,7 +3506,9 @@ export default function App() {
 
     // Fill pool leftovers if unique choices are exhausted
     while (result.length < count && result.length < pool.length) {
-      const remaining = pool.filter((p) => !result.some((r) => r.digit === p.digit));
+      const remaining = pool.filter(
+        (p) => !result.some((r) => r.digit === p.digit),
+      );
       if (remaining.length === 0) break;
       result.push(remaining[Math.floor(Math.random() * remaining.length)]);
     }
@@ -3001,9 +3534,10 @@ export default function App() {
     }
     saveState((prev) => {
       const currentProgressPrev = prev.arenaStageProgress ?? 1;
-      const nextProgress = completedStage >= currentProgressPrev
-        ? Math.min(5, completedStage + 1)
-        : currentProgressPrev;
+      const nextProgress =
+        completedStage >= currentProgressPrev
+          ? Math.min(5, completedStage + 1)
+          : currentProgressPrev;
 
       const updated: AppState = {
         ...prev,
@@ -3023,9 +3557,13 @@ export default function App() {
     return leveledUp;
   };
 
-  const recordArenaResponse = (digit: number, isCorrect: boolean, elapsedMs: number) => {
+  const recordArenaResponse = (
+    digit: number,
+    isCorrect: boolean,
+    elapsedMs: number,
+  ) => {
     const isSlow = !isCorrect ? false : elapsedMs > 4000;
-    
+
     saveState((prev) => {
       const currentCorrects = prev.arenaCorrectMap ?? {};
       const currentWrongs = prev.arenaWeakMap ?? {};
@@ -3054,9 +3592,10 @@ export default function App() {
         arenaCorrectMap: updatedCorrects,
         arenaWeakMap: updatedWrongs,
         arenaSlowMap: updatedSlows,
-        weakAreas: !isCorrect && !prev.weakAreas.includes(digit)
-          ? [...prev.weakAreas, digit]
-          : prev.weakAreas
+        weakAreas:
+          !isCorrect && !prev.weakAreas.includes(digit)
+            ? [...prev.weakAreas, digit]
+            : prev.weakAreas,
       };
     });
   };
@@ -3068,7 +3607,12 @@ export default function App() {
     const pool = getArenaNumbersPool();
 
     const questions: QuizQuestion[] = [];
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
 
@@ -3093,8 +3637,16 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, pool);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-      questions.push({ entry, promptType: pFormat, promptValue, correctAnswer, choices });
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
+      questions.push({
+        entry,
+        promptType: pFormat,
+        promptValue,
+        correctAnswer,
+        choices,
+      });
     }
 
     setArenaQuizQuestions(questions);
@@ -3117,9 +3669,15 @@ export default function App() {
     for (let i = 0; i < 5; i++) {
       const entry = activeList[i];
       const correctAnswer = entry.digit;
-      const distractors = getSmartDistractors(entry, "roman_to_digit", pool) as number[];
+      const distractors = getSmartDistractors(
+        entry,
+        "roman_to_digit",
+        pool,
+      ) as number[];
 
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
       questions.push({ entry, correctAnswer, choices });
     }
 
@@ -3137,12 +3695,24 @@ export default function App() {
     // Get top 8 adaptive candidates (or less if pool is smaller)
     const countToFetch = Math.min(8, pool.length);
     const activeList = getAdaptiveArenaList(countToFetch);
-    const entry = getRandomObjectAvoidingRecent(activeList, recentArenaArcadeDigitsRef.current, 0.5);
-    
+    const entry = getRandomObjectAvoidingRecent(
+      activeList,
+      recentArenaArcadeDigitsRef.current,
+      0.5,
+    );
+
     // Update recent
-    recentArenaArcadeDigitsRef.current = [...recentArenaArcadeDigitsRef.current, entry.digit].slice(-15);
-    
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    recentArenaArcadeDigitsRef.current = [
+      ...recentArenaArcadeDigitsRef.current,
+      entry.digit,
+    ].slice(-15);
+
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
     const pFormat = formats[Math.floor(Math.random() * formats.length)];
@@ -3164,7 +3734,9 @@ export default function App() {
     }
 
     const distractors = getSmartDistractors(entry, pFormat, pool);
-    const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
+    const choices = [correctAnswer, ...distractors].sort(
+      () => 0.5 - Math.random(),
+    );
     return { entry, promptType: pFormat, promptValue, correctAnswer, choices };
   };
 
@@ -3189,15 +3761,20 @@ export default function App() {
     const pool = getArenaNumbersPool();
 
     const questions: QuizQuestion[] = [];
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
 
     for (let i = 0; i < 10; i++) {
-       const entry = activeList[i];
-       const pFormat = formats[Math.floor(Math.random() * formats.length)];
-       let promptValue: string | number = "";
-       let correctAnswer: string | number = "";
+      const entry = activeList[i];
+      const pFormat = formats[Math.floor(Math.random() * formats.length)];
+      let promptValue: string | number = "";
+      let correctAnswer: string | number = "";
 
       if (pFormat === "digit_to_roman") {
         promptValue = entry.digit;
@@ -3214,8 +3791,16 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, pool);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-      questions.push({ entry, promptType: pFormat, promptValue, correctAnswer, choices });
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
+      questions.push({
+        entry,
+        promptType: pFormat,
+        promptValue,
+        correctAnswer,
+        choices,
+      });
     }
 
     setArenaQuizQuestions(questions);
@@ -3258,9 +3843,16 @@ export default function App() {
 
   // Automatically scroll to the next unlocked stage in the Unit Journey selection map when progressing
   useEffect(() => {
-    if (activeScreen === "unit-journey" && activeStageIndex === null && selectedJourneyUnitId && nextStageToFocus !== null) {
+    if (
+      activeScreen === "unit-journey" &&
+      activeStageIndex === null &&
+      selectedJourneyUnitId &&
+      nextStageToFocus !== null
+    ) {
       const timer = setTimeout(() => {
-        const nextStageElement = document.getElementById(`journey-stage-row-${nextStageToFocus}`);
+        const nextStageElement = document.getElementById(
+          `journey-stage-row-${nextStageToFocus}`,
+        );
         if (nextStageElement) {
           nextStageElement.scrollIntoView({
             behavior: "smooth",
@@ -3275,9 +3867,15 @@ export default function App() {
 
   // Automatically scroll to the next unlocked stage in the Training Arena selection map when progressing
   useEffect(() => {
-    if (activeScreen === "training-arena" && arenaActiveStage === null && nextArenaStageToFocus !== null) {
+    if (
+      activeScreen === "training-arena" &&
+      arenaActiveStage === null &&
+      nextArenaStageToFocus !== null
+    ) {
       const timer = setTimeout(() => {
-        const nextStageElement = document.getElementById(`arena-stage-row-${nextArenaStageToFocus}`);
+        const nextStageElement = document.getElementById(
+          `arena-stage-row-${nextArenaStageToFocus}`,
+        );
         if (nextStageElement) {
           nextStageElement.scrollIntoView({
             behavior: "smooth",
@@ -3296,8 +3894,10 @@ export default function App() {
       const timer = setTimeout(() => {
         const targetId = nextUnitToFocus;
         setNextUnitToFocus(null); // Clear first to avoid re-triggering
-        
-        const nextUnitElement = document.getElementById(`unit-card-${targetId}`);
+
+        const nextUnitElement = document.getElementById(
+          `unit-card-${targetId}`,
+        );
         if (nextUnitElement) {
           nextUnitElement.scrollIntoView({
             behavior: "smooth",
@@ -3306,7 +3906,7 @@ export default function App() {
           // Set highlight
           setHighlightedUnitId(targetId);
           const clearHighlightTimer = setTimeout(() => {
-            setHighlightedUnitId((curr) => curr === targetId ? null : curr);
+            setHighlightedUnitId((curr) => (curr === targetId ? null : curr));
           }, 3500);
           return () => clearTimeout(clearHighlightTimer);
         }
@@ -3324,7 +3924,12 @@ export default function App() {
     // Shuffle and pick 15 randomized questions from the unit
     const shuffledList = [...unitList].sort(() => 0.5 - Math.random());
     const questions: QuizQuestion[] = [];
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
 
@@ -3349,8 +3954,16 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, NUMBERS);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-      questions.push({ entry, promptType: pFormat, promptValue, correctAnswer, choices });
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
+      questions.push({
+        entry,
+        promptType: pFormat,
+        promptValue,
+        correctAnswer,
+        choices,
+      });
     }
 
     setPlacementState({
@@ -3384,13 +3997,19 @@ export default function App() {
       15,
       0,
       true,
-      recentMithuMessagesRef.current
+      recentMithuMessagesRef.current,
     );
-    const wFeedback = getMithuWrongFeedback(true, recentMithuMessagesRef.current, 0);
+    const wFeedback = getMithuWrongFeedback(
+      true,
+      recentMithuMessagesRef.current,
+      0,
+    );
     const chosenFeedback = isCorrect ? cFeedback : wFeedback;
     trackMithuMessage(chosenFeedback.title);
 
-    const nextScore = isCorrect ? placementState.score + 1 : placementState.score;
+    const nextScore = isCorrect
+      ? placementState.score + 1
+      : placementState.score;
     const nextAnswers = [...placementState.answers, isCorrect];
     const nextIndex = placementState.currentIndex + 1;
 
@@ -3462,9 +4081,11 @@ export default function App() {
       ? [...appState.completedUnits, unitId]
       : appState.completedUnits;
 
-    const placementsArray = appState.placementCompletedUnits && !appState.placementCompletedUnits.includes(unitId)
-      ? [...appState.placementCompletedUnits, unitId]
-      : appState.placementCompletedUnits || [unitId];
+    const placementsArray =
+      appState.placementCompletedUnits &&
+      !appState.placementCompletedUnits.includes(unitId)
+        ? [...appState.placementCompletedUnits, unitId]
+        : appState.placementCompletedUnits || [unitId];
 
     const nextJourneyProgress = {
       ...(appState.unitStagesProgress ?? {}),
@@ -3482,7 +4103,10 @@ export default function App() {
     saveState(updated);
 
     const currentIndex = UNITS.findIndex((u) => u.id === unitId);
-    const nextUnitAvailable = currentIndex !== -1 && currentIndex + 1 < UNITS.length ? UNITS[currentIndex + 1] : null;
+    const nextUnitAvailable =
+      currentIndex !== -1 && currentIndex + 1 < UNITS.length
+        ? UNITS[currentIndex + 1]
+        : null;
     if (nextUnitAvailable) {
       setNextUnitToFocus(nextUnitAvailable.id);
     }
@@ -3495,15 +4119,24 @@ export default function App() {
 
   const launchPlacementRecovery = () => {
     if (!placementState) return;
-    const missedQuestions = placementState.questions.filter((q, idx) => !placementState.answers[idx]);
-    
-    startRecoveryRound("placement_challenge", missedQuestions, placementState.unitId);
+    const missedQuestions = placementState.questions.filter(
+      (q, idx) => !placementState.answers[idx],
+    );
+
+    startRecoveryRound(
+      "placement_challenge",
+      missedQuestions,
+      placementState.unitId,
+    );
   };
 
   const startUnitJourney = (unitId: string) => {
     const unitIndex = UNITS.findIndex((u) => u.id === unitId);
-    const isUnlocked = unitIndex === 0 || appState.completedUnits.includes(UNITS[unitIndex - 1].id) || appState.completedUnits.includes(unitId);
-    
+    const isUnlocked =
+      unitIndex === 0 ||
+      appState.completedUnits.includes(UNITS[unitIndex - 1].id) ||
+      appState.completedUnits.includes(unitId);
+
     if (!isUnlocked) {
       playSoundSynth("incorrect");
       showToast("This unit is locked! Please complete earlier units first. 🔒");
@@ -3525,7 +4158,12 @@ export default function App() {
     setStageQuizMistakes([]);
     const shuffledUnitList = getAdaptiveSortedList(unitList, 5);
     const questions: QuizQuestion[] = [];
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
 
@@ -3550,8 +4188,16 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, NUMBERS);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-      questions.push({ entry, promptType: pFormat, promptValue, correctAnswer, choices });
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
+      questions.push({
+        entry,
+        promptType: pFormat,
+        promptValue,
+        correctAnswer,
+        choices,
+      });
     }
 
     setStageQuizQuestions(questions);
@@ -3573,9 +4219,15 @@ export default function App() {
     for (let i = 0; i < 5; i++) {
       const entry = shuffledUnitList[i % shuffledUnitList.length];
       const correctAnswer = entry.digit;
-      const distractors = getSmartDistractors(entry, "roman_to_digit", NUMBERS) as number[];
+      const distractors = getSmartDistractors(
+        entry,
+        "roman_to_digit",
+        NUMBERS,
+      ) as number[];
 
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
       questions.push({ entry, correctAnswer, choices });
     }
 
@@ -3588,15 +4240,22 @@ export default function App() {
 
   const makeSingleUnitArcadeQuestion = (unitId: string): QuizQuestion => {
     const unitList = NUMBERS.filter((n) => n.unitId === unitId);
-    
+
     // Get recent for this unit
     const recent = recentUnitArcadeDigitsRef.current[unitId] || [];
     const entry = getRandomObjectAvoidingRecent(unitList, recent, 0.5);
-    
-    // Update recent
-    recentUnitArcadeDigitsRef.current[unitId] = [...recent, entry.digit].slice(-10);
 
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    // Update recent
+    recentUnitArcadeDigitsRef.current[unitId] = [...recent, entry.digit].slice(
+      -10,
+    );
+
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
     const pFormat = formats[Math.floor(Math.random() * formats.length)];
@@ -3618,7 +4277,9 @@ export default function App() {
     }
 
     const distractors = getSmartDistractors(entry, pFormat, NUMBERS);
-    const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
+    const choices = [correctAnswer, ...distractors].sort(
+      () => 0.5 - Math.random(),
+    );
     return { entry, promptType: pFormat, promptValue, correctAnswer, choices };
   };
 
@@ -3643,7 +4304,12 @@ export default function App() {
     setStage5Mistakes([]);
     const shuffledUnitList = getAdaptiveSortedList(unitList, 10);
     const queryDecks: QuizQuestion[] = [];
-    const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    const formats: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
 
@@ -3669,7 +4335,9 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, NUMBERS);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
 
       queryDecks.push({
         entry,
@@ -3713,7 +4381,7 @@ export default function App() {
     } else {
       showToast("Mithu gifted you 5 free Hearts! Shabash! 🦜❤️");
     }
-    
+
     if (quizState) {
       setQuizState({
         ...quizState,
@@ -3738,7 +4406,9 @@ export default function App() {
       resetMasteryStreak(currQuestion.entry.digit);
     }
 
-    const nextHearts = correct ? quizState.hearts : Math.max(0, quizState.hearts - 1);
+    const nextHearts = correct
+      ? quizState.hearts
+      : Math.max(0, quizState.hearts - 1);
     const depleted = nextHearts === 0;
 
     if (correct) {
@@ -3794,9 +4464,13 @@ export default function App() {
       quizState.questions.length,
       correct ? consecutiveCount : 0,
       false,
-      recentMithuMessagesRef.current
+      recentMithuMessagesRef.current,
     );
-    const wFeedback = getMithuWrongFeedback(false, recentMithuMessagesRef.current, previousStreak);
+    const wFeedback = getMithuWrongFeedback(
+      false,
+      recentMithuMessagesRef.current,
+      previousStreak,
+    );
     const chosenFeedback = correct ? cFeedback : wFeedback;
     trackMithuMessage(chosenFeedback.title);
 
@@ -3828,7 +4502,9 @@ export default function App() {
           return;
         }
         // Completed full set! Save completion milestones
-        const isNewCompletion = !appState.completedUnits.includes(quizState.unitId);
+        const isNewCompletion = !appState.completedUnits.includes(
+          quizState.unitId,
+        );
         const unitsArray = isNewCompletion
           ? [...appState.completedUnits, quizState.unitId]
           : appState.completedUnits;
@@ -3847,17 +4523,23 @@ export default function App() {
 
         saveState(updated);
         playSoundSynth("levelUp");
-        
-        const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
+
+        const celebratoryMsg = getMithuUnitCompletionMessage(
+          recentMithuMessagesRef.current,
+        );
         trackMithuMessage(celebratoryMsg);
-        
+
         if (quizState.isStage5Test) {
-          showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
+          showToast(
+            `${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`,
+          );
           setCompletedUnitPopup(quizState.unitId);
         } else {
-          showToast(`${celebratoryMsg} Stage Completed! Awarded +50 Reward XP! 🎉`);
+          showToast(
+            `${celebratoryMsg} Stage Completed! Awarded +50 Reward XP! 🎉`,
+          );
         }
-        
+
         setQuizState(null);
         setActiveScreen("dashboard");
       }, 180);
@@ -3873,14 +4555,21 @@ export default function App() {
 
   // MISTAKE RECOVERY CHALLENGE SYSTEM (Duolingo style correction loop)
   const startRecoveryRound = (
-    originalMode: "journey_stage2" | "journey_stage3" | "journey_stage5" | "arena_stage2" | "arena_stage3" | "arena_stage5" | "placement_challenge",
+    originalMode:
+      | "journey_stage2"
+      | "journey_stage3"
+      | "journey_stage5"
+      | "arena_stage2"
+      | "arena_stage3"
+      | "arena_stage5"
+      | "placement_challenge",
     mistakeQuestions: any[],
-    unitId?: string
+    unitId?: string,
   ) => {
     playSoundSynth("progress");
     const initialMistakes: NumberEntry[] = [];
     const uniqueDigits = new Set<number>();
-    
+
     // Extract unique mistake entries
     for (const q of mistakeQuestions) {
       if (q && q.entry && !uniqueDigits.has(q.entry.digit)) {
@@ -3895,7 +4584,12 @@ export default function App() {
     }
 
     const questions = initialMistakes.map((entry) => {
-      const formats: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+      const formats: (
+        | "digit_to_roman"
+        | "roman_to_digit"
+        | "digit_to_script"
+        | "script_to_digit"
+      )[] = appState.showScript
         ? ["digit_to_script", "script_to_digit"]
         : ["digit_to_roman", "roman_to_digit"];
       const pFormat = formats[Math.floor(Math.random() * formats.length)];
@@ -3917,14 +4611,16 @@ export default function App() {
       }
 
       const distractors = getSmartDistractors(entry, pFormat, NUMBERS);
-      const choices = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-      
+      const choices = [correctAnswer, ...distractors].sort(
+        () => 0.5 - Math.random(),
+      );
+
       return {
         entry,
         promptType: pFormat,
         promptValue,
         correctAnswer,
-        choices
+        choices,
       };
     });
 
@@ -3990,10 +4686,12 @@ export default function App() {
         // Clone with newly randomized choices
         const reQueuedQuestion = {
           ...currentQ,
-          choices: [...currentQ.choices].sort(() => 0.5 - Math.random())
+          choices: [...currentQ.choices].sort(() => 0.5 - Math.random()),
         };
         activeQuestions.push(reQueuedQuestion);
-        showToast(`Mithu says: Re-queueing digit ${digit} for reinforcement loop! ⚠️`);
+        showToast(
+          `Mithu says: Re-queueing digit ${digit} for reinforcement loop! ⚠️`,
+        );
       } else {
         // Failed 3 times: stop forcing it, explain, move to failedPermanently
         if (!failedPermanently.includes(digit)) {
@@ -4009,9 +4707,13 @@ export default function App() {
       recoveryState.questions.length,
       0,
       true,
-      recentMithuMessagesRef.current
+      recentMithuMessagesRef.current,
     );
-    const wFeedback = getMithuWrongFeedback(true, recentMithuMessagesRef.current, previousStreak);
+    const wFeedback = getMithuWrongFeedback(
+      true,
+      recentMithuMessagesRef.current,
+      previousStreak,
+    );
     const chosenFeedback = correct ? cFeedback : wFeedback;
     trackMithuMessage(chosenFeedback.title);
 
@@ -4038,14 +4740,14 @@ export default function App() {
         currentIndex: nextIdx,
         userAnswer: null,
         isAnswered: false,
-        isDone: true
+        isDone: true,
       });
     } else {
       setRecoveryState({
         ...recoveryState,
         currentIndex: nextIdx,
         userAnswer: null,
-        isAnswered: false
+        isAnswered: false,
       });
     }
   };
@@ -4066,12 +4768,24 @@ export default function App() {
   // ARCADE BLITZ ENGINE (⚡ COUNTDOWN REFLEXES CHALLENGE)
   // =============================================================================
   const makeArcadeQuestion = (): QuizQuestion => {
-    const randomObject = getRandomObjectAvoidingRecent(NUMBERS, recentArcadeDigitsRef.current, 0.5);
-    
-    // Update the recent list
-    recentArcadeDigitsRef.current = [...recentArcadeDigitsRef.current, randomObject.digit].slice(-40);
+    const randomObject = getRandomObjectAvoidingRecent(
+      NUMBERS,
+      recentArcadeDigitsRef.current,
+      0.5,
+    );
 
-    const options: ("digit_to_roman" | "roman_to_digit" | "digit_to_script" | "script_to_digit")[] = appState.showScript
+    // Update the recent list
+    recentArcadeDigitsRef.current = [
+      ...recentArcadeDigitsRef.current,
+      randomObject.digit,
+    ].slice(-40);
+
+    const options: (
+      | "digit_to_roman"
+      | "roman_to_digit"
+      | "digit_to_script"
+      | "script_to_digit"
+    )[] = appState.showScript
       ? ["digit_to_script", "script_to_digit"]
       : ["digit_to_roman", "roman_to_digit"];
     const selection = options[Math.floor(Math.random() * options.length)];
@@ -4108,7 +4822,11 @@ export default function App() {
 
     for (const piece of randomizedPool) {
       if (choicesList.length >= 3) break;
-      let targetValue = isNumTarget ? piece.digit : isScriptTarget ? piece.nativeScript : piece.romanUrdu;
+      let targetValue = isNumTarget
+        ? piece.digit
+        : isScriptTarget
+          ? piece.nativeScript
+          : piece.romanUrdu;
       if (!choicesList.includes(targetValue) && targetValue !== cAnswer) {
         choicesList.push(targetValue);
       }
@@ -4160,9 +4878,9 @@ export default function App() {
         if (prev.timeLeft <= 1) {
           // Time completed
           if (arcadeTimerRef.current) clearInterval(arcadeTimerRef.current);
-          
+
           const reachedScore = prev.score;
-          
+
           setAppState((currentAppState) => {
             const currentHigh = currentAppState.highScore;
             const nextHigh = reachedScore > currentHigh;
@@ -4172,11 +4890,11 @@ export default function App() {
               highScore: nextHigh ? reachedScore : currentHigh,
               totalXP: currentAppState.totalXP + reachedScore, // Real XP earned matches scorecard points
             };
-            
+
             if (reachedScore > 0) {
               saved = markUserActive(saved);
             }
-            
+
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saved));
             return saved;
           });
@@ -4198,33 +4916,36 @@ export default function App() {
   };
 
   const selectArcadeOption = (choiceSelected: string | number) => {
-    if (!arcadeState || arcadeState.isGameOver || arcadeState.isAnswered) return;
+    if (!arcadeState || arcadeState.isGameOver || arcadeState.isAnswered)
+      return;
 
     const currQ = arcadeState.activeQuestion;
     if (!currQ) return;
 
     const correctMatch = choiceSelected === currQ.correctAnswer;
-    const nextConsecutiveCorrect = correctMatch ? (arcadeState.consecutiveCorrect ?? 0) + 1 : 0;
+    const nextConsecutiveCorrect = correctMatch
+      ? (arcadeState.consecutiveCorrect ?? 0) + 1
+      : 0;
 
     if (nextConsecutiveCorrect === 10) {
       const RAPID_LINES = [
         "Bijli se tez! ⚡",
         "Reaction time dekho zara!",
         "Mithu ko bhi sochne ka time nahi mila!",
-        "Rapid? Aap to turbo nikle!"
+        "Rapid? Aap to turbo nikle!",
       ];
       setTimeout(() => {
         const randomIndex = Math.floor(Math.random() * RAPID_LINES.length);
         const milestoneMsg = RAPID_LINES[randomIndex];
-        setStreakCelebration({ 
-          title: "Rapid Intuition Master! ⚡", 
-          message: milestoneMsg, 
-          streak: 10 
+        setStreakCelebration({
+          title: "Rapid Intuition Master! ⚡",
+          message: milestoneMsg,
+          streak: 10,
         });
         playSoundSynth("milestone");
         // Auto-dismiss after 4 seconds
         setTimeout(() => {
-          setStreakCelebration(prevCel => {
+          setStreakCelebration((prevCel) => {
             if (prevCel?.title === "Rapid Intuition Master! ⚡") return null;
             return prevCel;
           });
@@ -4244,9 +4965,13 @@ export default function App() {
       setMascotAnimation("");
     }, 600);
 
-    const calculatedScore = correctMatch ? arcadeState.score + 10 : Math.max(0, arcadeState.score - 5);
+    const calculatedScore = correctMatch
+      ? arcadeState.score + 10
+      : Math.max(0, arcadeState.score - 5);
     const completedChallenges = arcadeState.totalAnswered + 1;
-    const errorsCounter = correctMatch ? arcadeState.wrongCount : arcadeState.wrongCount + 1;
+    const errorsCounter = correctMatch
+      ? arcadeState.wrongCount
+      : arcadeState.wrongCount + 1;
 
     let weakAreasUpdate = [...appState.weakAreas];
     if (!correctMatch && !weakAreasUpdate.includes(currQ.entry.digit)) {
@@ -4339,10 +5064,10 @@ export default function App() {
         const questionKey = `${selectedJourneyUnitId || "unit"}-${stageListIdx}-${currentQ.entry.digit}`;
         if (lastPlayedStageQRef.current !== questionKey) {
           lastPlayedStageQRef.current = questionKey;
-          
+
           // Auto-play the word audio
           playWordAudio(currentQ.entry);
-          
+
           setStageListSpeakerAnimate(true);
           const timer = setTimeout(() => {
             setStageListSpeakerAnimate(false);
@@ -4351,7 +5076,12 @@ export default function App() {
         }
       }
     }
-  }, [activeStageIndex, stageListIdx, stageListQuestions, selectedJourneyUnitId]);
+  }, [
+    activeStageIndex,
+    stageListIdx,
+    stageListQuestions,
+    selectedJourneyUnitId,
+  ]);
 
   useEffect(() => {
     if (arenaActiveStage === 3) {
@@ -4360,10 +5090,10 @@ export default function App() {
         const questionKey = `${arenaListIdx}-${currentQ.entry.digit}`;
         if (lastPlayedArenaQRef.current !== questionKey) {
           lastPlayedArenaQRef.current = questionKey;
-          
+
           // Auto-play the word audio
           playWordAudio(currentQ.entry);
-          
+
           setArenaListSpeakerAnimate(true);
           const timer = setTimeout(() => {
             setArenaListSpeakerAnimate(false);
@@ -4378,7 +5108,11 @@ export default function App() {
   useEffect(() => {
     if (recoveryState && !recoveryState.isDone) {
       const currentQ = recoveryState.questions[recoveryState.currentIndex];
-      if (currentQ && currentQ.entry && currentQ.promptType === "audio_to_digit") {
+      if (
+        currentQ &&
+        currentQ.entry &&
+        currentQ.promptType === "audio_to_digit"
+      ) {
         const questionKey = `recovery-${recoveryState.currentIndex}-${currentQ.entry.digit}`;
         if (lastPlayedRecoveryQRef.current !== questionKey) {
           lastPlayedRecoveryQRef.current = questionKey;
@@ -4547,14 +5281,11 @@ export default function App() {
   const activeLevel = Math.max(1, Math.floor(appState.totalXP / 100) + 1);
 
   return (
-    <motion.div 
-      className="min-h-screen relative flex flex-col justify-between"
-    >
-      
+    <motion.div className="min-h-screen relative flex flex-col justify-between">
       {/* Visual Header System Notifications Toast */}
       <AnimatePresence>
         {toastMessage && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -4569,14 +5300,14 @@ export default function App() {
       {/* Onboarding Dialog Panel Backdrop Overlay */}
       <AnimatePresence>
         {onboardingActive && (
-          <motion.div 
+          <motion.div
             id="onboarding-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[150] flex items-center justify-center p-3.5 sm:p-4"
           >
-            <motion.div 
+            <motion.div
               id="onboarding-card"
               initial={{ scale: 0.92, y: 15 }}
               animate={{ scale: 1, y: 0 }}
@@ -4585,7 +5316,7 @@ export default function App() {
             >
               {/* Premium Top Line Accent */}
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-700 via-emerald-600 to-amber-500" />
-              
+
               <div className="mx-auto flex justify-center mb-3 sm:mb-6 transform scale-[0.85] xs:scale-100 origin-center">
                 <MithuMascot mood="happy" />
               </div>
@@ -4593,35 +5324,52 @@ export default function App() {
               <h1 className="text-2xl xs:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-2 sm:mb-3 font-sans">
                 Welcome to <span className="text-emerald-800">Ginti</span>
               </h1>
-              
+
               <p className="text-xs md:text-sm text-slate-600 leading-relaxed mb-4 sm:mb-8 max-w-md mx-auto px-1 sm:px-0">
-                Ever spoken perfect conversational Urdu—but when a micro-merchant yells out <span className="font-semibold text-slate-900">"Tirpan"</span> or <span className="font-semibold text-slate-900">"Chaunsath"</span>, you panic? <span className="text-emerald-700 font-semibold">Ginti</span> bridges this exact gap instantly.
+                Ever spoken perfect conversational Urdu—but when a
+                micro-merchant yells out{" "}
+                <span className="font-semibold text-slate-900">"Tirpan"</span>{" "}
+                or{" "}
+                <span className="font-semibold text-slate-900">
+                  "Chaunsath"
+                </span>
+                , you panic?{" "}
+                <span className="text-emerald-700 font-semibold">Ginti</span>{" "}
+                bridges this exact gap instantly.
               </p>
 
-              <div id="onboarding-choices" className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch justify-center">
-                <button 
+              <div
+                id="onboarding-choices"
+                className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch justify-center"
+              >
+                <button
                   onClick={() => handleOnboardMode("learn")}
                   className="flex-1 btn-primary py-2.5 sm:py-4 px-4 sm:px-6 rounded-2xl text-xs sm:text-sm font-bold flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-center cursor-pointer"
                 >
                   <span className="font-extrabold flex items-center justify-center gap-1">
                     📚 Learn Systematically
                   </span>
-                  <span className="opacity-85 text-[10px] font-normal leading-tight">Step-by-step unit exercises</span>
+                  <span className="opacity-85 text-[10px] font-normal leading-tight">
+                    Step-by-step unit exercises
+                  </span>
                 </button>
 
-                <button 
+                <button
                   onClick={() => handleOnboardMode("lookup")}
                   className="flex-1 btn-secondary py-2.5 sm:py-4 px-4 sm:px-6 rounded-2xl text-xs sm:text-sm font-bold flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-center cursor-pointer"
                 >
                   <span className="font-extrabold flex items-center justify-center gap-1">
                     ⚡ Instant Search Hub
                   </span>
-                  <span className="opacity-85 text-[10px] font-normal leading-tight">Phonetic lookup dictionary</span>
+                  <span className="opacity-85 text-[10px] font-normal leading-tight">
+                    Phonetic lookup dictionary
+                  </span>
                 </button>
               </div>
 
               <p className="text-[9.5px] sm:text-[10px] text-slate-400 mt-4 sm:mt-8 italic">
-                Designed to run completely client-side. Complete matching intuition anytime, anywhere.
+                Designed to run completely client-side. Complete matching
+                intuition anytime, anywhere.
               </p>
             </motion.div>
           </motion.div>
@@ -4631,14 +5379,14 @@ export default function App() {
       {/* Custom Reset Progress Confirmation Modal */}
       <AnimatePresence>
         {showResetConfirm && (
-          <motion.div 
+          <motion.div
             id="reset-confirm-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-fade-in"
           >
-            <motion.div 
+            <motion.div
               id="reset-confirm-card"
               initial={{ scale: 0.92, y: 15 }}
               animate={{ scale: 1, y: 0 }}
@@ -4647,7 +5395,7 @@ export default function App() {
             >
               {/* Premium Warning Top Stripe */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 via-orange-500 to-rose-600" />
-              
+
               {/* 3D Rose/Crimson Alert Badge */}
               <div className="mx-auto w-16 h-16 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center mb-4 border-2 border-rose-500 border-b-[5px] border-b-rose-900 shadow-md mt-2 relative select-none animate-pulse">
                 <AlertCircle className="w-8 h-8 text-white stroke-[2.5]" />
@@ -4660,20 +5408,31 @@ export default function App() {
               <p className="text-[10px] sm:text-[10.5px] font-black text-rose-600 uppercase tracking-widest font-mono mb-4">
                 IRREVERSIBLE ACTION WARNING
               </p>
-              
+
               <p className="text-xs sm:text-[13px] text-slate-500 font-semibold leading-relaxed mb-6 max-w-[290px] mx-auto">
-                Are you absolutely sure? This will permanently wipe your accumulated <strong className="text-slate-800 font-extrabold">XP</strong>, reset all milestones to <strong className="text-slate-800 font-extrabold">Unit 0</strong>, and erase your <strong className="text-slate-800 font-extrabold">Targeted Practice Numbers</strong>.
+                Are you absolutely sure? This will permanently wipe your
+                accumulated{" "}
+                <strong className="text-slate-800 font-extrabold">XP</strong>,
+                reset all milestones to{" "}
+                <strong className="text-slate-800 font-extrabold">
+                  Unit 0
+                </strong>
+                , and erase your{" "}
+                <strong className="text-slate-800 font-extrabold">
+                  Targeted Practice Numbers
+                </strong>
+                .
               </p>
 
               <div id="reset-confirm-actions" className="flex flex-col gap-3">
-                <button 
+                <button
                   onClick={performAppReset}
                   className="w-full bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl font-black text-xs sm:text-sm tracking-wider uppercase border-2 border-rose-500 border-b-[5px] border-b-rose-700 transition-all duration-100 cursor-pointer flex items-center justify-center gap-2 py-3.5 shadow-md select-none hover:from-rose-600 hover:to-rose-700 active:translate-y-[2px] active:border-b-[3px]"
                 >
                   🔥 YES, RESET MY PROGRESS
                 </button>
 
-                <button 
+                <button
                   onClick={cancelAppReset}
                   className="w-full bg-slate-50 hover:bg-slate-100/80 text-slate-600 rounded-2xl font-black text-xs sm:text-sm tracking-wider uppercase border-2 border-slate-200 border-b-[5px] border-b-slate-350 transition-all duration-100 cursor-pointer flex items-center justify-center gap-2 py-3.5 shadow-sm select-none active:translate-y-[2px] active:border-b-[3px]"
                 >
@@ -4688,14 +5447,14 @@ export default function App() {
       {/* Custom Delete Training Range Confirmation Modal */}
       <AnimatePresence>
         {showDeleteArenaConfirm && (
-          <motion.div 
+          <motion.div
             id="delete-arena-confirm-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-fade-in"
           >
-            <motion.div 
+            <motion.div
               id="delete-arena-confirm-card"
               initial={{ scale: 0.92, y: 15 }}
               animate={{ scale: 1, y: 0 }}
@@ -4704,7 +5463,7 @@ export default function App() {
             >
               {/* Premium Warning Top Stripe */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 to-orange-500" />
-              
+
               {/* 3D Rose/Crimson Alert Badge */}
               <div className="mx-auto w-16 h-16 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center mb-4 border-2 border-rose-500 border-b-[5px] border-b-rose-900 shadow-md mt-2 relative select-none animate-pulse">
                 <Trash2 className="w-8 h-8 text-white stroke-[2.5]" />
@@ -4713,21 +5472,25 @@ export default function App() {
               <h2 className="text-xl sm:text-2xl font-black text-rose-950 tracking-tight leading-none mb-3 font-sans">
                 Delete Training Range?
               </h2>
-              
+
               <p className="text-xs sm:text-[13px] text-slate-500 font-semibold leading-relaxed mb-6 max-w-[290px] mx-auto">
-                This will remove your saved practice range.<br />
+                This will remove your saved practice range.
+                <br />
                 You can create a new one at any time.
               </p>
 
-              <div id="delete-arena-confirm-actions" className="flex flex-col gap-3">
-                <button 
+              <div
+                id="delete-arena-confirm-actions"
+                className="flex flex-col gap-3"
+              >
+                <button
                   onClick={performDeleteArenaRange}
                   className="w-full bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl font-black text-xs sm:text-sm tracking-wider uppercase border-2 border-rose-500 border-b-[5px] border-b-rose-700 transition-all duration-100 cursor-pointer flex items-center justify-center gap-2 py-3.5 shadow-md select-none hover:from-rose-600 hover:to-rose-700 active:translate-y-[2px] active:border-b-[3px]"
                 >
                   Delete Range
                 </button>
 
-                <button 
+                <button
                   onClick={() => {
                     playSoundSynth("navigation");
                     setShowDeleteArenaConfirm(false);
@@ -4744,156 +5507,197 @@ export default function App() {
 
       {/* Mastery Streak Popup Modal */}
       <AnimatePresence>
-        {showStreakPopup && (() => {
-          const streakVal = appState.masteryStreak ?? 0;
-          let mithuMood: "thinking" | "happy" | "sparkly" = "thinking";
-          let mithuDialogueRoman = "Ginti seekhein aur\napna flame roshan karein! 🎯";
-          let mithuDialogueEng = "Build your Mastery Streak! Correct answers in any game or level keep the fire burning.";
+        {showStreakPopup &&
+          (() => {
+            const streakVal = appState.masteryStreak ?? 0;
+            let mithuMood: "thinking" | "happy" | "sparkly" = "thinking";
+            let mithuDialogueRoman =
+              "Ginti seekhein aur\napna flame roshan karein! 🎯";
+            let mithuDialogueEng =
+              "Build your Mastery Streak! Correct answers in any game or level keep the fire burning.";
 
-          if (streakVal >= 10) {
-            mithuMood = "sparkly";
-            mithuDialogueRoman = "Subhanallah! Aap tou bilkul\nGinti ke shehenshah hain! 👑";
-            mithuDialogueEng = "Absolutely legendary accuracy! You have achieved ultimate master-level Urdu numbers intuition.";
-          } else if (streakVal >= 5) {
-            mithuMood = "sparkly";
-            mithuDialogueRoman = "Kamal kar diya! Aap ka learning\nflame bohot garam hai! 🔥";
-            mithuDialogueEng = "Your learning flame is burning hot! Let's push for an even bigger milestone.";
-          } else if (streakVal >= 1) {
-            mithuMood = "happy";
-            mithuDialogueRoman = "Zabardast! Is momentum ko\nbarqarar rakhna hai! 🚀";
-            mithuDialogueEng = "You're building solid momentum! Keep choosing correct answers to watch your flame grow.";
-          }
+            if (streakVal >= 10) {
+              mithuMood = "sparkly";
+              mithuDialogueRoman =
+                "Subhanallah! Aap tou bilkul\nGinti ke shehenshah hain! 👑";
+              mithuDialogueEng =
+                "Absolutely legendary accuracy! You have achieved ultimate master-level Urdu numbers intuition.";
+            } else if (streakVal >= 5) {
+              mithuMood = "sparkly";
+              mithuDialogueRoman =
+                "Kamal kar diya! Aap ka learning\nflame bohot garam hai! 🔥";
+              mithuDialogueEng =
+                "Your learning flame is burning hot! Let's push for an even bigger milestone.";
+            } else if (streakVal >= 1) {
+              mithuMood = "happy";
+              mithuDialogueRoman =
+                "Zabardast! Is momentum ko\nbarqarar rakhna hai! 🚀";
+              mithuDialogueEng =
+                "You're building solid momentum! Keep choosing correct answers to watch your flame grow.";
+            }
 
-          return (
-            <motion.div 
-              id="streak-popup-overlay" 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
-            >
+            return (
               <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.10 } }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className="relative w-full max-w-[365px] bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2rem] p-5 shadow-2xl overflow-hidden flex flex-col gap-4"
+                id="streak-popup-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12 }}
+                className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
               >
-                {/* Premium Gradient Top-bar Accent */}
-                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-500" />
-                
-                {/* Ambient glowing radial light background */}
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-36 h-36 rounded-full bg-gradient-to-br from-orange-400/10 to-transparent blur-2xl pointer-events-none" />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.98,
+                    transition: { duration: 0.1 },
+                  }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
+                  className="relative w-full max-w-[365px] bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2rem] p-5 shadow-2xl overflow-hidden flex flex-col gap-4"
+                >
+                  {/* Premium Gradient Top-bar Accent */}
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-500" />
 
-                {/* 1. Header with Close Button */}
-                <div className="flex items-start justify-between w-full">
-                  <div>
-                    <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none mb-1">
-                      Mastery Streak
-                    </h3>
-                    <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
-                      Accuracy &amp; Momentum Tracker
+                  {/* Ambient glowing radial light background */}
+                  <div className="absolute top-0 right-0 -mt-10 -mr-10 w-36 h-36 rounded-full bg-gradient-to-br from-orange-400/10 to-transparent blur-2xl pointer-events-none" />
+
+                  {/* 1. Header with Close Button */}
+                  <div className="flex items-start justify-between w-full">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none mb-1">
+                        Mastery Streak
+                      </h3>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+                        Accuracy &amp; Momentum Tracker
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        playSoundSynth("navigation");
+                        setShowStreakPopup(false);
+                      }}
+                      className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10 -mr-1 -mt-1"
+                      aria-label="Close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* 2. Mithu Guidance */}
+                  <div className="flex items-center gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/70 dark:border-emerald-900/30 rounded-xl py-2 px-3 text-left w-full shrink-0">
+                    {/* Mascot */}
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <div
+                        className={`absolute inset-0 ${appState.isDarkMode ? "bg-emerald-400/20" : "bg-amber-400/20"} rounded-full blur-xs animate-pulse`}
+                      />
+                      <div className="relative z-10 w-9 h-9 flex items-center justify-center">
+                        <MithuMascot mood={mithuMood} size={36} />
+                      </div>
+                    </div>
+                    {/* Bubble Content */}
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[7.5px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest block mb-0.5">
+                        Mithu says
+                      </span>
+                      <p className="font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 leading-snug mb-0.5 not-italic whitespace-pre-line">
+                        "{mithuDialogueRoman}"
+                      </p>
+                      <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
+                        {mithuDialogueEng}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3. Current Streak (Premium tactile card as visual centerpiece) */}
+                  <div className="relative w-full bg-gradient-to-b from-orange-50/40 to-amber-50/10 dark:from-orange-950/5 dark:to-amber-950/2 border-2 border-orange-100/80 dark:border-orange-950/30 border-b-[5px] border-b-orange-200/80 dark:border-b-orange-950/80 rounded-[1.5rem] p-3.5 overflow-hidden shadow-xs">
+                    {/* Flame decor details */}
+                    <div className="absolute -left-3 -bottom-3 w-10 h-10 text-orange-500/5 dark:text-orange-500/10 pointer-events-none">
+                      <Flame className="w-full h-full fill-current" />
+                    </div>
+                    <div className="absolute -right-3 -top-3 w-10 h-10 text-amber-500/5 dark:text-amber-500/10 pointer-events-none">
+                      <Flame className="w-full h-full fill-current" />
+                    </div>
+
+                    <div className="flex flex-col items-center text-center">
+                      {/* Interactive Flame Container */}
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center mb-1.5 border-2 shadow-xs bg-white dark:bg-slate-900 ${getStreakBadgeStyles()}`}
+                      >
+                        <MasteryFlame
+                          streak={appState.masteryStreak ?? 0}
+                          size={24}
+                        />
+                      </div>
+
+                      <span className="text-[8.5px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-0.5">
+                        Current Mastery Streak
+                      </span>
+
+                      <div className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tracking-tight flex items-center justify-center gap-1.5 leading-none py-0.5">
+                        <span className="text-3xl">🔥</span>
+                        <span>{streakVal}</span>
+                      </div>
+
+                      <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900/80 border border-orange-100 dark:border-orange-950 text-[10.5px] font-black text-orange-700 dark:text-orange-300 shadow-3xs">
+                        <span>⚡</span>
+                        <span>
+                          {streakVal === 0
+                            ? "No Active Streak"
+                            : `${streakVal} Correct Answers`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Explanation Section */}
+                  <div className="w-full text-slate-600 dark:text-slate-400 text-center px-1">
+                    <p className="text-[11.5px] font-semibold leading-relaxed">
+                      Consecutive correct answers are tracked globally across{" "}
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        Units
+                      </span>
+                      ,{" "}
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        Stages
+                      </span>
+                      ,{" "}
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        Training Arena
+                      </span>
+                      , and{" "}
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        Blitz Mode
+                      </span>
+                      .
+                    </p>
+                    <p className="text-[10.5px] font-bold text-rose-500 dark:text-rose-400 mt-1.5 flex items-center justify-center gap-1">
+                      <span>⚠️</span>
+                      <span>
+                        One incorrect answer resets your Mastery Streak.
+                      </span>
                     </p>
                   </div>
-                  
+
+                  {/* 5. Primary 3D Tactile CTA Button */}
                   <button
                     onClick={() => {
                       playSoundSynth("navigation");
                       setShowStreakPopup(false);
                     }}
-                    className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10 -mr-1 -mt-1"
-                    aria-label="Close"
+                    className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-xl py-2.5 px-4 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
+                      appState.isDarkMode
+                        ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                        : "border-2 border-emerald-700 border-b-[5px] border-b-emerald-800 active:translate-y-[3px] active:border-b-[2px]"
+                    }`}
                   >
-                    <X className="w-4 h-4" />
+                    Keep Learning! 🚀
                   </button>
-                </div>
-
-                {/* 2. Mithu Guidance */}
-                <div className="flex items-center gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/70 dark:border-emerald-900/30 rounded-xl py-2 px-3 text-left w-full shrink-0">
-                  {/* Mascot */}
-                  <div className="relative shrink-0 flex items-center justify-center">
-                    <div className={`absolute inset-0 ${appState.isDarkMode ? "bg-emerald-400/20" : "bg-amber-400/20"} rounded-full blur-xs animate-pulse`} />
-                    <div className="relative z-10 w-9 h-9 flex items-center justify-center">
-                      <MithuMascot mood={mithuMood} size={36} />
-                    </div>
-                  </div>
-                  {/* Bubble Content */}
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[7.5px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest block mb-0.5">
-                      Mithu says
-                    </span>
-                    <p className="font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 leading-snug mb-0.5 not-italic whitespace-pre-line">
-                      "{mithuDialogueRoman}"
-                    </p>
-                    <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
-                      {mithuDialogueEng}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 3. Current Streak (Premium tactile card as visual centerpiece) */}
-                <div className="relative w-full bg-gradient-to-b from-orange-50/40 to-amber-50/10 dark:from-orange-950/5 dark:to-amber-950/2 border-2 border-orange-100/80 dark:border-orange-950/30 border-b-[5px] border-b-orange-200/80 dark:border-b-orange-950/80 rounded-[1.5rem] p-3.5 overflow-hidden shadow-xs">
-                  {/* Flame decor details */}
-                  <div className="absolute -left-3 -bottom-3 w-10 h-10 text-orange-500/5 dark:text-orange-500/10 pointer-events-none">
-                    <Flame className="w-full h-full fill-current" />
-                  </div>
-                  <div className="absolute -right-3 -top-3 w-10 h-10 text-amber-500/5 dark:text-amber-500/10 pointer-events-none">
-                    <Flame className="w-full h-full fill-current" />
-                  </div>
-
-                  <div className="flex flex-col items-center text-center">
-                    {/* Interactive Flame Container */}
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-1.5 border-2 shadow-xs bg-white dark:bg-slate-900 ${getStreakBadgeStyles()}`}>
-                      <MasteryFlame streak={appState.masteryStreak ?? 0} size={24} />
-                    </div>
-
-                    <span className="text-[8.5px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-0.5">
-                      Current Mastery Streak
-                    </span>
-                    
-                    <div className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tracking-tight flex items-center justify-center gap-1.5 leading-none py-0.5">
-                      <span className="text-3xl">🔥</span>
-                      <span>{streakVal}</span>
-                    </div>
-
-                    <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900/80 border border-orange-100 dark:border-orange-950 text-[10.5px] font-black text-orange-700 dark:text-orange-300 shadow-3xs">
-                      <span>⚡</span>
-                      <span>{streakVal === 0 ? "No Active Streak" : `${streakVal} Correct Answers`}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Explanation Section */}
-                <div className="w-full text-slate-600 dark:text-slate-400 text-center px-1">
-                  <p className="text-[11.5px] font-semibold leading-relaxed">
-                    Consecutive correct answers are tracked globally across <span className="text-emerald-600 dark:text-emerald-400 font-bold">Units</span>, <span className="text-emerald-600 dark:text-emerald-400 font-bold">Stages</span>, <span className="text-emerald-600 dark:text-emerald-400 font-bold">Training Arena</span>, and <span className="text-emerald-600 dark:text-emerald-400 font-bold">Blitz Mode</span>.
-                  </p>
-                  <p className="text-[10.5px] font-bold text-rose-500 dark:text-rose-400 mt-1.5 flex items-center justify-center gap-1">
-                    <span>⚠️</span>
-                    <span>One incorrect answer resets your Mastery Streak.</span>
-                  </p>
-                </div>
-
-                {/* 5. Primary 3D Tactile CTA Button */}
-                <button
-                  onClick={() => {
-                    playSoundSynth("navigation");
-                    setShowStreakPopup(false);
-                  }}
-                  className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-xl py-2.5 px-4 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none transition-all ${
-                    appState.isDarkMode 
-                      ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                      : "border-2 border-emerald-700 border-b-[5px] border-b-emerald-800 active:translate-y-[3px] active:border-b-[2px]"
-                  }`}
-                >
-                  Keep Learning! 🚀
-                </button>
-
+                </motion.div>
               </motion.div>
-            </motion.div>
-          );
-        })()}
+            );
+          })()}
       </AnimatePresence>
 
       {/* Mastery Streak Milestone Celebration Toast */}
@@ -4911,41 +5715,62 @@ export default function App() {
             }`}
           >
             {/* Left side compact fire badge with dynamic shine and glow */}
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center relative overflow-hidden shrink-0 transition-all ${
-              appState.isDarkMode
-                ? "shadow-[0_3px_15px_rgba(245,158,11,0.6)]"
-                : "shadow-[0_3px_12px_rgba(245,158,11,0.35)]"
-            }`}>
-              <MasteryFlame streak={streakCelebration ? streakCelebration.streak : (appState.masteryStreak ?? 0)} size={22} />
+            <div
+              className={`w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center relative overflow-hidden shrink-0 transition-all ${
+                appState.isDarkMode
+                  ? "shadow-[0_3px_15px_rgba(245,158,11,0.6)]"
+                  : "shadow-[0_3px_12px_rgba(245,158,11,0.35)]"
+              }`}
+            >
+              <MasteryFlame
+                streak={
+                  streakCelebration
+                    ? streakCelebration.streak
+                    : (appState.masteryStreak ?? 0)
+                }
+                size={22}
+              />
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rotate-45 -translate-y-full animate-[shine_2s_infinite]" />
             </div>
 
             {/* Compact content details */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <div className="flex items-center gap-1.5 leading-none mb-0.5">
-                <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${
-                  appState.isDarkMode ? "text-emerald-400" : "text-emerald-700"
-                }`}>
+                <span
+                  className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${
+                    appState.isDarkMode
+                      ? "text-emerald-400"
+                      : "text-emerald-700"
+                  }`}
+                >
                   🔥 Milestone
                 </span>
-                <span className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full truncate shadow-xs border ${
-                  appState.isDarkMode
-                    ? "bg-amber-950/65 text-amber-300 border-amber-800/40"
-                    : "bg-amber-100/90 text-amber-900 border-amber-250/60"
-                }`}>
+                <span
+                  className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full truncate shadow-xs border ${
+                    appState.isDarkMode
+                      ? "bg-amber-950/65 text-amber-300 border-amber-800/40"
+                      : "bg-amber-100/90 text-amber-900 border-amber-250/60"
+                  }`}
+                >
                   {streakCelebration.title}
                 </span>
               </div>
-              
+
               <div className="flex items-baseline gap-1.5 leading-none">
-                <span className={`text-xs sm:text-sm font-black shrink-0 ${
-                  appState.isDarkMode ? "text-white" : "text-slate-900"
-                }`}>
+                <span
+                  className={`text-xs sm:text-sm font-black shrink-0 ${
+                    appState.isDarkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {streakCelebration.streak} Streak!
                 </span>
-                <span className={`text-[11px] truncate italic font-medium ${
-                  appState.isDarkMode ? "text-emerald-200/90" : "text-slate-600"
-                }`}>
+                <span
+                  className={`text-[11px] truncate italic font-medium ${
+                    appState.isDarkMode
+                      ? "text-emerald-200/90"
+                      : "text-slate-600"
+                  }`}
+                >
                   "{streakCelebration.message}"
                 </span>
               </div>
@@ -4956,255 +5781,304 @@ export default function App() {
 
       {/* Unit Mastered Completion Popup Modal */}
       <AnimatePresence>
-        {completedUnitPopup && (() => {
-          const unit = UNITS.find((u) => u.id === completedUnitPopup);
-          if (!unit) return null;
+        {completedUnitPopup &&
+          (() => {
+            const unit = UNITS.find((u) => u.id === completedUnitPopup);
+            if (!unit) return null;
 
-          const currentIndex = UNITS.findIndex((u) => u.id === completedUnitPopup);
-          const nextUnitAvailable = currentIndex !== -1 && currentIndex + 1 < UNITS.length ? UNITS[currentIndex + 1] : null;
+            const currentIndex = UNITS.findIndex(
+              (u) => u.id === completedUnitPopup,
+            );
+            const nextUnitAvailable =
+              currentIndex !== -1 && currentIndex + 1 < UNITS.length
+                ? UNITS[currentIndex + 1]
+                : null;
 
-          return (
-            <motion.div
-              id="unit-complete-popup-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
-            >
+            return (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                id="unit-complete-popup-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="relative w-full max-w-sm sm:max-w-lg bg-gradient-to-b from-amber-50/90 via-amber-50/20 to-white dark:from-[#3a2c0f] dark:via-[#1f1707] dark:to-[#0f0b03] border-[3px] border-amber-200 dark:border-[#523d14] border-b-[8px] border-b-amber-300 dark:border-b-[#1c1505] rounded-[2.5rem] p-4.5 sm:p-5.5 shadow-2xl overflow-hidden text-center text-slate-800 dark:text-slate-200"
+                className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
               >
-                {/* Premium Gradient Top-bar Accent */}
-                <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
-                
-                {/* Ambient glowing radial light background */}
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 rounded-full bg-gradient-to-br from-amber-400/10 to-transparent blur-2xl pointer-events-none" />
-
-                <button
-                  onClick={() => {
-                    playSoundSynth("navigation");
-                    setCompletedUnitPopup(null);
-                  }}
-                  className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10"
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="relative w-full max-w-sm sm:max-w-lg bg-gradient-to-b from-amber-50/90 via-amber-50/20 to-white dark:from-[#3a2c0f] dark:via-[#1f1707] dark:to-[#0f0b03] border-[3px] border-amber-200 dark:border-[#523d14] border-b-[8px] border-b-amber-300 dark:border-b-[#1c1505] rounded-[2.5rem] p-4.5 sm:p-5.5 shadow-2xl overflow-hidden text-center text-slate-800 dark:text-slate-200"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  {/* Premium Gradient Top-bar Accent */}
+                  <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
 
-                <div className="flex flex-col items-center gap-3 sm:gap-3.5 mt-1">
-                  {/* Huge Animated Trophy Badge */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-2xl sm:text-3xl border-2 border-amber-200 border-b-4 border-b-amber-700 shadow-md transform rotate-3 select-none animate-bounce">
-                    🏆
-                  </div>
+                  {/* Ambient glowing radial light background */}
+                  <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 rounded-full bg-gradient-to-br from-amber-400/10 to-transparent blur-2xl pointer-events-none" />
 
-                  <div>
-                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
-                      Unit Milestone Cleared
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
-                      {unit.title} Mastered! 🎉
-                    </h2>
-                  </div>
+                  <button
+                    onClick={() => {
+                      playSoundSynth("navigation");
+                      setCompletedUnitPopup(null);
+                    }}
+                    className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
 
-                  {/* Character feedback box */}
-                  <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center text-left w-full">
-                    <MithuMascot mood="sparkly" />
-                    <div className="flex-1">
-                      <p className="text-[12px] text-slate-700 dark:text-slate-300 font-extrabold leading-tight">
-                        "Mashallah! Aap ne kamaal kar diya!"
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
-                        You successfully conquered all five stages of {unit.numbersRange} training! Your Urdu numbers reflex is absolutely top-tier.
-                      </p>
+                  <div className="flex flex-col items-center gap-3 sm:gap-3.5 mt-1">
+                    {/* Huge Animated Trophy Badge */}
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-2xl sm:text-3xl border-2 border-amber-200 border-b-4 border-b-amber-700 shadow-md transform rotate-3 select-none animate-bounce">
+                      🏆
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
+                        Unit Milestone Cleared
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
+                        {unit.title} Mastered! 🎉
+                      </h2>
+                    </div>
+
+                    {/* Character feedback box */}
+                    <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center text-left w-full">
+                      <MithuMascot mood="sparkly" />
+                      <div className="flex-1">
+                        <p className="text-[12px] text-slate-700 dark:text-slate-300 font-extrabold leading-tight">
+                          "Mashallah! Aap ne kamaal kar diya!"
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
+                          You successfully conquered all five stages of{" "}
+                          {unit.numbersRange} training! Your Urdu numbers reflex
+                          is absolutely top-tier.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Rewards Row */}
+                    <div className="grid grid-cols-2 gap-2.5 w-full mt-0.5">
+                      <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 rounded-xl p-2.5 flex flex-col items-center justify-center shadow-[inset_0_1.5px_3px_rgba(139,92,26,0.06)] dark:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.4)]">
+                        <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">
+                          Rewards
+                        </span>
+                        <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          +50 XP ⚡
+                        </span>
+                      </div>
+                      <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 rounded-xl p-2.5 flex flex-col items-center justify-center shadow-[inset_0_1.5px_3px_rgba(139,92,26,0.06)] dark:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.4)]">
+                        <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">
+                          Status
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5 uppercase tracking-wide">
+                          🏆 Master Badge
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Continue Button */}
+                    <div className="w-full mt-2">
+                      <button
+                        onClick={() => {
+                          playSoundSynth("navigation");
+                          setCompletedUnitPopup(null);
+                          setActiveScreen("dashboard");
+                          if (nextUnitAvailable) {
+                            setNextUnitToFocus(nextUnitAvailable.id);
+                          } else {
+                            // Mastered everything! Scroll to Unit 5
+                            setNextUnitToFocus("unit5");
+                          }
+                        }}
+                        className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-emerald-950 border-2 border-amber-400 border-b-[6px] border-b-amber-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-2.5 sm:py-3 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none uppercase"
+                      >
+                        {nextUnitAvailable
+                          ? `Continue to ${nextUnitAvailable.title} 🚀`
+                          : "Finish Learning! Let's Celebrate! 👑"}
+                      </button>
                     </div>
                   </div>
-
-                  {/* Rewards Row */}
-                  <div className="grid grid-cols-2 gap-2.5 w-full mt-0.5">
-                    <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 rounded-xl p-2.5 flex flex-col items-center justify-center shadow-[inset_0_1.5px_3px_rgba(139,92,26,0.06)] dark:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.4)]">
-                      <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Rewards</span>
-                      <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">+50 XP ⚡</span>
-                    </div>
-                    <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 rounded-xl p-2.5 flex flex-col items-center justify-center shadow-[inset_0_1.5px_3px_rgba(139,92,26,0.06)] dark:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.4)]">
-                      <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">Status</span>
-                      <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5 uppercase tracking-wide">🏆 Master Badge</span>
-                    </div>
-                  </div>
-
-                  {/* Continue Button */}
-                  <div className="w-full mt-2">
-                    <button
-                      onClick={() => {
-                        playSoundSynth("navigation");
-                        setCompletedUnitPopup(null);
-                        setActiveScreen("dashboard");
-                        if (nextUnitAvailable) {
-                          setNextUnitToFocus(nextUnitAvailable.id);
-                        } else {
-                          // Mastered everything! Scroll to Unit 5
-                          setNextUnitToFocus("unit5");
-                        }
-                      }}
-                      className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-emerald-950 border-2 border-amber-400 border-b-[6px] border-b-amber-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-2.5 sm:py-3 px-5 font-black tracking-wide text-xs sm:text-sm shadow-md cursor-pointer select-none uppercase"
-                    >
-                      {nextUnitAvailable ? `Continue to ${nextUnitAvailable.title} 🚀` : "Finish Learning! Let's Celebrate! 👑"}
-                    </button>
-                  </div>
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          );
-        })()}
+            );
+          })()}
       </AnimatePresence>
-      
+
       {/* Placement Challenge Entrance Popup Modal */}
       <AnimatePresence>
-        {showPlacementChallengePopup && placementChallengeUnitId && (() => {
-          const unit = UNITS.find((u) => u.id === placementChallengeUnitId);
-          if (!unit) return null;
+        {showPlacementChallengePopup &&
+          placementChallengeUnitId &&
+          (() => {
+            const unit = UNITS.find((u) => u.id === placementChallengeUnitId);
+            if (!unit) return null;
 
-          const attemptCount = appState.placementAttempts?.[unit.id] ?? 0;
-          const hasFailedTwice = attemptCount >= 2;
+            const attemptCount = appState.placementAttempts?.[unit.id] ?? 0;
+            const hasFailedTwice = attemptCount >= 2;
 
-          return (
-            <motion.div
-              id="placement-challenge-popup-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
-            >
+            return (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                id="placement-challenge-popup-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="relative w-full max-w-sm sm:max-w-md bg-gradient-to-b from-emerald-50/95 via-emerald-50/15 to-white dark:from-[#0c2e1b] dark:via-[#051c10] dark:to-[#03120a] border-[3px] border-emerald-300/85 dark:border-emerald-900/80 border-b-[8px] border-b-emerald-400 dark:border-b-[#021b0d] rounded-[2.5rem] p-5 sm:p-6 shadow-2xl overflow-hidden text-center text-slate-800 dark:text-slate-200"
+                className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
               >
-                {/* Premium Gradient Top-bar Accent */}
-                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
-
-                {/* Ambient glowing radial light background */}
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-400/10 to-transparent blur-2xl pointer-events-none" />
-
-                <button
-                  onClick={() => {
-                    playSoundSynth("navigation");
-                    setShowPlacementChallengePopup(false);
-                    setPlacementChallengeUnitId(null);
-                  }}
-                  className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10"
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="relative w-full max-w-sm sm:max-w-md bg-gradient-to-b from-emerald-50/95 via-emerald-50/15 to-white dark:from-[#0c2e1b] dark:via-[#051c10] dark:to-[#03120a] border-[3px] border-emerald-300/85 dark:border-emerald-900/80 border-b-[8px] border-b-emerald-400 dark:border-b-[#021b0d] rounded-[2.5rem] p-5 sm:p-6 shadow-2xl overflow-hidden text-center text-slate-800 dark:text-slate-200"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  {/* Premium Gradient Top-bar Accent */}
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
 
-                <div className="flex flex-col items-center gap-3.5 mt-1">
-                  {/* Mascot Badge with interactive Mithu */}
-                  <div className="w-20 h-20 bg-emerald-100/60 dark:bg-emerald-950/70 rounded-full flex items-center justify-center border-2 border-emerald-300/80 dark:border-emerald-800/80 shadow-md p-1">
-                    <MithuMascot mood={hasFailedTwice ? "sad" : "happy"} size={72} />
-                  </div>
+                  {/* Ambient glowing radial light background */}
+                  <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-400/10 to-transparent blur-2xl pointer-events-none" />
 
-                  <div>
-                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-                      {hasFailedTwice ? "Assessment Limit Reached" : "Skip Unit Journey via Assessment"}
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
-                      Placement Challenge: {unit.title}
-                    </h2>
-                  </div>
+                  <button
+                    onClick={() => {
+                      playSoundSynth("navigation");
+                      setShowPlacementChallengePopup(false);
+                      setPlacementChallengeUnitId(null);
+                    }}
+                    className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
 
-                  {hasFailedTwice ? (
-                    <div className="flex flex-col gap-3 w-full">
-                      <p className="text-xs text-slate-600 dark:text-slate-300 font-extrabold leading-relaxed bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-4 rounded-2xl">
-                        "You've already used both Placement Challenge attempts for this unit."
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                        "Let's learn this unit first. Once you're comfortable with it, you'll be ready to fly through the next one!"
-                      </p>
+                  <div className="flex flex-col items-center gap-3.5 mt-1">
+                    {/* Mascot Badge with interactive Mithu */}
+                    <div className="w-20 h-20 bg-emerald-100/60 dark:bg-emerald-950/70 rounded-full flex items-center justify-center border-2 border-emerald-300/80 dark:border-emerald-800/80 shadow-md p-1">
+                      <MithuMascot
+                        mood={hasFailedTwice ? "sad" : "happy"}
+                        size={72}
+                      />
                     </div>
-                  ) : (
-                    <>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                        Prove you already know the Urdu counting in this unit by passing Ginti's official assessment!
-                      </p>
 
-                      {/* Requirements List Box */}
-                      <div className="bg-emerald-50/40 dark:bg-emerald-950/30 border border-emerald-100/80 dark:border-emerald-900/50 rounded-2xl p-4 text-left w-full">
-                        <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider block mb-2">Requirements & Rules</span>
-                        <ul className="space-y-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                          <li className="flex items-center gap-2">
-                            <span className="text-emerald-500 font-extrabold text-xs">📋</span>
-                            <span><strong>15</strong> randomised questions from this unit</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-emerald-500 font-extrabold text-xs">🎯</span>
-                            <span><strong>90%</strong> required to pass (at least 14 correct)</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-emerald-500 font-extrabold text-xs">🔒</span>
-                            <span><strong>No Hints</strong> or Clues allowed</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-emerald-500 font-extrabold text-xs">📖</span>
-                            <span><strong>No Learning Cards</strong> during the challenge</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </>
-                  )}
+                    <div>
+                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                        {hasFailedTwice
+                          ? "Assessment Limit Reached"
+                          : "Skip Unit Journey via Assessment"}
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
+                        Placement Challenge: {unit.title}
+                      </h2>
+                    </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col gap-2 w-full mt-2">
                     {hasFailedTwice ? (
-                      <button
-                        onClick={() => startLearningNormally(unit.id)}
-                        className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
-                          appState.isDarkMode
-                            ? "border-2 border-amber-950 border-b-4 border-b-amber-955 active:translate-y-[2px] active:border-b-2"
-                            : "border-2 border-amber-400 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-0.5"
-                        }`}
-                      >
-                        Start Learning This Unit 📖
-                      </button>
+                      <div className="flex flex-col gap-3 w-full">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-extrabold leading-relaxed bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-4 rounded-2xl">
+                          "You've already used both Placement Challenge attempts
+                          for this unit."
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                          "Let's learn this unit first. Once you're comfortable
+                          with it, you'll be ready to fly through the next one!"
+                        </p>
+                      </div>
                     ) : (
                       <>
-                        <button
-                          onClick={() => startPlacementChallenge(unit.id)}
-                          className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
-                            appState.isDarkMode
-                              ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
-                              : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5"
-                          }`}
-                        >
-                          Start Challenge 🚀
-                        </button>
-                        <button
-                          onClick={() => {
-                            playSoundSynth("navigation");
-                            setShowPlacementChallengePopup(false);
-                            setPlacementChallengeUnitId(null);
-                          }}
-                          className={`w-full rounded-full py-2.5 px-5 font-black text-xs uppercase cursor-pointer transition-all ${
-                            appState.isDarkMode
-                              ? "bg-slate-800 hover:bg-slate-800 text-slate-300 border border-slate-750"
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-200 border-b-[5px] border-b-slate-300 hover:border-slate-300 hover:border-b-[5px] active:translate-y-[2px] active:border-b-[3px] shadow-sm"
-                          }`}
-                        >
-                          Cancel
-                        </button>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                          Prove you already know the Urdu counting in this unit
+                          by passing Ginti's official assessment!
+                        </p>
+
+                        {/* Requirements List Box */}
+                        <div className="bg-emerald-50/40 dark:bg-emerald-950/30 border border-emerald-100/80 dark:border-emerald-900/50 rounded-2xl p-4 text-left w-full">
+                          <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider block mb-2">
+                            Requirements & Rules
+                          </span>
+                          <ul className="space-y-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                            <li className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-extrabold text-xs">
+                                📋
+                              </span>
+                              <span>
+                                <strong>15</strong> randomised questions from
+                                this unit
+                              </span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-extrabold text-xs">
+                                🎯
+                              </span>
+                              <span>
+                                <strong>90%</strong> required to pass (at least
+                                14 correct)
+                              </span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-extrabold text-xs">
+                                🔒
+                              </span>
+                              <span>
+                                <strong>No Hints</strong> or Clues allowed
+                              </span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-extrabold text-xs">
+                                📖
+                              </span>
+                              <span>
+                                <strong>No Learning Cards</strong> during the
+                                challenge
+                              </span>
+                            </li>
+                          </ul>
+                        </div>
                       </>
                     )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2 w-full mt-2">
+                      {hasFailedTwice ? (
+                        <button
+                          onClick={() => startLearningNormally(unit.id)}
+                          className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
+                            appState.isDarkMode
+                              ? "border-2 border-amber-950 border-b-4 border-b-amber-955 active:translate-y-[2px] active:border-b-2"
+                              : "border-2 border-amber-400 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-0.5"
+                          }`}
+                        >
+                          Start Learning This Unit 📖
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startPlacementChallenge(unit.id)}
+                            className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
+                              appState.isDarkMode
+                                ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5"
+                            }`}
+                          >
+                            Start Challenge 🚀
+                          </button>
+                          <button
+                            onClick={() => {
+                              playSoundSynth("navigation");
+                              setShowPlacementChallengePopup(false);
+                              setPlacementChallengeUnitId(null);
+                            }}
+                            className={`w-full rounded-full py-2.5 px-5 font-black text-xs uppercase cursor-pointer transition-all ${
+                              appState.isDarkMode
+                                ? "bg-slate-800 hover:bg-slate-800 text-slate-300 border border-slate-750"
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-200 border-b-[5px] border-b-slate-300 hover:border-slate-300 hover:border-b-[5px] active:translate-y-[2px] active:border-b-[3px] shadow-sm"
+                            }`}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          );
-        })()}
+            );
+          })()}
       </AnimatePresence>
 
       {/* Training Arena Mastered Completion Popup Modal */}
@@ -5227,7 +6101,7 @@ export default function App() {
             >
               {/* Premium Gradient Top-bar Accent */}
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
-              
+
               {/* Ambient glowing radial light background */}
               <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 rounded-full bg-gradient-to-br from-amber-400/10 to-transparent blur-2xl pointer-events-none" />
 
@@ -5261,7 +6135,8 @@ export default function App() {
 
                 {/* Range Info Badge */}
                 <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 text-amber-800 dark:text-amber-300 font-extrabold text-[10px] sm:text-xs px-3.5 py-1 rounded-full shadow-xs">
-                  Range: {completedArenaFieldPopup.min} – {completedArenaFieldPopup.max} (Total Range Mastery)
+                  Range: {completedArenaFieldPopup.min} –{" "}
+                  {completedArenaFieldPopup.max} (Total Range Mastery)
                 </div>
 
                 {/* Character feedback box (Warm Amber Accents reverted to match Unit Completion's Premium Emerald) */}
@@ -5272,7 +6147,8 @@ export default function App() {
                       "Mashallah! Aap ne kamaal kar diya!"
                     </p>
                     <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1 leading-normal font-semibold">
-                      You completed all 5 custom stages for Urdu counting. Select an option below to define your next goal.
+                      You completed all 5 custom stages for Urdu counting.
+                      Select an option below to define your next goal.
                     </p>
                   </div>
                 </div>
@@ -5284,7 +6160,9 @@ export default function App() {
                     onClick={() => {
                       playSoundSynth("navigation");
                       setCompletedArenaFieldPopup(null);
-                      showToast("Arena kept active. Revisit any stage anytime! ⚔️");
+                      showToast(
+                        "Arena kept active. Revisit any stage anytime! ⚔️",
+                      );
                     }}
                     className="w-full text-left p-3 rounded-2xl border-2 border-emerald-300 dark:border-emerald-800/80 border-b-[5px] border-b-emerald-500 dark:border-b-emerald-700 bg-emerald-50/75 dark:bg-[#122c1b]/30 hover:bg-emerald-100/90 dark:hover:bg-[#122c1b]/60 hover:border-emerald-400 dark:hover:border-emerald-700 hover:scale-[1.01] hover:shadow-md transition-all duration-100 cursor-pointer select-none active:translate-y-[2px] active:border-b-[3px]"
                   >
@@ -5293,9 +6171,12 @@ export default function App() {
                         <Play className="w-4.5 h-4.5 fill-current text-white stroke-none" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-xs sm:text-sm font-black text-emerald-900 dark:text-emerald-100 leading-tight">Continue Practicing</h4>
+                        <h4 className="text-xs sm:text-sm font-black text-emerald-900 dark:text-emerald-100 leading-tight">
+                          Continue Practicing
+                        </h4>
                         <p className="text-[10px] sm:text-[11px] text-emerald-700/80 dark:text-emerald-300/85 font-semibold leading-relaxed mt-0.5">
-                          Keep this field available so you can revisit it whenever you'd like.
+                          Keep this field available so you can revisit it
+                          whenever you'd like.
                         </p>
                       </div>
                     </div>
@@ -5308,7 +6189,9 @@ export default function App() {
                       const fieldKey = `${completedArenaFieldPopup.min}-${completedArenaFieldPopup.max}`;
                       saveState((prev) => {
                         const existingArchived = prev.archivedArenaFields || [];
-                        const nextArchived = existingArchived.includes(fieldKey) ? existingArchived : [...existingArchived, fieldKey];
+                        const nextArchived = existingArchived.includes(fieldKey)
+                          ? existingArchived
+                          : [...existingArchived, fieldKey];
                         return {
                           ...prev,
                           archivedArenaFields: nextArchived,
@@ -5328,9 +6211,12 @@ export default function App() {
                         <GintiArchiveBoxIcon />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-100 leading-tight">Archive This Field</h4>
+                        <h4 className="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-100 leading-tight">
+                          Archive This Field
+                        </h4>
                         <p className="text-[10px] sm:text-[11px] text-amber-700/80 dark:text-amber-300/85 font-semibold leading-relaxed mt-0.5">
-                          Hide this completed field from the Training Arena to keep your dashboard focused on new topics.
+                          Hide this completed field from the Training Arena to
+                          keep your dashboard focused on new topics.
                         </p>
                       </div>
                     </div>
@@ -5344,188 +6230,232 @@ export default function App() {
 
       {/* Mithu Learning Assistant Explanation Overlay Card */}
       <AnimatePresence>
-        {mithuExplanationDigit !== null && (() => {
-          let entry = NUMBERS.find(n => n.digit === mithuExplanationDigit);
-          if (!entry && mithuExplanationDigit === 0) {
-            entry = {
-              digit: 0,
-              romanUrdu: "Sifr",
-              nativeScript: "صفر",
-              unitId: "unit1",
-              searchKeys: ["sifr", "sifr", "zero", "0", "صفر"]
+        {mithuExplanationDigit !== null &&
+          (() => {
+            let entry = NUMBERS.find((n) => n.digit === mithuExplanationDigit);
+            if (!entry && mithuExplanationDigit === 0) {
+              entry = {
+                digit: 0,
+                romanUrdu: "Sifr",
+                nativeScript: "صفر",
+                unitId: "unit1",
+                searchKeys: ["sifr", "sifr", "zero", "0", "صفر"],
+              };
+            }
+            if (!entry) return null;
+            const rawExplanation = getNumberExplanation(
+              mithuExplanationDigit,
+              entry.romanUrdu,
+            );
+            const explanation = {
+              ...rawExplanation,
+              simpleExplanation:
+                mithuExplanationDigit === 0 && !appState.hasEncounteredZero
+                  ? "Sab kuch isi se shuru hota hai."
+                  : rawExplanation.simpleExplanation,
+              simpleExplanationEn:
+                mithuExplanationDigit === 0 && !appState.hasEncounteredZero
+                  ? "Everything begins from here."
+                  : rawExplanation.simpleExplanationEn,
             };
-          }
-          if (!entry) return null;
-          const rawExplanation = getNumberExplanation(mithuExplanationDigit, entry.romanUrdu);
-          const explanation = {
-            ...rawExplanation,
-            simpleExplanation: (mithuExplanationDigit === 0 && !appState.hasEncounteredZero)
-              ? "Sab kuch isi se shuru hota hai."
-              : rawExplanation.simpleExplanation,
-            simpleExplanationEn: (mithuExplanationDigit === 0 && !appState.hasEncounteredZero)
-              ? "Everything begins from here."
-              : rawExplanation.simpleExplanationEn,
-          };
-          const famStyle = FAMILY_STYLES[explanation.familyId] || FAMILY_STYLES.single;
+            const famStyle =
+              FAMILY_STYLES[explanation.familyId] || FAMILY_STYLES.single;
 
-          return (
-            <motion.div
-              id="mithu-explanation-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-950/85 backdrop-blur-xs z-[200] flex items-center justify-center p-3"
-            >
+            return (
               <motion.div
-                id="mithu-explanation-card"
-                initial={{ scale: 0.93, y: 15 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.93, y: 15 }}
-                className="bg-white rounded-[2.5rem] w-full max-w-sm border-[4px] border-emerald-300 border-b-[10px] border-b-emerald-500 overflow-hidden relative shadow-2xl flex flex-col p-4 gap-3 text-slate-800"
+                id="mithu-explanation-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-950/85 backdrop-blur-xs z-[200] flex items-center justify-center p-3"
               >
-                {/* Premium colored stripe accent */}
-                <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-300" />
-
-                {/* Card Header */}
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🦜</span>
-                    <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-widest font-mono">
-                      Mithu's Code Decoder
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Small unobtrusive English language toggle button */}
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setMithuLanguage(prev => prev === "ur" ? "en" : "ur");
-                      }}
-                      className="px-2 py-1 text-[9px] font-extrabold rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 select-none cursor-pointer transition-all active:scale-95 shadow-xs ginti-decoder-lang-btn"
-                      title={mithuLanguage === "ur" ? "Switch to English explanation" : "Switch to Urdu explanation"}
-                    >
-                      <span className="text-[10px]">🌐</span>
-                      <span>{mithuLanguage === "ur" ? "EN" : "UR"}</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        playSoundSynth("navigation");
-                        setMithuExplanationDigit(null);
-                      }}
-                      className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center justify-center border-2 border-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-800 cursor-pointer transition active:scale-90 ginti-decoder-close-btn"
-                      aria-label="Close decoder"
-                    >
-                      <X className="w-4 h-4 stroke-[2.5]" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Word is the Star */}
-                <div className="text-center py-1.5 flex flex-col items-center">
-                  <h2 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-none mb-2">
-                    {explanation.word}
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-0.5 rounded-full dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800 ginti-decoder-top-badge">
-                      Digit {entry.digit}
-                    </span>
-                    {entry.nativeScript && (
-                      <span className="text-[14px] font-bold text-emerald-800 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 font-urdu leading-none dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800 ginti-decoder-top-badge">
-                        {entry.nativeScript}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Visual Word Breakdown Blocks (No more clinical tables!) */}
-                <div className="flex items-center justify-center gap-2.5 py-1">
-                  {/* Digit Clue Block (Vibrant but soft Sky/Teal Theme) */}
-                  <div className="flex-1 px-3 py-2 bg-sky-50 border-2 border-sky-200 border-b-[5px] border-b-sky-300 text-sky-800 rounded-2xl text-center shadow-xs dark:bg-sky-950/40 dark:border-sky-900/60 dark:border-b-sky-850 dark:text-sky-300 ginti-decoder-prefix-block">
-                    <span className="text-xl font-black block tracking-tight leading-none text-sky-700 dark:text-sky-300">{explanation.prefix}</span>
-                    <span className="text-[9px] font-black text-sky-500 dark:text-sky-400 block leading-none mt-1 uppercase tracking-wide">
-                      {mithuLanguage === "en" ? explanation.prefixMeaningEn : explanation.prefixMeaning}
-                    </span>
-                  </div>
-                  
-                  <span className="text-slate-400 font-black text-xl">+</span>
-
-                  {/* Family Clue Block (Consistent Family Theme) */}
-                  <div className={`flex-1 px-3 py-2 border-2 border-b-[5px] rounded-2xl text-center shadow-xs ginti-decoder-suffix-block ${famStyle.badgeBg} ${famStyle.badgeBorder} ${famStyle.badgeText} ${
-                    explanation.familyId === "tees" ? "border-b-violet-300 dark:border-b-violet-500" :
-                    explanation.familyId === "chalees" ? "border-b-emerald-300 dark:border-b-emerald-500" :
-                    explanation.familyId === "awan" ? "border-b-orange-300 dark:border-b-orange-500" :
-                    explanation.familyId === "sath" ? "border-b-teal-300 dark:border-b-teal-500" :
-                    explanation.familyId === "hattar" ? "border-b-fuchsia-300 dark:border-b-fuchsia-500" :
-                    explanation.familyId === "asi" ? "border-b-rose-300 dark:border-b-rose-500" :
-                    explanation.familyId === "nawey" ? "border-b-amber-300 dark:border-b-amber-500" :
-                    explanation.familyId === "dahae" ? "border-b-yellow-300 dark:border-b-yellow-500" :
-                    explanation.familyId === "ees" ? "border-b-purple-300 dark:border-b-purple-500" :
-                    "border-b-slate-300 dark:border-b-slate-500"
-                  } ${
-                    explanation.familyId === "tees" ? "dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/60" :
-                    explanation.familyId === "chalees" ? "dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60" :
-                    explanation.familyId === "awan" ? "dark:bg-orange-950/40 dark:text-orange-350 dark:border-orange-900/60" :
-                    explanation.familyId === "sath" ? "dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900/60" :
-                    explanation.familyId === "hattar" ? "dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900/60" :
-                    explanation.familyId === "asi" ? "dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60" :
-                    explanation.familyId === "nawey" ? "dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60" :
-                    explanation.familyId === "dahae" ? "dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900/60" :
-                    explanation.familyId === "ees" ? "dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60" :
-                    "dark:bg-slate-950/40 dark:text-slate-300 dark:border-slate-900/60"
-                  }`} data-family={explanation.familyId}>
-                    <span className="text-xl font-black block tracking-tight leading-none">{explanation.suffix}</span>
-                    <span className="text-[9px] font-black opacity-85 block leading-none mt-1 uppercase tracking-wide">
-                      {famStyle.name}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Short Pattern-Based Dialogue Bubble (Mithu Mascot + Clue explanation merged) */}
-                <div className="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-950/40 border-2 border-emerald-100/70 dark:border-emerald-900/60 rounded-2xl p-3 relative ginti-decoder-bubble">
-                  <div className="w-12 h-12 shrink-0 flex items-center justify-center relative select-none bg-emerald-100/30 rounded-full">
-                    <div className="absolute inset-0 bg-emerald-300/20 rounded-full blur-xs animate-pulse" />
-                    <MithuMascot mood="happy" size={46} />
-                  </div>
-                  <div className="text-left flex-1">
-                    <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest block leading-none mb-1">
-                      {mithuLanguage === "en" ? "Mithu guides you:" : "Mithu ka mashwara:"}
-                    </span>
-                    <p className="text-[11.5px] font-black text-emerald-950 dark:text-emerald-100 leading-snug">
-                      "{mithuLanguage === "en" 
-                        ? `${explanation.mithuHeaderEn.replace("👀", "").trim()} 👀 ${explanation.simpleExplanationEn}`
-                        : `${explanation.mithuHeader.replace("👀", "").trim()} 👀 ${explanation.simpleExplanation}`}"
-                    </p>
-                  </div>
-                </div>
-
-                {/* Close/Action Button */}
-                <button
-                  onClick={() => {
-                    playSoundSynth("click");
-                    setMithuExplanationDigit(null);
-                  }}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-white border-2 border-emerald-500 border-b-[6px] border-b-emerald-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-3 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md select-none mt-1 ginti-samajh-gaya-btn"
+                <motion.div
+                  id="mithu-explanation-card"
+                  initial={{ scale: 0.93, y: 15 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.93, y: 15 }}
+                  className="bg-white rounded-[2.5rem] w-full max-w-sm border-[4px] border-emerald-300 border-b-[10px] border-b-emerald-500 overflow-hidden relative shadow-2xl flex flex-col p-4 gap-3 text-slate-800"
                 >
-                  {mithuLanguage === "en" ? "Got It! 👍" : "Samajh Gaya! 👍"}
-                </button>
+                  {/* Premium colored stripe accent */}
+                  <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-300" />
+
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🦜</span>
+                      <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-widest font-mono">
+                        Mithu's Code Decoder
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Small unobtrusive English language toggle button */}
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setMithuLanguage((prev) =>
+                            prev === "ur" ? "en" : "ur",
+                          );
+                        }}
+                        className="px-2 py-1 text-[9px] font-extrabold rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 select-none cursor-pointer transition-all active:scale-95 shadow-xs ginti-decoder-lang-btn"
+                        title={
+                          mithuLanguage === "ur"
+                            ? "Switch to English explanation"
+                            : "Switch to Urdu explanation"
+                        }
+                      >
+                        <span className="text-[10px]">🌐</span>
+                        <span>{mithuLanguage === "ur" ? "EN" : "UR"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          playSoundSynth("navigation");
+                          setMithuExplanationDigit(null);
+                        }}
+                        className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center justify-center border-2 border-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-800 cursor-pointer transition active:scale-90 ginti-decoder-close-btn"
+                        aria-label="Close decoder"
+                      >
+                        <X className="w-4 h-4 stroke-[2.5]" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Word is the Star */}
+                  <div className="text-center py-1.5 flex flex-col items-center">
+                    <h2 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-none mb-2">
+                      {explanation.word}
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-0.5 rounded-full dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800 ginti-decoder-top-badge">
+                        Digit {entry.digit}
+                      </span>
+                      {entry.nativeScript && (
+                        <span className="text-[14px] font-bold text-emerald-800 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 font-urdu leading-none dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800 ginti-decoder-top-badge">
+                          {entry.nativeScript}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Visual Word Breakdown Blocks (No more clinical tables!) */}
+                  <div className="flex items-center justify-center gap-2.5 py-1">
+                    {/* Digit Clue Block (Vibrant but soft Sky/Teal Theme) */}
+                    <div className="flex-1 px-3 py-2 bg-sky-50 border-2 border-sky-200 border-b-[5px] border-b-sky-300 text-sky-800 rounded-2xl text-center shadow-xs dark:bg-sky-950/40 dark:border-sky-900/60 dark:border-b-sky-850 dark:text-sky-300 ginti-decoder-prefix-block">
+                      <span className="text-xl font-black block tracking-tight leading-none text-sky-700 dark:text-sky-300">
+                        {explanation.prefix}
+                      </span>
+                      <span className="text-[9px] font-black text-sky-500 dark:text-sky-400 block leading-none mt-1 uppercase tracking-wide">
+                        {mithuLanguage === "en"
+                          ? explanation.prefixMeaningEn
+                          : explanation.prefixMeaning}
+                      </span>
+                    </div>
+
+                    <span className="text-slate-400 font-black text-xl">+</span>
+
+                    {/* Family Clue Block (Consistent Family Theme) */}
+                    <div
+                      className={`flex-1 px-3 py-2 border-2 border-b-[5px] rounded-2xl text-center shadow-xs ginti-decoder-suffix-block ${famStyle.badgeBg} ${famStyle.badgeBorder} ${famStyle.badgeText} ${
+                        explanation.familyId === "tees"
+                          ? "border-b-violet-300 dark:border-b-violet-500"
+                          : explanation.familyId === "chalees"
+                            ? "border-b-emerald-300 dark:border-b-emerald-500"
+                            : explanation.familyId === "awan"
+                              ? "border-b-orange-300 dark:border-b-orange-500"
+                              : explanation.familyId === "sath"
+                                ? "border-b-teal-300 dark:border-b-teal-500"
+                                : explanation.familyId === "hattar"
+                                  ? "border-b-fuchsia-300 dark:border-b-fuchsia-500"
+                                  : explanation.familyId === "asi"
+                                    ? "border-b-rose-300 dark:border-b-rose-500"
+                                    : explanation.familyId === "nawey"
+                                      ? "border-b-amber-300 dark:border-b-amber-500"
+                                      : explanation.familyId === "dahae"
+                                        ? "border-b-yellow-300 dark:border-b-yellow-500"
+                                        : explanation.familyId === "ees"
+                                          ? "border-b-purple-300 dark:border-b-purple-500"
+                                          : "border-b-slate-300 dark:border-b-slate-500"
+                      } ${
+                        explanation.familyId === "tees"
+                          ? "dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/60"
+                          : explanation.familyId === "chalees"
+                            ? "dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60"
+                            : explanation.familyId === "awan"
+                              ? "dark:bg-orange-950/40 dark:text-orange-350 dark:border-orange-900/60"
+                              : explanation.familyId === "sath"
+                                ? "dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900/60"
+                                : explanation.familyId === "hattar"
+                                  ? "dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900/60"
+                                  : explanation.familyId === "asi"
+                                    ? "dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60"
+                                    : explanation.familyId === "nawey"
+                                      ? "dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60"
+                                      : explanation.familyId === "dahae"
+                                        ? "dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900/60"
+                                        : explanation.familyId === "ees"
+                                          ? "dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60"
+                                          : "dark:bg-slate-950/40 dark:text-slate-300 dark:border-slate-900/60"
+                      }`}
+                      data-family={explanation.familyId}
+                    >
+                      <span className="text-xl font-black block tracking-tight leading-none">
+                        {explanation.suffix}
+                      </span>
+                      <span className="text-[9px] font-black opacity-85 block leading-none mt-1 uppercase tracking-wide">
+                        {famStyle.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Short Pattern-Based Dialogue Bubble (Mithu Mascot + Clue explanation merged) */}
+                  <div className="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-950/40 border-2 border-emerald-100/70 dark:border-emerald-900/60 rounded-2xl p-3 relative ginti-decoder-bubble">
+                    <div className="w-12 h-12 shrink-0 flex items-center justify-center relative select-none bg-emerald-100/30 rounded-full">
+                      <div className="absolute inset-0 bg-emerald-300/20 rounded-full blur-xs animate-pulse" />
+                      <MithuMascot mood="happy" size={46} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest block leading-none mb-1">
+                        {mithuLanguage === "en"
+                          ? "Mithu guides you:"
+                          : "Mithu ka mashwara:"}
+                      </span>
+                      <p className="text-[11.5px] font-black text-emerald-950 dark:text-emerald-100 leading-snug">
+                        "
+                        {mithuLanguage === "en"
+                          ? `${explanation.mithuHeaderEn.replace("👀", "").trim()} 👀 ${explanation.simpleExplanationEn}`
+                          : `${explanation.mithuHeader.replace("👀", "").trim()} 👀 ${explanation.simpleExplanation}`}
+                        "
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Close/Action Button */}
+                  <button
+                    onClick={() => {
+                      playSoundSynth("click");
+                      setMithuExplanationDigit(null);
+                    }}
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white border-2 border-emerald-500 border-b-[6px] border-b-emerald-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-3 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md select-none mt-1 ginti-samajh-gaya-btn"
+                  >
+                    {mithuLanguage === "en" ? "Got It! 👍" : "Samajh Gaya! 👍"}
+                  </button>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          );
-        })()}
+            );
+          })()}
       </AnimatePresence>
 
       {/* Floating Training Arena Setup Panel Modal */}
       <AnimatePresence>
         {isArenaSetupOpen && (
-          <motion.div 
+          <motion.div
             id="arena-setup-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[150] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto pt-4 pb-4 xs:pt-6 sm:py-6"
           >
-            <motion.div 
+            <motion.div
               id="arena-setup-card"
               initial={{ scale: 0.92, y: 15 }}
               animate={{ scale: 1, y: 0 }}
@@ -5564,7 +6494,6 @@ export default function App() {
 
               {/* Scrollable Setup Section */}
               <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3.5 sm:gap-5 relative z-10">
-                
                 {/* Sliders Container */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Min Bound Selector */}
@@ -5584,24 +6513,32 @@ export default function App() {
                           onBlur={() => {
                             setIsEditingMin(false);
                             const parsed = parseInt(tempMinStr);
-                            if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                            if (
+                              !isNaN(parsed) &&
+                              parsed >= 0 &&
+                              parsed <= 100
+                            ) {
                               const currMax = appState.arenaMax ?? 100;
                               const nextMin = Math.min(parsed, currMax);
                               saveState({
                                 ...appState,
-                                arenaMin: nextMin
+                                arenaMin: nextMin,
                               });
                             }
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               const parsed = parseInt(tempMinStr);
-                              if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                              if (
+                                !isNaN(parsed) &&
+                                parsed >= 0 &&
+                                parsed <= 100
+                              ) {
                                 const currMax = appState.arenaMax ?? 100;
                                 const nextMin = Math.min(parsed, currMax);
                                 saveState({
                                   ...appState,
-                                  arenaMin: nextMin
+                                  arenaMin: nextMin,
                                 });
                               }
                               setIsEditingMin(false);
@@ -5628,8 +6565,8 @@ export default function App() {
                         </button>
                       )}
                     </div>
-                    
-                    <input 
+
+                    <input
                       type="range"
                       min="0"
                       max="100"
@@ -5641,7 +6578,7 @@ export default function App() {
                         const nextMin = Math.min(val, currMax);
                         saveState({
                           ...appState,
-                          arenaMin: nextMin
+                          arenaMin: nextMin,
                         });
                       }}
                       className="w-full h-2 bg-emerald-900/80 rounded-lg appearance-none cursor-pointer accent-amber-400 focus:outline-none border border-emerald-800"
@@ -5669,24 +6606,32 @@ export default function App() {
                           onBlur={() => {
                             setIsEditingMax(false);
                             const parsed = parseInt(tempMaxStr);
-                            if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                            if (
+                              !isNaN(parsed) &&
+                              parsed >= 0 &&
+                              parsed <= 100
+                            ) {
                               const currMin = appState.arenaMin ?? 30;
                               const nextMax = Math.max(parsed, currMin);
                               saveState({
                                 ...appState,
-                                arenaMax: nextMax
+                                arenaMax: nextMax,
                               });
                             }
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               const parsed = parseInt(tempMaxStr);
-                              if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                              if (
+                                !isNaN(parsed) &&
+                                parsed >= 0 &&
+                                parsed <= 100
+                              ) {
                                 const currMin = appState.arenaMin ?? 30;
                                 const nextMax = Math.max(parsed, currMin);
                                 saveState({
                                   ...appState,
-                                  arenaMax: nextMax
+                                  arenaMax: nextMax,
                                 });
                               }
                               setIsEditingMax(false);
@@ -5702,7 +6647,9 @@ export default function App() {
                         <button
                           onClick={() => {
                             playSoundSynth("click");
-                            setTempMaxStr((appState.arenaMax ?? 100).toString());
+                            setTempMaxStr(
+                              (appState.arenaMax ?? 100).toString(),
+                            );
                             setIsEditingMax(true);
                           }}
                           title="Click to type custom end bound"
@@ -5714,7 +6661,7 @@ export default function App() {
                       )}
                     </div>
 
-                    <input 
+                    <input
                       type="range"
                       min="0"
                       max="100"
@@ -5726,7 +6673,7 @@ export default function App() {
                         const nextMax = Math.max(val, currMin);
                         saveState({
                           ...appState,
-                          arenaMax: nextMax
+                          arenaMax: nextMax,
                         });
                       }}
                       className="w-full h-2 bg-emerald-900/80 rounded-lg appearance-none cursor-pointer accent-amber-400 focus:outline-none border border-emerald-800"
@@ -5753,7 +6700,14 @@ export default function App() {
                         {appState.arenaMin ?? 30} → {appState.arenaMax ?? 100}
                       </span>
                       <span className="text-emerald-300 text-xs font-bold">
-                        ({Math.max(0, (appState.arenaMax ?? 100) - (appState.arenaMin ?? 30) + 1)} total scales)
+                        (
+                        {Math.max(
+                          0,
+                          (appState.arenaMax ?? 100) -
+                            (appState.arenaMin ?? 30) +
+                            1,
+                        )}{" "}
+                        total scales)
                       </span>
                     </div>
                   </div>
@@ -5764,14 +6718,16 @@ export default function App() {
                   <div className="text-[10px] uppercase font-black text-emerald-300 tracking-wider flex items-center gap-1.5 select-none font-sans">
                     <span>⚡ Quick presets & previous ranges:</span>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 text-left">
                     {[
                       { label: "20 - 70", min: 20, max: 70 },
                       { label: "30 - 100", min: 30, max: 100 },
-                      { label: "0 - 100", min: 0, max: 100 }
+                      { label: "0 - 100", min: 0, max: 100 },
                     ].map((pr) => {
-                      const isCurrentPreset = (appState.arenaMin ?? 30) === pr.min && (appState.arenaMax ?? 100) === pr.max;
+                      const isCurrentPreset =
+                        (appState.arenaMin ?? 30) === pr.min &&
+                        (appState.arenaMax ?? 100) === pr.max;
                       return (
                         <button
                           key={pr.label}
@@ -5780,11 +6736,11 @@ export default function App() {
                             saveState({
                               ...appState,
                               arenaMin: pr.min,
-                              arenaMax: pr.max
+                              arenaMax: pr.max,
                             });
                           }}
                           className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer select-none active:scale-95 ${
-                            isCurrentPreset 
+                            isCurrentPreset
                               ? "bg-amber-400 text-emerald-955 border-amber-300 font-extrabold shadow-sm"
                               : "bg-emerald-955/60 text-emerald-300 border-emerald-850 hover:bg-emerald-900 hover:text-white"
                           }`}
@@ -5799,12 +6755,14 @@ export default function App() {
                       const isGeneral = [
                         { min: 20, max: 70 },
                         { min: 30, max: 100 },
-                        { min: 0, max: 100 }
-                      ].some(g => g.min === past.min && g.max === past.max);
+                        { min: 0, max: 100 },
+                      ].some((g) => g.min === past.min && g.max === past.max);
 
                       if (isGeneral) return null;
 
-                      const isCurrentPast = (appState.arenaMin ?? 30) === past.min && (appState.arenaMax ?? 100) === past.max;
+                      const isCurrentPast =
+                        (appState.arenaMin ?? 30) === past.min &&
+                        (appState.arenaMax ?? 100) === past.max;
                       return (
                         <button
                           key={`past-${pIdx}`}
@@ -5813,23 +6771,24 @@ export default function App() {
                             saveState({
                               ...appState,
                               arenaMin: past.min,
-                              arenaMax: past.max
+                              arenaMax: past.max,
                             });
                           }}
                           className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer select-none active:scale-95 flex items-center gap-1 ${
-                            isCurrentPast 
+                            isCurrentPast
                               ? "bg-amber-400 text-emerald-950 border-amber-300 shadow-sm"
                               : "bg-emerald-900/80 border-emerald-800 text-amber-200/90 hover:bg-emerald-850"
                           }`}
                         >
                           <span>🕒</span>
-                          <span>{past.min} - {past.max}</span>
+                          <span>
+                            {past.min} - {past.max}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
-
               </div>
 
               {/* Action Launch Bar */}
@@ -5851,9 +6810,15 @@ export default function App() {
                     const startRangeMin = appState.arenaMin ?? 30;
                     const startRangeMax = appState.arenaMax ?? 100;
                     let history = appState.arenaRangeHistory ?? [];
-                    history = history.filter(h => !(h.min === startRangeMin && h.max === startRangeMax));
-                    history = [{ min: startRangeMin, max: startRangeMax }, ...history].slice(0, 4);
-                    
+                    history = history.filter(
+                      (h) =>
+                        !(h.min === startRangeMin && h.max === startRangeMax),
+                    );
+                    history = [
+                      { min: startRangeMin, max: startRangeMax },
+                      ...history,
+                    ].slice(0, 4);
+
                     saveState({
                       ...appState,
                       arenaMin: startRangeMin,
@@ -5863,7 +6828,7 @@ export default function App() {
                       arenaCompleted: false,
                       arenaStageProgress: 1,
                     });
-                    
+
                     setIsArenaSetupOpen(false);
                     setIsTrainingActive(true);
                     setArenaActiveStage(null);
@@ -5875,7 +6840,6 @@ export default function App() {
                   <Play className="w-3.5 h-3.5 text-emerald-955 fill-amber-950/20" />
                 </button>
               </div>
-
             </motion.div>
           </motion.div>
         )}
@@ -5884,43 +6848,61 @@ export default function App() {
       {/* =============================================================================
           GLOBAL STICKY HEADER
           ============================================================================= */}
-      <header 
-        id="global-header" 
+      <header
+        id="global-header"
         className="sticky top-0 z-[100] bg-white/95 backdrop-blur-md border-b-2 border-slate-200 px-2.5 py-2 sm:px-4 sm:py-3.5 w-full shadow-sm"
       >
         <div className="max-w-5xl mx-auto flex items-center justify-between w-full">
-          <div 
+          <div
             onClick={closeArcadeFrame}
-            className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group shrink-0"
+            className="flex items-center gap-1.5 sm:gap-[7px] cursor-pointer group shrink-0"
           >
-            <div className="w-7.5 h-7.5 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-black transition group-hover:scale-105 active:scale-95 border-2 border-emerald-500 border-b-[3px] sm:border-b-4 border-b-emerald-950 text-xs sm:text-base select-none">
-              G
-            </div>
-            <div className="flex flex-col">
-              <h1 className="font-extrabold text-xs sm:text-base md:text-lg text-slate-800 tracking-tight group-hover:text-emerald-700 transition leading-none">
+            <img
+              src={appState.showScript ? "/logo-urdu.png" : "/logo-en.png"}
+              alt="Ginti Logo"
+              className="w-7.5 h-7.5 sm:w-10 sm:h-10 object-contain transition group-hover:scale-105 active:scale-95 select-none"
+            />
+            <div className="flex flex-col justify-center relative top-[1px] sm:top-[1px]">
+              <h1
+                className={`font-fredoka font-bold text-[16px] sm:text-[19.5px] md:text-[21.5px] tracking-normal transition leading-none ${
+                  appState.isDarkMode
+                    ? "text-[#EEF7F1] hover:text-emerald-400 group-hover:text-emerald-400"
+                    : "text-[#0F5C45] hover:text-emerald-600 group-hover:text-emerald-600"
+                }`}
+              >
                 Ginti
               </h1>
-              <p className="text-[7.5px] sm:text-[8px] text-slate-405 font-black uppercase tracking-wide font-mono hidden xs:block mt-0.5 select-none leading-none">
+              <p
+                className={`text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider font-mono hidden xs:block mt-0.5 select-none leading-none ${
+                  appState.isDarkMode ? "text-emerald-500/60" : "text-slate-500"
+                }`}
+              >
                 Urdu Numbers
               </p>
             </div>
           </div>
 
           {/* Global Progress Indicators - Inline sleek layout (highly readable, uncluttered) */}
-          <div className="flex items-center gap-1.5 sm:gap-3 flex-nowrap shrink-0">
-            
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
             {/* XP Button - Tactile Styled matching Urdu script switcher button style */}
             <button
               onClick={() => {
                 playSoundSynth("click");
-                showToast(`Keep practicing! You have accumulated ${appState.totalXP} XP.`);
+                showToast(
+                  `Keep practicing! You have accumulated ${appState.totalXP} XP.`,
+                );
               }}
               className="flex items-center justify-center gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-700 hover:bg-slate-50/50 shadow-xs"
               title="Total XP - Click to check status"
             >
-              <span className="text-xs sm:text-sm select-none leading-none translate-y-[-0.5px]">⭐</span>
+              <span className="text-xs sm:text-sm select-none leading-none translate-y-[-0.5px]">
+                ⭐
+              </span>
               <span className="font-mono font-black text-slate-700 leading-none tracking-tight flex items-center">
-                {appState.totalXP}<span className="text-[7.5px] sm:text-[8.5px] text-slate-400 font-bold ml-0.5 uppercase tracking-wide">XP</span>
+                {appState.totalXP}
+                <span className="text-[7.5px] sm:text-[8.5px] text-slate-400 font-bold ml-0.5 uppercase tracking-wide">
+                  XP
+                </span>
               </span>
             </button>
 
@@ -5933,13 +6915,19 @@ export default function App() {
               className={`flex items-center justify-center gap-1 sm:gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] border-b-[3.5px] sm:border-b-[4.5px] ${getStreakBadgeStyles()}`}
               title="Mastery Streak - Click to view true value"
             >
-              <MasteryFlame 
-                streak={appState.masteryStreak ?? 0} 
-                size={16} 
-                className={triggerHeaderFlameAnimate ? "scale-125 transition-transform duration-150" : "transition-transform duration-150"} 
+              <MasteryFlame
+                streak={appState.masteryStreak ?? 0}
+                size={16}
+                className={
+                  triggerHeaderFlameAnimate
+                    ? "scale-125 transition-transform duration-150"
+                    : "transition-transform duration-150"
+                }
               />
               <span className="font-mono font-black text-xs sm:text-sm leading-none translate-y-[-0.5px]">
-                {appState.masteryStreak > 99 ? "99+" : appState.masteryStreak || 0}
+                {appState.masteryStreak > 99
+                  ? "99+"
+                  : appState.masteryStreak || 0}
               </span>
             </button>
 
@@ -5952,37 +6940,49 @@ export default function App() {
                   const nextState = !appState.showScript;
                   const updated = { ...appState, showScript: nextState };
                   saveState(updated);
-                  showToast(nextState ? "Urdu Script shown." : "Urdu Script hidden.");
+                  showToast(
+                    nextState ? "Urdu Script shown." : "Urdu Script hidden.",
+                  );
                 }}
                 className={`flex items-center justify-center gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] ${
                   appState.isDarkMode
-                    ? (appState.showScript
-                        ? "bg-[#0c2417] border-[#064e3b] border-b-[3.5px] sm:border-b-[4.5px] border-b-[#047857] text-emerald-300 font-black shadow-xs"
-                        : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-400 hover:bg-slate-50/50 shadow-xs")
-                    : (appState.showScript
-                        ? "bg-emerald-50 border-emerald-500 border-b-[3.5px] sm:border-b-[4.5px] border-b-emerald-700 text-emerald-950 font-black shadow-xs"
-                        : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-500 hover:bg-slate-50/50")
+                    ? appState.showScript
+                      ? "bg-[#0c2417] border-[#064e3b] border-b-[3.5px] sm:border-b-[4.5px] border-b-[#047857] text-emerald-300 font-black shadow-xs"
+                      : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-400 hover:bg-slate-50/50 shadow-xs"
+                    : appState.showScript
+                      ? "bg-emerald-50 border-emerald-500 border-b-[3.5px] sm:border-b-[4.5px] border-b-emerald-700 text-emerald-950 font-black shadow-xs"
+                      : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-500 hover:bg-slate-50/50"
                 }`}
                 title="Toggle Urdu Nastaliq Script"
               >
-                <span className={`font-urdu font-black text-[10px] sm:text-[12.5px] leading-none select-none transition-all flex items-center justify-center translate-y-[-1px] ${
-                  appState.isDarkMode 
-                    ? (appState.showScript ? "text-emerald-300" : "text-slate-400")
-                    : (appState.showScript ? "text-emerald-950" : "text-slate-400")
-                }`}>
+                <span
+                  className={`font-urdu font-black text-[10px] sm:text-[12.5px] leading-none select-none transition-all flex items-center justify-center translate-y-[-1px] ${
+                    appState.isDarkMode
+                      ? appState.showScript
+                        ? "text-emerald-300"
+                        : "text-slate-400"
+                      : appState.showScript
+                        ? "text-emerald-950"
+                        : "text-slate-400"
+                  }`}
+                >
                   اردو
                 </span>
                 <div
                   className={`relative h-3.5 w-7 sm:h-[18px] sm:w-[2.1rem] rounded-full transition-colors duration-200 shrink-0 border border-t-[1.5px] border-b-[0.5px] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.18)] ${
-                    appState.showScript 
-                      ? (appState.isDarkMode ? "bg-emerald-700 border-emerald-900" : "bg-emerald-600 border-emerald-800") 
-                      : (appState.isDarkMode ? "bg-slate-800 border-slate-900" : "bg-slate-300 border-slate-400/80")
+                    appState.showScript
+                      ? appState.isDarkMode
+                        ? "bg-emerald-700 border-emerald-900"
+                        : "bg-emerald-600 border-emerald-800"
+                      : appState.isDarkMode
+                        ? "bg-slate-800 border-slate-900"
+                        : "bg-slate-300 border-slate-400/80"
                   }`}
                 >
                   <span
                     className={`absolute top-[1px] left-[1px] sm:top-[1.5px] sm:left-[1.5px] w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-gradient-to-b from-white via-white to-slate-200 shadow-[0_1.5px_3px_rgba(0,0,0,0.25),0_0_1px_rgba(0,0,0,0.3)] border-b-[1.5px] border-b-slate-400 transform transition-transform duration-200 ease-in-out ${
-                      appState.showScript 
-                        ? "translate-x-[14px] sm:translate-x-[16px]" 
+                      appState.showScript
+                        ? "translate-x-[14px] sm:translate-x-[16px]"
                         : "translate-x-0"
                     }`}
                   />
@@ -5997,30 +6997,55 @@ export default function App() {
                 onClick={() => {
                   playSoundSynth("toggle", "theme");
                   const nextDark = !appState.isDarkMode;
-                  localStorage.setItem("ginti_theme_pref", nextDark ? "dark" : "light");
+                  localStorage.setItem(
+                    "ginti_theme_pref",
+                    nextDark ? "dark" : "light",
+                  );
                   const updated = { ...appState, isDarkMode: nextDark };
                   saveState(updated);
-                  showToast(nextDark ? "Midnight Jade theme active" : "Classic Emerald theme active");
+                  showToast(
+                    nextDark
+                      ? "Midnight Jade theme active"
+                      : "Classic Emerald theme active",
+                  );
                 }}
                 className={`flex items-center justify-center p-2 sm:p-2.5 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] ${
-                  appState.isDarkMode 
-                    ? "bg-[#111A14] border-[#22382c] border-b-[3.5px] sm:border-b-[4.5px] border-b-[#2b4435] text-amber-400 shadow-xs" 
+                  appState.isDarkMode
+                    ? "bg-[#111A14] border-[#22382c] border-b-[3.5px] sm:border-b-[4.5px] border-b-[#2b4435] text-amber-400 shadow-xs"
                     : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-yellow-500 hover:bg-slate-50/55"
                 }`}
-                title={appState.isDarkMode ? "Switch to Classic Emerald" : "Switch to Midnight Jade"}
+                title={
+                  appState.isDarkMode
+                    ? "Switch to Classic Emerald"
+                    : "Switch to Midnight Jade"
+                }
               >
                 {appState.isDarkMode ? (
                   <motion.div
-                    initial={shouldReduceMotion ? {} : { rotate: 0, scale: 0.95 }}
-                    animate={shouldReduceMotion ? {} : { rotate: 18, scale: [0.95, 1.08, 1.0] }}
+                    initial={
+                      shouldReduceMotion ? {} : { rotate: 0, scale: 0.95 }
+                    }
+                    animate={
+                      shouldReduceMotion
+                        ? {}
+                        : { rotate: 18, scale: [0.95, 1.08, 1.0] }
+                    }
                     transition={{ duration: 0.25, ease: "easeOut" }}
                   >
                     <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 fill-amber-300" />
                   </motion.div>
                 ) : (
                   <motion.div
-                    initial={shouldReduceMotion ? {} : { rotate: 0, scale: 0.9, opacity: 0 }}
-                    animate={shouldReduceMotion ? {} : { rotate: -8, scale: [0.9, 1.06, 1.0], opacity: 1 }}
+                    initial={
+                      shouldReduceMotion
+                        ? {}
+                        : { rotate: 0, scale: 0.9, opacity: 0 }
+                    }
+                    animate={
+                      shouldReduceMotion
+                        ? {}
+                        : { rotate: -8, scale: [0.9, 1.06, 1.0], opacity: 1 }
+                    }
                     transition={{ duration: 0.25, ease: "easeOut" }}
                   >
                     <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800 fill-emerald-100" />
@@ -6028,7 +7053,6 @@ export default function App() {
                 )}
               </button>
             </div>
-
           </div>
         </div>
       </header>
@@ -6036,294 +7060,2211 @@ export default function App() {
       {/* =============================================================================
           unified #app-container WRAPPING SCREENS
           ============================================================================= */}
-      <main id="app-container" className="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-4 pt-1.5 sm:pt-2.5 pb-6 sm:pb-8 flex flex-col justify-start">
-        
+      <main
+        id="app-container"
+        className="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-4 pt-1.5 sm:pt-2.5 pb-6 sm:pb-8 flex flex-col justify-start"
+      >
         <AnimatePresence mode="wait">
-          {recoveryState && (() => {
-            const currentQ = recoveryState.questions[recoveryState.currentIndex];
-            const isFinished = recoveryState.isDone;
+          {recoveryState &&
+            (() => {
+              const currentQ =
+                recoveryState.questions[recoveryState.currentIndex];
+              const isFinished = recoveryState.isDone;
 
-            if (isFinished) {
+              if (isFinished) {
+                return (
+                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[150] flex items-center justify-center p-3.5 sm:p-4">
+                    <motion.div
+                      id="screen-recovery-summary"
+                      key="recovery-summary"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.28, ease: "easeOut" }}
+                      className="max-w-md w-full p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 bg-white border-2 border-slate-200 rounded-3xl shadow-lg py-5 sm:py-6 text-slate-800 animate-scale-up border-b-4 border-b-slate-300 relative overflow-hidden"
+                    >
+                      {/* Decorative Emerald Elegant Light Ray Background Accent */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-emerald-500 to-amber-500" />
+
+                      <div
+                        className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-600 shadow-sm relative group select-none animate-bounce"
+                        title="Mithu Victory Icon"
+                      >
+                        🏆
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none uppercase">
+                          Correction Complete!
+                        </h3>
+                        <p className="text-[10px] sm:text-xs text-slate-500 max-w-xs font-semibold leading-relaxed mt-1">
+                          You resolved all mistake cards! Every mistake is a
+                          step forward.
+                        </p>
+                      </div>
+
+                      <div className="w-full bg-slate-50/50 border border-slate-200/80 rounded-[1.5rem] p-4 flex flex-col gap-3 text-left shadow-inner">
+                        <div>
+                          <span className="text-[9px] font-black uppercase text-emerald-800 block mb-1.5 tracking-widest flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            ✅ Now Mastered ({recoveryState.mastered.length})
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {recoveryState.mastered.length > 0 ? (
+                              recoveryState.mastered.map((m) => (
+                                <span
+                                  key={m}
+                                  className="bg-emerald-50 text-emerald-850 text-[10px] px-2.5 py-1 font-bold rounded-lg border border-emerald-150 shadow-xs flex items-center gap-1"
+                                >
+                                  Digit {formatValueForDisplay(m)}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-slate-400 italic">
+                                None mastered
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-200 pt-3">
+                          <span className="text-[9px] font-black uppercase text-rose-500 block mb-1.5 tracking-widest flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-450" />
+                            ⚠️ Retained for Review (
+                            {recoveryState.failedPermanently.length})
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {recoveryState.failedPermanently.length > 0 ? (
+                              recoveryState.failedPermanently.map((v) => (
+                                <span
+                                  key={v}
+                                  className="bg-rose-50 text-rose-750 text-[10px] px-2.5 py-1 font-bold rounded-lg border border-rose-205 shadow-xs flex items-center gap-1"
+                                >
+                                  Digit {formatValueForDisplay(v)}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-slate-400 italic">
+                                None remaining
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {recoveryState.failedPermanently.length > 0 && (
+                        <div className="text-[10px] sm:text-[11px] text-indigo-800 font-extrabold flex items-center gap-1.5 bg-indigo-50/70 border border-indigo-150 rounded-xl py-2 px-3 self-center leading-snug">
+                          <span className="text-xs">💡</span>
+                          <span>
+                            Try the Practice or Training Arena to master tricky
+                            values!
+                          </span>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          const mode = recoveryState.originalMode;
+                          const uId = recoveryState.unitId;
+
+                          // Determine and play audio feedback immediately on tap
+                          const isStage5JourneyLevelUp =
+                            mode === "journey_stage5" &&
+                            uId &&
+                            !appState.completedUnits.includes(uId);
+                          if (isStage5JourneyLevelUp) {
+                            playSoundSynth("levelUp");
+                          } else {
+                            playSoundSynth("click");
+                          }
+
+                          // Delay the state updates and navigation slightly so the button has time to animate its physical press & return transition
+                          setTimeout(() => {
+                            let leveledUp = false;
+                            if (mode === "journey_stage2" && uId) {
+                              leveledUp = saveUnitStageProgress(uId, 2);
+                              setStageQuizIdx(5); // Show stage end screen
+                            } else if (mode === "journey_stage3" && uId) {
+                              leveledUp = saveUnitStageProgress(uId, 3);
+                              setStageListIdx(5); // Show stage end screen
+                            } else if (mode === "journey_stage5" && uId) {
+                              const isNewCompletion =
+                                !appState.completedUnits.includes(uId);
+                              const unitsArray = isNewCompletion
+                                ? [...appState.completedUnits, uId]
+                                : appState.completedUnits;
+
+                              const nextJourneyProgress = {
+                                ...(appState.unitStagesProgress ?? {}),
+                                [uId]: 5,
+                              };
+
+                              const updated = {
+                                ...appState,
+                                completedUnits: unitsArray,
+                                totalXP: appState.totalXP + 50,
+                                unitStagesProgress: nextJourneyProgress,
+                              };
+
+                              saveState(updated);
+                              leveledUp = true;
+                              const celebratoryMsg =
+                                getMithuUnitCompletionMessage(
+                                  recentMithuMessagesRef.current,
+                                );
+                              trackMithuMessage(celebratoryMsg);
+                              showToast(
+                                `${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`,
+                              );
+                              setCompletedUnitPopup(uId);
+                              setActiveScreen("dashboard");
+                            } else if (mode === "placement_challenge" && uId) {
+                              const isNewCompletion =
+                                !appState.completedUnits.includes(uId);
+                              const unitsArray = isNewCompletion
+                                ? [...appState.completedUnits, uId]
+                                : appState.completedUnits;
+
+                              const placementsArray =
+                                appState.placementCompletedUnits &&
+                                !appState.placementCompletedUnits.includes(uId)
+                                  ? [...appState.placementCompletedUnits, uId]
+                                  : appState.placementCompletedUnits || [uId];
+
+                              const nextJourneyProgress = {
+                                ...(appState.unitStagesProgress ?? {}),
+                                [uId]: 5,
+                              };
+
+                              const updated = {
+                                ...appState,
+                                completedUnits: unitsArray,
+                                placementCompletedUnits: placementsArray,
+                                totalXP: appState.totalXP + 50,
+                                unitStagesProgress: nextJourneyProgress,
+                              };
+
+                              saveState(updated);
+                              leveledUp = true;
+
+                              // Check if there is a next unit to focus
+                              const currentIndex = UNITS.findIndex(
+                                (u) => u.id === uId,
+                              );
+                              const nextUnitAvailable =
+                                currentIndex !== -1 &&
+                                currentIndex + 1 < UNITS.length
+                                  ? UNITS[currentIndex + 1]
+                                  : null;
+                              if (nextUnitAvailable) {
+                                setNextUnitToFocus(nextUnitAvailable.id);
+                              }
+
+                              setCompletedUnitPopup(uId);
+                              setActiveScreen("dashboard");
+                              setPlacementState(null);
+                            } else if (mode === "arena_stage2") {
+                              leveledUp = saveArenaStageProgress(2);
+                              setArenaQuizIdx(5); // Show stage end screen
+                            } else if (mode === "arena_stage3") {
+                              leveledUp = saveArenaStageProgress(3);
+                              setArenaListIdx(5); // Show stage end screen
+                            } else if (mode === "arena_stage5") {
+                              leveledUp = saveArenaStageProgress(5);
+                              setArenaQuizIdx(10); // Show stage end screen
+                            }
+
+                            setRecoveryState(null);
+                          }, 180);
+                        }}
+                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all duration-150 ${
+                          appState.isDarkMode
+                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2 active:scale-[0.99]"
+                            : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5 active:scale-[0.99]"
+                        }`}
+                      >
+                        Save Progress & Complete 🎉
+                      </button>
+                    </motion.div>
+                  </div>
+                );
+              }
+
+              if (!currentQ) return null;
+
               return (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[150] flex items-center justify-center p-3.5 sm:p-4">
-                  <motion.div
-                    id="screen-recovery-summary"
-                    key="recovery-summary"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.28, ease: "easeOut" }}
-                    className="max-w-md w-full p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 bg-white border-2 border-slate-200 rounded-3xl shadow-lg py-5 sm:py-6 text-slate-800 animate-scale-up border-b-4 border-b-slate-300 relative overflow-hidden"
+                <motion.div
+                  id="screen-recovery"
+                  key="recovery-step"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
+                  className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col flex-1 gap-4 min-h-[78vh] sm:min-h-[82vh]"
+                >
+                  {/* Top Section: Header & Progress */}
+                  <div className="flex flex-col gap-3.5 shrink-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setRecoveryState(null);
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer active:scale-95"
+                      >
+                        <Home className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Exit Drill</span>
+                      </button>
+
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                          Card {recoveryState.currentIndex + 1} of{" "}
+                          {recoveryState.questions.length}
+                        </span>
+                        <span className="text-[10px] font-extrabold uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 rounded-full py-0.5 tracking-wider flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                          🛡️ Correction
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full bg-slate-100 dark:bg-slate-850 h-3 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800/80">
+                      <div
+                        className="bg-[#ffc800] h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${((recoveryState.currentIndex + 1) / recoveryState.questions.length) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Center Content Area (Vertically Balanced & Centered) */}
+                  <div className="flex-1 flex flex-col justify-center gap-3.5 sm:gap-4 py-4 sm:py-6">
+                    {/* Prompt Card */}
+                    <div
+                      id="prompt-card"
+                      className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative overflow-hidden bg-white dark:bg-slate-900/65 min-h-[145px] sm:min-h-[165px] gap-2.5"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-[10px] font-mono uppercase font-black text-slate-400 tracking-wider">
+                          Correction Round
+                        </span>
+                        {renderMithuHelpBadge(currentQ.entry.digit)}
+                      </div>
+
+                      <div
+                        className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 ${
+                          appState.isDarkMode ? "text-white" : "text-slate-900"
+                        } ${
+                          appState.showScript &&
+                          typeof getDisplayPromptValue(currentQ) === "string" &&
+                          (getDisplayPromptValue(currentQ) as string).match(
+                            /[\u0600-\u06FF]/,
+                          )
+                            ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? "text-white" : "text-emerald-800"}`
+                            : "text-4xl sm:text-[3.25rem] leading-none py-2"
+                        }`}
+                      >
+                        {formatValueForDisplay(getDisplayPromptValue(currentQ))}
+                      </div>
+
+                      {/* Redesigned interactive tactile speaker button */}
+                      <div className="flex flex-col items-center gap-1">
+                        <button
+                          onClick={() => playWordAudio(currentQ.entry)}
+                          disabled={speechActive}
+                          className={`w-[2.35rem] h-[2.35rem] rounded-full border-2 border-emerald-100 bg-emerald-50/40 flex items-center justify-center shadow-xs transition hover:scale-105 active:scale-95 disabled:opacity-50 text-emerald-800 cursor-pointer border-b-[3.5px] border-b-emerald-200 active:translate-y-[1.5px] active:border-b-[1.5px] ${
+                            speechActive ? "pulse-primary-emerald" : ""
+                          }`}
+                          title="Hear pronunciation audio"
+                        >
+                          <PremiumSpeakerIcon className="w-4 h-4 text-emerald-700" />
+                        </button>
+                        <p className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wider">
+                          Tap speaker to hear pronunciation
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Choice buttons */}
+                    <div
+                      id="choice-grid"
+                      className="grid grid-cols-2 gap-2.5 sm:gap-3"
+                    >
+                      {currentQ.choices.map((choice: any, index: number) => {
+                        const isSelected = recoveryState.userAnswer === choice;
+                        const isCorrectVal = choice === currentQ.correctAnswer;
+
+                        let cardStyle = "ginti-choice-btn";
+                        if (recoveryState.isAnswered) {
+                          if (isCorrectVal) {
+                            cardStyle = "ginti-choice-btn-correct";
+                          } else if (isSelected) {
+                            cardStyle = "ginti-choice-btn-incorrect";
+                          } else {
+                            cardStyle = "ginti-choice-btn-dimmed";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={index}
+                            disabled={recoveryState.isAnswered}
+                            onClick={() => handleRecoveryAnswer(choice)}
+                            className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                          >
+                            <span
+                              className={
+                                appState.showScript &&
+                                typeof choice === "string" &&
+                                choice.match(/[\u0600-\u06FF]/)
+                                  ? "text-2xl font-urdu select-none leading-none"
+                                  : ""
+                              }
+                            >
+                              {formatValueForDisplay(choice)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Bottom: Feedback Footer - Reserved height container to eliminate layout shift */}
+                  <div className="shrink-0 min-h-[116px] sm:min-h-[68px] flex flex-col justify-center w-full">
+                    <AnimatePresence mode="wait">
+                      {recoveryState.isAnswered ? (
+                        <motion.div
+                          key="recovery-answered"
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          transition={{ duration: 0.2 }}
+                          className={`p-2.5 sm:p-3 px-4 sm:px-5 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-3 w-full ${
+                            recoveryState.userAnswer === currentQ.correctAnswer
+                              ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
+                              : "bg-rose-50 border-rose-300 text-rose-955 border-b-[5px] border-b-rose-450 shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 text-left w-full sm:w-auto">
+                            <div
+                              className="scale-[0.58] -my-5 -mx-2.5 select-none shrink-0"
+                              id="recovery-avatar"
+                            >
+                              <MithuMascot
+                                mood={
+                                  recoveryState.userAnswer ===
+                                  currentQ.correctAnswer
+                                    ? "sparkly"
+                                    : "sad"
+                                }
+                              />
+                            </div>
+
+                            {recoveryState.userAnswer ===
+                            currentQ.correctAnswer ? (
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                  <span>
+                                    {recoveryState.mithuFeedback?.title ??
+                                      "Correct Answer! Shabash!"}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                    appState.isDarkMode
+                                      ? "text-emerald-300"
+                                      : "text-emerald-950"
+                                  }`}
+                                >
+                                  {recoveryState.mithuFeedback?.subtitle ??
+                                    "You corrected this mistake card successfully."}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[12.5px] font-black flex items-center gap-1 text-rose-900 leading-tight">
+                                  <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-300 shrink-0" />
+                                  <span>
+                                    {recoveryState.mithuFeedback?.title ??
+                                      "Incorrect! Let's reinforce."}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                    appState.isDarkMode
+                                      ? "text-rose-300"
+                                      : "text-rose-950"
+                                  }`}
+                                >
+                                  Correct answer:{" "}
+                                  <span
+                                    className={`font-extrabold rounded px-1 border ${
+                                      appState.isDarkMode
+                                        ? "bg-rose-950 text-rose-200 border-rose-900/60"
+                                        : "bg-rose-100/70 text-rose-950 border-rose-200"
+                                    }`}
+                                  >
+                                    {formatValueForDisplay(
+                                      currentQ.correctAnswer,
+                                    )}
+                                  </span>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => advanceRecoveryRound()}
+                            className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                          >
+                            <span>Continue</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <div
+                          key="placeholder"
+                          className="h-[116px] sm:h-[68px] w-full"
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })()}
+
+          {!recoveryState &&
+            activeScreen === "dashboard" &&
+            (() => {
+              const hasProgress =
+                appState.completedUnits.length > 0 ||
+                Object.values(appState.unitStagesProgress || {}).some(
+                  (progress) => (progress as number) > 1,
+                ) ||
+                appState.totalXP > 0;
+
+              const nextUnit =
+                UNITS.find((u) => !appState.completedUnits.includes(u.id)) ||
+                UNITS[0];
+              const recommendedProgress = getUnitProgress(nextUnit.id);
+              const isNextUnitCompleted = appState.completedUnits.includes(
+                nextUnit.id,
+              );
+              const nextUnitPercent = isNextUnitCompleted
+                ? 100
+                : Math.round(((recommendedProgress - 1) / 5) * 100);
+
+              // Construct smart, contextual recommendations based on user progress and specified priorities
+              let recTitle = "Mithu Recommends";
+              let recSubtitle = nextUnit.title;
+              let recText = "";
+              let recProgressPercent = nextUnitPercent;
+              let recButtonText = "Start Learning";
+              let recAction = () => startUnitJourney(nextUnit.id);
+
+              if (!isNextUnitCompleted) {
+                if (recommendedProgress > 1) {
+                  // Priority 1 & 2: Continue unfinished stage / unit
+                  recTitle = `🦜 Continue Stage ${recommendedProgress}`;
+                  recSubtitle = nextUnit.title;
+                  recProgressPercent = nextUnitPercent;
+                  recText = `You are already ${nextUnitPercent}% through! Let's keep your streak active and clear Stage ${recommendedProgress} in ${nextUnit.title} right now.`;
+                  recButtonText = `Resume Stage ${recommendedProgress}`;
+                } else {
+                  // Priority 3 & 4: Start the next unlocked unit / Unit ready
+                  const hasCompletedAny = appState.completedUnits.length > 0;
+                  recTitle = hasCompletedAny
+                    ? `🦜 ${nextUnit.title} is ready!`
+                    : "Mithu Recommends";
+                  recSubtitle = nextUnit.title;
+                  recProgressPercent = 0;
+                  recText = `Ready to master Urdu counting in the range of ${nextUnit.numbersRange}? Let's jump in!`;
+                  recButtonText = "Start Learning";
+                }
+              } else {
+                // Priority 5: If all currently available units are completed:
+                // - Recommend Blitz Mode.
+                // - Recommend Training Arena.
+                // - Recommend improving previous performance.
+                const blitzScore = appState.highScore || 0;
+                const hasPlayedBlitz = blitzScore > 0;
+
+                if (!hasPlayedBlitz) {
+                  recTitle = "🦜 Try Blitz Mode for a speed challenge! ⚡";
+                  recSubtitle = "Arcade Blitz Challenge";
+                  recProgressPercent = 100;
+                  recText =
+                    "All units completed! Test your speed and reflexes in our high-energy Ginti Blitz challenge.";
+                  recButtonText = "Play Ginti Blitz";
+                  recAction = () => {
+                    const blitzBtn = document.querySelector(
+                      ".ginti-blitz-play-btn",
+                    ) as HTMLElement;
+                    if (blitzBtn) {
+                      blitzBtn.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                      setTimeout(() => blitzBtn.click(), 500);
+                    }
+                  };
+                } else if (blitzScore < 30) {
+                  recTitle = "🦜 Can you beat your best Blitz score? ⚡";
+                  recSubtitle = "Break Your Record";
+                  recProgressPercent = 100;
+                  recText = `Your current best Blitz score is ${blitzScore} hits! Challenge yourself to beat your record and sharpen your rapid reflexes.`;
+                  recButtonText = "Play Blitz Again";
+                  recAction = () => {
+                    const blitzBtn = document.querySelector(
+                      ".ginti-blitz-play-btn",
+                    ) as HTMLElement;
+                    if (blitzBtn) {
+                      blitzBtn.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                      setTimeout(() => blitzBtn.click(), 500);
+                    }
+                  };
+                } else {
+                  recTitle = "🦜 Challenge yourself in Training Arena! 🎯";
+                  recSubtitle = "Practice & Pronunciation";
+                  recProgressPercent = 100;
+                  recText =
+                    "Sharpen your skills, pronunciation, and spelling in the targeted Training Arena stages.";
+                  recButtonText = "Enter Arena";
+                  recAction = () => {
+                    setActiveScreen("training-arena");
+                    window.scrollTo({ top: 0 });
+                  };
+                }
+              }
+
+              return (
+                <motion.div
+                  id="screen-dashboard"
+                  key="dashboard"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
+                  className="max-w-xl md:max-w-2xl mx-auto w-full flex flex-col gap-4.5 sm:gap-6"
+                >
+                  {/* Mascot Welcome & Direct Recommended Next Step (Duolingo/Mimo-styled high-impact pathway start) */}
+                  {hasProgress && (
+                    <div className="bg-gradient-to-br from-emerald-800 via-emerald-850 to-emerald-900 text-white p-3.5 sm:p-5 rounded-[1.75rem] sm:rounded-[2rem] border-2 border-emerald-600 border-b-[5px] sm:border-b-[6px] border-b-emerald-950 shadow-[0_4px_0_#042414] sm:shadow-[0_6px_0_#042414] relative overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-5">
+                      {/* Backglow decoration for modernist depth */}
+                      <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-emerald-700/35 rounded-full blur-2xl pointer-events-none" />
+                      <div
+                        className={`absolute -left-12 -top-12 w-32 h-32 ${appState.isDarkMode ? "bg-emerald-500/20" : "bg-amber-400/10"} rounded-full blur-xl pointer-events-none`}
+                      />
+
+                      {/* Visual Top Row for Mobile (Mascot & Text side-by-side to save excessive vertical height) */}
+                      <div className="flex items-center gap-3.5 sm:gap-4.5 flex-1 min-w-0">
+                        {/* Integrated Mascot Pedestal Group */}
+                        <div
+                          className={`relative shrink-0 flex items-center justify-center p-0.5 sm:p-1 rounded-full border border-white/5 shadow-inner ${
+                            appState.isDarkMode
+                              ? "bg-gradient-to-br from-emerald-500/20 to-emerald-600/5"
+                              : "bg-gradient-to-br from-amber-400/15 to-amber-500/5"
+                          }`}
+                        >
+                          <div
+                            className={`absolute inset-0 rounded-full blur-sm ${
+                              appState.isDarkMode
+                                ? "bg-emerald-500/15"
+                                : "bg-amber-400/10"
+                            }`}
+                          />
+                          <div
+                            id="ginti-mascot-container"
+                            className={`relative z-10 scale-75 sm:scale-100 filter drop-shadow-md origin-center -m-1.5 sm:m-0 ${mascotAnimation}`}
+                          >
+                            <MithuMascot
+                              mood={
+                                appState.weakAreas.length > 2
+                                  ? "thinking"
+                                  : "happy"
+                              }
+                            />
+                          </div>
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 bg-gradient-to-r from-amber-400 to-amber-500 border-2 border-emerald-600 dark:border-[#0b3a22] text-[8px] sm:text-[9.5px] ${
+                              activeLevel >= 10
+                                ? "px-1.5 sm:px-2 min-w-5 h-5 sm:min-w-6.5 sm:h-6.5"
+                                : "w-5 h-5 sm:w-6.5 sm:h-6.5"
+                            } flex items-center justify-center rounded-full font-black text-slate-905 dark:text-[#0b2414] shadow-md select-none tracking-tight`}
+                          >
+                            Lv{activeLevel}
+                          </span>
+                        </div>
+
+                        {/* Clean, Scannable Content Block */}
+                        <div className="flex-1 min-w-0 flex flex-col gap-0.5 sm:gap-1">
+                          <div>
+                            <span className="text-[8px] sm:text-[9.5px] text-amber-300 font-black uppercase tracking-wider mb-0.5 block">
+                              {recTitle}
+                            </span>
+                            <h3 className="text-xs sm:text-base font-black text-white leading-tight truncate">
+                              {recSubtitle}
+                            </h3>
+                          </div>
+
+                          <p className="text-[9.5px] sm:text-[11px] text-emerald-100/90 font-medium leading-normal max-w-sm sm:max-w-none line-clamp-2 sm:line-clamp-none">
+                            {recText}
+                          </p>
+
+                          {/* Visual mini progress inline */}
+                          <div className="flex items-center gap-2 w-full max-w-[200px] sm:max-w-[250px] mt-0.5">
+                            <div className="flex-1 bg-emerald-950/40 h-1.5 sm:h-2.5 rounded-full overflow-hidden border border-emerald-700 p-[1px] sm:p-[1.5px] shadow-inner">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-400 to-amber-300 rounded-full transition-all duration-500"
+                                style={{ width: `${recProgressPercent}%` }}
+                              />
+                            </div>
+                            <span className="text-[8px] sm:text-[9px] font-extrabold text-amber-300 tracking-wide font-mono">
+                              {recProgressPercent}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Balanced CTA Button - Compact height on mobile, full size on desktop */}
+                      <button
+                        onClick={recAction}
+                        className="w-full sm:w-auto px-4 py-2 sm:px-5 sm:py-2.5 bg-amber-400 hover:bg-amber-300 active:translate-y-[1px] sm:active:translate-y-[2px] active:border-b-2 text-emerald-950 rounded-xl font-black text-xs sm:text-sm tracking-tight border-2 border-amber-300 border-b-[3px] sm:border-b-[4px] border-b-amber-600 transition-all duration-100 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 z-10 shadow-md"
+                      >
+                        <span>{recButtonText}</span>
+                        <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-950 fill-emerald-950 stroke-none" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Grid layout separating search learning tool and premium arcade game action */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 relative z-30">
+                    {/* 1. Instant Lookup Card (Search Learning Tool) */}
+                    <section
+                      id="panic-search-hub"
+                      className="bg-white col-span-12 sm:col-span-8 rounded-[1.75rem] border-2 border-slate-200/90 border-b-[6px] border-b-slate-350 relative p-4 sm:p-5 flex flex-col gap-3 transition-all duration-200 shadow-sm animate-fade-in"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-150 pb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="p-1 rounded-lg bg-emerald-50 text-emerald-800 shrink-0">
+                            <Search className="w-4 h-4" />
+                          </span>
+                          <div>
+                            <h3 className="text-xs sm:text-sm font-black text-slate-800 leading-none">
+                              Instant Lookup
+                            </h3>
+                            <p className="text-[9px] text-slate-450 font-bold leading-none mt-1">
+                              Type any number or phonetic Urdu
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[9.5px] font-mono font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-100/50 px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-xs">
+                          1-5000
+                        </span>
+                      </div>
+
+                      {/* Input and Overlay container */}
+                      <div className="relative w-full z-45">
+                        <div className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              id="ginti-search"
+                              placeholder="Search number, word, or Urdu (e.g., 35, paintees...)"
+                              value={searchQuery}
+                              onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setSelectedSearchEntry(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  const matches = handleQuerySearch();
+                                  if (matches.length > 0) {
+                                    saveSearchToHistory(searchQuery);
+                                  }
+                                }
+                              }}
+                              onBlur={() => {
+                                const matches = handleQuerySearch();
+                                if (matches.length > 0) {
+                                  saveSearchToHistory(searchQuery);
+                                }
+                              }}
+                              className="w-full bg-slate-50 focus:bg-white text-xs text-slate-900 px-3.5 py-2.5 pl-9 rounded-xl border-2 border-slate-200 focus:border-emerald-600 focus:outline-none transition-all duration-150 font-semibold shadow-inner"
+                            />
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+                            {searchQuery && (
+                              <button
+                                onClick={() => {
+                                  playSoundSynth("navigation");
+                                  setSearchQuery("");
+                                  setSelectedSearchEntry(null);
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-200/60 hover:bg-slate-200 rounded-full text-slate-500 cursor-pointer flex items-center justify-center w-5 h-5"
+                              >
+                                <X className="w-2.5 h-2.5 text-slate-500" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Recent Search History Pills */}
+                        {recentSearches.length > 0 && (
+                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[10px] w-full">
+                            <span className="text-slate-400 font-bold flex items-center gap-1 shrink-0 mr-1 select-none">
+                              <Clock className="w-3 h-3 text-slate-400" />{" "}
+                              Recent
+                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+                              {recentSearches.map((query) => (
+                                <div
+                                  key={query}
+                                  className="inline-flex items-center bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-full text-slate-600 hover:text-emerald-800 text-[9px] font-black transition select-none overflow-hidden"
+                                >
+                                  <button
+                                    onClick={() => {
+                                      playSoundSynth("click");
+                                      setSearchQuery(query);
+                                      setSelectedSearchEntry(null);
+                                      saveSearchToHistory(query);
+                                    }}
+                                    className="pl-2.5 pr-2 py-1 font-black transition cursor-pointer select-none outline-none text-left"
+                                  >
+                                    {query}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      playSoundSynth("click");
+                                      removeSearchFromHistory(query);
+                                    }}
+                                    className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:scale-115 active:scale-95 transition cursor-pointer select-none outline-none font-black text-[11px] border-l border-slate-200/40 leading-none"
+                                    title="Remove search"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            {recentSearches.length >= 3 && (
+                              <button
+                                onClick={clearAllSearchHistory}
+                                className="text-slate-400 hover:text-rose-500 text-[8px] font-extrabold uppercase tracking-wider ml-auto select-none cursor-pointer hover:underline transition-colors"
+                              >
+                                Clear All
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Common Confusions Shortcuts */}
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[10px]">
+                          <span className="text-slate-400 font-bold flex items-center gap-0.5 shrink-0 mr-1">
+                            💡 Confused?
+                          </span>
+                          {[
+                            { label: "88", term: "atasi" },
+                            { label: "87", term: "satasi" },
+                            { label: "77", term: "sathattar" },
+                            { label: "99", term: "ninanwe" },
+                            { label: "69", term: "unhattar" },
+                            { label: "150", term: "derh sau" },
+                          ].map((btn) => (
+                            <button
+                              key={btn.label}
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setSearchQuery(btn.term);
+                                setSelectedSearchEntry(null);
+                              }}
+                              className="px-2.5 py-1 bg-slate-50 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-full text-slate-600 hover:text-emerald-800 text-[9px] font-black transition cursor-pointer select-none"
+                            >
+                              {btn.label}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Search Outcomes Absolute Floating Overlay */}
+                        <AnimatePresence>
+                          {searchQuery && (
+                            <motion.div
+                              key="search-outcomes-overlay"
+                              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 5, scale: 0.99 }}
+                              transition={{ type: "spring", duration: 0.25 }}
+                              className="absolute left-0 right-0 top-full mt-2.5 p-3.5 sm:p-4.5 bg-slate-100 border-2 border-slate-200 border-b-[8px] border-b-slate-350 shadow-[0_16px_40px_rgba(15,23,42,0.16)] rounded-[2.25rem] z-50 flex flex-col gap-3.5 max-h-[385px] overflow-y-auto overflow-x-hidden"
+                            >
+                              {/* Top standby / banner style for the absolute top match */}
+                              {matchingSearchResults.length > 0 && (
+                                <div className="bg-gradient-to-r from-emerald-900 to-emerald-950 text-white rounded-[1.5rem] p-3 flex items-center justify-between gap-2 border-2 border-emerald-700 border-b-[5px] border-b-emerald-950 shadow-md">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="text-xs font-mono bg-amber-400 font-extrabold text-emerald-950 border border-amber-300 border-b-[3px] border-b-amber-600 px-2.5 py-0.5 rounded-[0.75rem] shadow-xs shrink-0 select-none">
+                                      {matchingSearchResults[0].digit}
+                                    </span>
+                                    <div className="truncate">
+                                      <span className="text-xs font-black truncate text-amber-300 block">
+                                        {matchingSearchResults[0].romanUrdu}
+                                      </span>
+                                      {appState.showScript && (
+                                        <span className="text-[10px] font-urdu leading-none text-emerald-250/90 font-medium">
+                                          {
+                                            matchingSearchResults[0]
+                                              .nativeScript
+                                          }
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      playWordAudio(matchingSearchResults[0])
+                                    }
+                                    className="p-2 bg-emerald-800 hover:bg-emerald-700 active:translate-y-[1px] active:border-b-2 border-2 border-emerald-600 border-b-4 border-b-emerald-955 rounded-[0.75rem] text-white transition cursor-pointer shrink-0 shadow-xs"
+                                  >
+                                    <PremiumSpeakerIcon
+                                      className="w-3.5 h-3.5 text-emerald-300 fill-emerald-300/10"
+                                      style={{ fill: "currentColor" }}
+                                    />
+                                  </button>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                {/* Matching results feed list */}
+                                <div className="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-1">
+                                  <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest pl-1">
+                                    Matches ({matchingSearchResults.length})
+                                  </div>
+
+                                  {matchingSearchResults.length === 0 ? (
+                                    <div className="p-4 text-center text-slate-500 flex flex-col items-center justify-center gap-1 bg-white rounded-[1.5rem] border-2 border-dashed border-slate-200">
+                                      <SearchX className="w-6 h-6 text-slate-300" />
+                                      <span className="text-[11px] font-bold">
+                                        No matching numbers found.
+                                      </span>
+                                      <span className="text-[9px] text-slate-400">
+                                        Try alternate spelling configurations.
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    matchingSearchResults.map((ent) => {
+                                      const isSelected =
+                                        selectedSearchEntry?.digit ===
+                                        ent.digit;
+                                      return (
+                                        <div
+                                          key={ent.digit}
+                                          onClick={() => {
+                                            playSoundSynth("click");
+                                            setSelectedSearchEntry(ent);
+                                            saveSearchToHistory(searchQuery);
+                                          }}
+                                          className={`p-2.5 text-left rounded-[1.25rem] border-2 transition duration-75 cursor-pointer flex items-center justify-between active:translate-y-[1.5px] active:border-b-[2px] ${
+                                            isSelected
+                                              ? "bg-emerald-50 border-emerald-500 border-b-[5px] border-b-emerald-700 font-bold shadow-xs text-emerald-950"
+                                              : "bg-white border-slate-200 border-b-[4px] border-b-slate-300 hover:bg-slate-50/50 hover:border-slate-300 hover:border-b-[4.5px]"
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <span
+                                              className={`font-extrabold text-[10px] w-7 h-7 border rounded-[0.75rem] flex items-center justify-center shrink-0 shadow-xs ${
+                                                isSelected
+                                                  ? "bg-emerald-200 border-emerald-300 text-emerald-950 dark:!text-[#0b2414]"
+                                                  : "bg-slate-50 border-slate-200"
+                                              }`}
+                                            >
+                                              {ent.digit}
+                                            </span>
+                                            <div className="truncate">
+                                              <div
+                                                className={`text-xs font-black leading-tight ${isSelected ? "text-emerald-950" : "text-slate-800"}`}
+                                              >
+                                                {ent.romanUrdu}
+                                              </div>
+                                              <div className="text-[8.5px] text-slate-400 font-semibold font-mono leading-none mt-0.5 truncate">
+                                                {ent.searchKeys
+                                                  .filter(
+                                                    (a) =>
+                                                      a !==
+                                                      ent.digit.toString(),
+                                                  )
+                                                  .slice(0, 2)
+                                                  .join(", ")}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            {appState.showScript && (
+                                              <span
+                                                className={`text-[10px] font-urdu leading-none pt-0.5 pr-2 border-r ${
+                                                  isSelected
+                                                    ? "border-emerald-200 font-bold"
+                                                    : "border-slate-150"
+                                                }`}
+                                              >
+                                                {ent.nativeScript}
+                                              </span>
+                                            )}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                playWordAudio(ent);
+                                              }}
+                                              className={`p-1.5 border-2 rounded-[0.75rem] text-slate-700 cursor-pointer transition-all duration-75 ${
+                                                isSelected
+                                                  ? "bg-emerald-600 hover:bg-emerald-550 border-emerald-700 border-b-[4px] hover:border-b-[5px] active:translate-y-[2px] active:border-b-2 text-white"
+                                                  : "bg-slate-100 hover:bg-slate-150 border-slate-300 border-b-[4px] hover:border-b-[5px] active:translate-y-[2px] active:border-b-2"
+                                              }`}
+                                            >
+                                              <PremiumSpeakerIcon
+                                                className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-emerald-850"}`}
+                                              />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+
+                                {/* Detail viewer panel for selected item */}
+                                <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 border-b-[6px] border-b-slate-350 p-3.5 flex flex-col items-center justify-center relative select-none">
+                                  <AnimatePresence mode="wait">
+                                    {selectedSearchEntry ? (
+                                      <motion.div
+                                        key={selectedSearchEntry.digit}
+                                        initial={{ opacity: 0, scale: 0.97 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.97 }}
+                                        className="w-full text-center flex flex-col items-center gap-2 animate-scale-up"
+                                      >
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full select-none border border-emerald-100">
+                                          Card Detail
+                                        </span>
+
+                                        <div className="text-3.5xl font-black text-slate-800 leading-none">
+                                          {selectedSearchEntry.digit}
+                                        </div>
+
+                                        <div className="text-sm font-black text-slate-800 flex items-center gap-1.5 justify-center leading-none">
+                                          <span>
+                                            {selectedSearchEntry.romanUrdu}
+                                          </span>
+                                          <button
+                                            onClick={() =>
+                                              playWordAudio(selectedSearchEntry)
+                                            }
+                                            className="p-1.5 bg-amber-400 hover:bg-amber-300 active:translate-y-[2px] active:border-b-2 border-2 border-amber-300 border-b-4 border-b-amber-600 rounded-[0.75rem] text-amber-955 hover:scale-105 shadow-xs shrink-0 cursor-pointer transition-all duration-75"
+                                          >
+                                            <PremiumSpeakerIcon
+                                              className="w-3.5 h-3.5 fill-amber-100/10 text-amber-955"
+                                              style={{ fill: "currentColor" }}
+                                            />
+                                          </button>
+                                        </div>
+
+                                        {appState.showScript && (
+                                          <div
+                                            className={`text-xl font-urdu font-black leading-normal pt-0.5 ${
+                                              appState.isDarkMode
+                                                ? "text-white"
+                                                : "text-emerald-850"
+                                            }`}
+                                          >
+                                            {selectedSearchEntry.nativeScript}
+                                          </div>
+                                        )}
+
+                                        <div className="text-[9.5px] text-slate-450 leading-tight font-medium max-w-[170px] mx-auto">
+                                          {selectedSearchEntry.context ||
+                                            "Standard counting vocabulary element."}
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            playSoundSynth("click");
+                                            setMithuExplanationDigit(
+                                              selectedSearchEntry.digit,
+                                            );
+                                          }}
+                                          className="mt-2.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-800 rounded-full text-[10px] font-black flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs"
+                                        >
+                                          <span>🦜</span>
+                                          <span>View Clues</span>
+                                        </button>
+                                      </motion.div>
+                                    ) : (
+                                      <div className="text-slate-400 text-[10px] flex flex-col items-center gap-2 py-3 text-center">
+                                        <HelpCircle className="w-7 h-7 text-emerald-800/60 animate-pulse" />
+                                        <span className="font-bold text-slate-500">
+                                          Pick any card
+                                        </span>
+                                        <span className="text-[9px] text-slate-400 max-w-[155px]">
+                                          Select an item from the list to reveal
+                                          audio, script, and contextual learning
+                                          details.
+                                        </span>
+                                      </div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </section>
+
+                    {/* 2. Blitz Premium Game Card */}
+                    <div className="col-span-12 sm:col-span-4 bg-gradient-to-br from-amber-50 to-amber-100/40 rounded-[1.75rem] border-2 border-amber-200 border-b-[6px] border-b-amber-400 p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in text-justify">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-1.5 justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="p-1 rounded-lg bg-amber-400 text-amber-950 animate-pulse shrink-0 ginti-blitz-zap-container">
+                              <Zap className="w-4 h-4 fill-amber-900 stroke-none" />
+                            </span>
+                            <div>
+                              <h3 className="text-xs sm:text-sm font-black text-amber-955 text-justify">
+                                Ginti Blitz
+                              </h3>
+                              <p className="text-[9px] text-amber-805 font-bold leading-none mt-0.5 text-justify">
+                                Speed Play
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[8px] font-mono font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap ${
+                              appState.isDarkMode
+                                ? "text-amber-200 bg-amber-950/60 border border-amber-700/60"
+                                : "text-amber-905 bg-amber-200/50 border border-amber-300/40"
+                            }`}
+                          >
+                            Arcade
+                          </span>
+                        </div>
+
+                        <p
+                          className={`text-[10.5px] leading-normal font-bold mt-1 text-justify ${
+                            appState.isDarkMode
+                              ? "text-amber-100"
+                              : "text-amber-900/90"
+                          }`}
+                        >
+                          Match fast under timer pressure! Keep your streak and
+                          set a high score.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between text-[9px] font-bold text-amber-805 px-1">
+                          <span>Personal Best:</span>
+                          <span
+                            className={`font-black ${
+                              appState.isDarkMode
+                                ? "text-amber-300"
+                                : "text-amber-950"
+                            }`}
+                          >
+                            {appState.highScore} pts
+                          </span>
+                        </div>
+                        <button
+                          onClick={startArcadeMode}
+                          className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 active:translate-y-[2px] active:border-b-2 text-amber-950 text-xs font-black border-2 border-amber-300 border-b-[4px] border-b-amber-600 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-100 shadow-xs ginti-blitz-play-btn"
+                        >
+                          <Play className="w-3.5 h-3.5 text-amber-900 fill-amber-900/20" />
+                          <span>Start Ginti Blitz</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <section
+                    id="training-arena-panel"
+                    className="bg-gradient-to-br from-emerald-900 to-emerald-950 rounded-[2rem] border-[4px] border-emerald-800 border-b-[12px] border-b-emerald-955 relative pt-[18px] pb-[18px] px-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-[18px] sm:gap-5 text-white shadow-xl overflow-hidden"
                   >
-                    {/* Decorative Emerald Elegant Light Ray Background Accent */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-emerald-500 to-amber-500" />
-                    
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-600 shadow-sm relative group select-none animate-bounce" title="Mithu Victory Icon">
-                      🏆
-                    </div>
+                    {/* 3D background grid pattern overlay */}
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-0" />
 
-                    <div className="flex flex-col gap-0.5">
-                      <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none uppercase">
-                        Correction Complete!
-                      </h3>
-                      <p className="text-[10px] sm:text-xs text-slate-500 max-w-xs font-semibold leading-relaxed mt-1">
-                        You resolved all mistake cards! Every mistake is a step forward.
-                      </p>
-                    </div>
-
-                    <div className="w-full bg-slate-50/50 border border-slate-200/80 rounded-[1.5rem] p-4 flex flex-col gap-3 text-left shadow-inner">
+                    <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 relative z-10 text-center sm:text-left">
+                      <div className="w-14 h-14 bg-amber-400 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-3xl shrink-0 border-2 border-amber-300 border-b-[5px] border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none">
+                        ⭐
+                      </div>
                       <div>
-                        <span className="text-[9px] font-black uppercase text-emerald-800 block mb-1.5 tracking-widest flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          ✅ Now Mastered ({recoveryState.mastered.length})
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {recoveryState.mastered.length > 0 ? (
-                            recoveryState.mastered.map((m) => (
-                              <span key={m} className="bg-emerald-50 text-emerald-850 text-[10px] px-2.5 py-1 font-bold rounded-lg border border-emerald-150 shadow-xs flex items-center gap-1">
-                                Digit {formatValueForDisplay(m)}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic">None mastered</span>
-                          )}
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                          <h3 className="text-xl font-black text-amber-300 tracking-tight leading-none uppercase">
+                            Training Arena
+                          </h3>
+                          <span className="text-[9px] uppercase font-black text-amber-400 bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-700 font-mono shadow-inner select-none whitespace-nowrap hidden xs:inline-block">
+                            Personal Practice
+                          </span>
                         </div>
-                      </div>
-
-                      <div className="border-t border-slate-200 pt-3">
-                        <span className="text-[9px] font-black uppercase text-rose-500 block mb-1.5 tracking-widest flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-450" />
-                          ⚠️ Retained for Review ({recoveryState.failedPermanently.length})
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {recoveryState.failedPermanently.length > 0 ? (
-                            recoveryState.failedPermanently.map((v) => (
-                              <span key={v} className="bg-rose-50 text-rose-750 text-[10px] px-2.5 py-1 font-bold rounded-lg border border-rose-205 shadow-xs flex items-center gap-1">
-                                Digit {formatValueForDisplay(v)}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic">None remaining</span>
-                          )}
-                        </div>
+                        <p className="text-xs text-emerald-100 font-medium leading-relaxed max-w-sm mt-[7px] sm:mt-2">
+                          Design your own custom battlefield. Set dynamic
+                          boundaries from 0 to 100 to practice and strengthen
+                          your target list of Urdu numbers.
+                        </p>
                       </div>
                     </div>
 
-                    {recoveryState.failedPermanently.length > 0 && (
-                      <div className="text-[10px] sm:text-[11px] text-indigo-800 font-extrabold flex items-center gap-1.5 bg-indigo-50/70 border border-indigo-150 rounded-xl py-2 px-3 self-center leading-snug">
-                        <span className="text-xs">💡</span> 
-                        <span>Try the Practice or Training Arena to master tricky values!</span>
+                    <div className="relative z-10 w-full sm:w-auto shrink-0">
+                      {appState.arenaStarted || appState.arenaCompleted ? (
+                        <button
+                          onClick={() => {
+                            playSoundSynth("click");
+                            setActiveScreen("training-arena");
+                            setArenaActiveStage(null);
+                          }}
+                          className="w-full sm:w-auto py-2.5 px-6 bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-black text-xs sm:text-sm rounded-2xl uppercase tracking-wider border-2 border-amber-300 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-[3px] cursor-pointer shadow-md transition-all duration-100 flex flex-col items-center justify-center select-none"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span>
+                              {appState.arenaCompleted
+                                ? "Revisit Arena"
+                                : "Continue Arena"}
+                            </span>
+                            <Play className="w-3.5 h-3.5 text-emerald-950 fill-emerald-950/20" />
+                          </div>
+                          <span className="text-[10px] text-emerald-950/80 font-bold tracking-tight normal-case mt-0.5">
+                            {appState.arenaMin !== undefined
+                              ? appState.arenaMin
+                              : 30}
+                            –
+                            {appState.arenaMax !== undefined
+                              ? appState.arenaMax
+                              : 100}{" "}
+                            •{" "}
+                            {appState.arenaCompleted
+                              ? "Fully Mastered 🏆"
+                              : `Stage ${appState.arenaStageProgress ?? 1}`}
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            playSoundSynth("click");
+                            setIsArenaSetupOpen(true);
+                          }}
+                          className="w-full sm:w-auto py-3 px-6 bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-black text-xs sm:text-sm rounded-2xl uppercase tracking-wider border-2 border-amber-300 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-[3px] cursor-pointer shadow-md transition-all duration-100 flex items-center justify-center gap-1.5 select-none"
+                        >
+                          <span>Enter Arena</span>
+                          <Play className="w-3.5 h-3.5 text-emerald-950 fill-emerald-950/20" />
+                        </button>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Interactive Practice Units list */}
+                  <section
+                    id="milestone-roadmap"
+                    className="flex flex-col gap-3"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <BookMarked className="w-4 h-4 text-emerald-800 mr-0.5" />
+                        <span>Your Learning Journey</span>
+                      </h3>
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                        {appState.completedUnits.length} / 5 Mastered
+                      </span>
+                    </div>
+
+                    {/* Vertical roadmap track container */}
+                    <div
+                      id="units-feed"
+                      className="milestone-roadmap relative flex flex-col gap-5 sm:gap-6 pl-4 py-1.5"
+                    >
+                      {UNITS.map((unit, index) => {
+                        const isFinished = appState.completedUnits.includes(
+                          unit.id,
+                        );
+                        const isCurrent = nextUnit.id === unit.id;
+                        const isLocked = !isFinished && !isCurrent;
+                        const count = NUMBERS.filter(
+                          (n) => n.unitId === unit.id,
+                        ).length;
+                        const unitProgressVal = getUnitProgress(unit.id);
+                        const unitPercent = isFinished
+                          ? 100
+                          : isCurrent
+                            ? Math.max(
+                                0,
+                                Math.round(((unitProgressVal - 1) / 5) * 100),
+                              )
+                            : 0;
+                        const isHighlighted = highlightedUnitId === unit.id;
+
+                        return (
+                          <div
+                            key={unit.id}
+                            data-unit-id={unit.id}
+                            className="milestone-row relative z-10 flex gap-3 sm:gap-5 items-center w-full"
+                          >
+                            {/* Compact Circular 3D Step Node on the left */}
+                            <div className="milestone-node shrink-0 relative w-14 sm:w-[76px] self-stretch flex items-center justify-center">
+                              {/* Row-segmented connection track line going upwards */}
+                              {index > 0 && (
+                                <div className="absolute left-1/2 -translate-x-1/2 w-[8px] sm:w-[10px] top-0 h-1/2 pointer-events-none z-0">
+                                  <div
+                                    className={`w-full h-full ginti-roadmap-track-bg ${index === UNITS.length - 1 ? "rounded-b-full" : ""}`}
+                                  />
+                                  {index <= appState.completedUnits.length && (
+                                    <div
+                                      className={`absolute inset-0 ginti-roadmap-track-fill transition-all duration-500 ${index === UNITS.length - 1 ? "rounded-b-full" : ""}`}
+                                    />
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Row-segmented connection track line going downwards */}
+                              {index < UNITS.length - 1 && (
+                                <div className="absolute left-1/2 -translate-x-1/2 w-[8px] sm:w-[10px] top-1/2 h-1/2 pointer-events-none z-0">
+                                  <div
+                                    className={`w-full h-full ginti-roadmap-track-bg ${index === 0 ? "rounded-t-full" : ""}`}
+                                  />
+                                  {index < appState.completedUnits.length && (
+                                    <div
+                                      className={`absolute inset-0 ginti-roadmap-track-fill transition-all duration-500 ${index === 0 ? "rounded-t-full" : ""}`}
+                                    />
+                                  )}
+                                </div>
+                              )}
+
+                              <button
+                                onClick={() => {
+                                  if (isLocked) {
+                                    playSoundSynth("incorrect");
+                                    showToast(
+                                      `Master the active unit first to unlock ${unit.title}! 🔒`,
+                                    );
+                                    return;
+                                  }
+                                  startUnitJourney(unit.id);
+                                }}
+                                className={`w-14 h-14 sm:w-[76px] sm:h-[76px] rounded-full flex items-center justify-center select-none cursor-pointer relative text-xl sm:text-2xl z-10 ${
+                                  isFinished
+                                    ? "ginti-node-finished"
+                                    : isCurrent
+                                      ? "ginti-node-current ginti-pulse-active"
+                                      : "ginti-node-locked cursor-not-allowed"
+                                }`}
+                              >
+                                <span className="drop-shadow-[0_2.5px_2px_rgba(0,0,0,0.38)] filter select-none">
+                                  {unit.emoji}
+                                </span>
+
+                                {/* Status Overlay Badge on bottom-right of the circle node */}
+                                {isCurrent ? (
+                                  <span
+                                    className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-[20px] h-[20px] sm:w-[26px] sm:h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-[1.5px] sm:border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
+                                    style={{
+                                      boxShadow:
+                                        "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)",
+                                    }}
+                                  >
+                                    <Zap className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-[#451a03] fill-[#451a03]" />
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4.5 h-4.5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-[8.5px] sm:text-[10px] font-black border border-white shadow-xs ${
+                                      isFinished
+                                        ? "bg-emerald-700 text-amber-300"
+                                        : "bg-slate-250 text-slate-500 ginti-status-badge-locked"
+                                    }`}
+                                  >
+                                    {isFinished ? "✓" : "🔒"}
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Interactive Step Card on the right */}
+                            <article
+                              id={`unit-card-${unit.id}`}
+                              className={`flex-1 relative overflow-hidden rounded-2xl p-3 sm:p-4.5 transition-all duration-300 border-2 flex flex-col justify-between ${
+                                isCurrent
+                                  ? "bg-gradient-to-br from-emerald-50/10 via-white to-amber-50/15 border-amber-400/90 border-b-[5px] border-b-amber-500 shadow-md ring-4 ring-amber-400/5"
+                                  : isFinished
+                                    ? "bg-emerald-50/5 hover:bg-emerald-50/10 border-emerald-600/20 hover:border-emerald-600/35 hover:shadow-sm"
+                                    : "bg-white border-slate-200/65 opacity-70 cursor-not-allowed"
+                              }`}
+                            >
+                              {isFinished && (
+                                <div className="absolute top-0 right-0 bg-emerald-700 text-amber-300 font-extrabold text-[8px] sm:text-[9px] tracking-wider px-3 py-1 rounded-bl-xl uppercase flex items-center gap-0.5 shadow-xs select-none border-l border-b border-emerald-600/20">
+                                  <span>Mastered</span>
+                                  <CheckCircle2 className="w-3 h-3 text-amber-350" />
+                                </div>
+                              )}
+
+                              {isCurrent && (
+                                <div className="absolute top-0 right-0 bg-amber-400 text-emerald-950 font-black text-[8px] sm:text-[9px] tracking-widest px-3 py-1 rounded-bl-xl uppercase select-none flex items-center gap-1 border-l border-b border-amber-500/35">
+                                  <Sparkles className="w-2.5 h-2.5 animate-pulse text-emerald-950 fill-emerald-950/20" />
+                                  <span>Next up</span>
+                                </div>
+                              )}
+
+                              {isLocked && (
+                                <div className="absolute top-0 right-0 bg-slate-200 text-slate-500 font-bold text-[8px] sm:text-[9px] tracking-wider px-2.5 py-1 rounded-bl-xl uppercase flex items-center gap-1 select-none border-l border-b border-slate-300/30">
+                                  <Lock className="w-2.5 h-2.5" />
+                                  <span>Locked</span>
+                                </div>
+                              )}
+
+                              <div className="flex flex-col gap-1 pr-[60px]">
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 leading-tight truncate">
+                                    {unit.title}
+                                  </h4>
+                                  <span className="text-[8px] font-mono font-extrabold bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 inline-block uppercase mt-0.5 tracking-wider whitespace-nowrap">
+                                    {unit.numbersRange} ({count} entries)
+                                  </span>
+                                </div>
+
+                                <p className="text-[10.5px] text-slate-550 leading-relaxed font-semibold max-w-sm">
+                                  {unit.description}
+                                </p>
+                              </div>
+
+                              {/* Progress sliders & active step buttons */}
+                              <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-3">
+                                <div className="flex-1 flex items-center gap-1.5">
+                                  <div className="flex-1 bg-slate-120 h-2 rounded-full overflow-hidden border border-slate-200/40">
+                                    <div
+                                      className={`h-full transition-all duration-500 rounded-full ${isFinished ? "bg-emerald-600" : isCurrent ? "bg-gradient-to-r from-amber-400 to-amber-300 animate-pulse" : "bg-slate-300"}`}
+                                      style={{ width: `${unitPercent}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[8.5px] font-black text-slate-400 font-mono">
+                                    {isFinished
+                                      ? "100%"
+                                      : isCurrent
+                                        ? `${unitPercent}%`
+                                        : "0%"}
+                                  </span>
+                                </div>
+
+                                {isCurrent && (
+                                  <button
+                                    onClick={() => startUnitJourney(unit.id)}
+                                    className={`unit-action-btn flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] rounded-xl transition-all cursor-pointer shadow-sm ${
+                                      appState.isDarkMode
+                                        ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                        : "border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                    }`}
+                                  >
+                                    <span>
+                                      {unitPercent > 0 ? "Continue" : "Start"}
+                                    </span>
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {isFinished && (
+                                  <button
+                                    onClick={() => startUnitJourney(unit.id)}
+                                    className="unit-action-btn flex items-center gap-0.5 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 active:translate-y-[1px] border border-slate-250 hover:border-slate-300 text-slate-700 text-[10px] font-black rounded-xl cursor-pointer transition-all"
+                                  >
+                                    <span>Review</span>
+                                    <RotateCcw className="w-2.5 h-2.5 ml-0.5 text-slate-400" />
+                                  </button>
+                                )}
+
+                                {isLocked && (
+                                  <button
+                                    onClick={() => {
+                                      playSoundSynth("incorrect");
+                                      showToast(
+                                        `Master the active unit first to unlock ${unit.title}! 🔒`,
+                                      );
+                                    }}
+                                    className="unit-action-btn flex items-center gap-0.5 px-3 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-bold cursor-not-allowed"
+                                  >
+                                    <span>Locked</span>
+                                    <Lock className="w-2.5 h-2.5 ml-0.5 text-slate-400" />
+                                  </button>
+                                )}
+                              </div>
+
+                              {isCurrent && unitPercent === 0 && (
+                                <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200/50 flex flex-col items-center text-center gap-1.5 sm:flex-row sm:items-center sm:justify-end sm:gap-2 sm:text-right w-full">
+                                  <span className="text-[10px] sm:text-[10.5px] font-medium text-slate-500 dark:text-slate-400 leading-none">
+                                    Already know this unit?
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      playSoundSynth("click");
+                                      setPlacementChallengeUnitId(unit.id);
+                                      setShowPlacementChallengePopup(true);
+                                    }}
+                                    className="group text-[11px] sm:text-[11.5px] font-semibold text-emerald-900 hover:text-emerald-950 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-0.5 cursor-pointer select-none transition-colors duration-150 leading-none"
+                                  >
+                                    <span>Take Placement Challenge</span>
+                                    <span className="inline-block transition-transform duration-200 ease-out group-hover:translate-x-[3px] ml-0.5 select-none text-[12px] sm:text-[13px] leading-none">
+                                      →
+                                    </span>
+                                  </button>
+                                </div>
+                              )}
+
+                              {isFinished &&
+                                appState.placementCompletedUnits?.includes(
+                                  unit.id,
+                                ) && (
+                                  <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200/50 flex items-center justify-center sm:justify-end w-full">
+                                    <span className="text-[10px] sm:text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 select-none">
+                                      <span>✓ Placement Challenge Passed</span>
+                                    </span>
+                                  </div>
+                                )}
+                            </article>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  {/* Stats & Streak Bento grid - Positioned right above targeted practice numbers */}
+                  <div
+                    id="insights-panel"
+                    className="grid grid-cols-2 sm:grid-cols-3 gap-3.5"
+                  >
+                    {/* Stat 1: Total XP */}
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-600/30 hover:shadow-md transition-all duration-200 select-none">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-800 shrink-0 shadow-xs">
+                        <Award className="w-5 h-5 text-emerald-700" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">
+                          Total XP
+                        </span>
+                        <span className="text-sm font-black text-slate-800 leading-none">
+                          <strong>{appState.totalXP}</strong>{" "}
+                          <span className="text-[10px] font-bold text-slate-400 font-mono">
+                            XP
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stat 2: Mastery Streak */}
+                    <button
+                      onClick={() => {
+                        playSoundSynth("click");
+                        setShowStreakPopup(true);
+                      }}
+                      className="flex items-center text-left gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-orange-500/30 hover:shadow-md transition-all duration-200 select-none cursor-pointer active:translate-y-[1px]"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shrink-0 shadow-xs ginti-stat-mastery-streak-box">
+                        <MasteryFlame
+                          streak={appState.masteryStreak ?? 0}
+                          size={20}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">
+                          Mastery Streak
+                        </span>
+                        <span className="text-sm font-black text-slate-800 leading-none">
+                          <strong>{appState.masteryStreak ?? 0}</strong>{" "}
+                          <span className="text-[10px] font-bold text-slate-400 font-mono">
+                            In A Row
+                          </span>
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Stat 3: Arcade Blitz record - spanned on small screens for solid look */}
+                    <div className="col-span-2 sm:col-span-1 flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-amber-400/35 hover:shadow-md transition-all duration-200 select-none">
+                      <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0 shadow-xs ginti-stat-blitz-record-box">
+                        <Zap className="w-5 h-5 fill-amber-400 text-amber-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">
+                          Blitz Record
+                        </span>
+                        <span className="text-sm font-black text-slate-800 leading-none">
+                          <strong>{appState.highScore}</strong>{" "}
+                          <span className="text-[10px] font-bold text-slate-400 font-mono">
+                            pts
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Targeted mistakes list tray */}
+                  <div className="bg-white rounded-[1.75rem] p-4.5 border border-slate-100 shadow-xs flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        🎯 Targeted Practice Numbers (
+                        {appState.weakAreas.length})
+                      </h4>
+                      {appState.weakAreas.length > 0 && (
+                        <button
+                          onClick={() => {
+                            playSoundSynth("click");
+                            const cleared = { ...appState, weakAreas: [] };
+                            saveState(cleared);
+                            showToast("Mistakes history cleared.");
+                          }}
+                          className="text-[9px] text-slate-400 hover:text-slate-600 font-bold transition flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" />
+                          <span>Clear history</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {appState.weakAreas.length === 0 ? (
+                      <p
+                        id="weak-areas-empty-state"
+                        className="text-[11px] text-slate-400 italic"
+                      >
+                        Splendid accuracy! Answer quiz options correctly to
+                        track milestones.
+                      </p>
+                    ) : (
+                      <div
+                        className="flex flex-wrap gap-1.5"
+                        id="weak-areas-list"
+                      >
+                        {appState.weakAreas.map((digit) => {
+                          const associated = NUMBERS.find(
+                            (n) => n.digit === digit,
+                          );
+                          return (
+                            <span
+                              key={digit}
+                              onClick={() => {
+                                if (associated) {
+                                  playSoundSynth("click");
+                                  setSelectedSearchEntry(associated);
+                                  // Smoothly scroll to lookup
+                                  const elementInput =
+                                    document.getElementById("ginti-search");
+                                  elementInput?.scrollIntoView({
+                                    behavior: "smooth",
+                                  });
+                                }
+                              }}
+                              className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 active:translate-y-[1px] border border-rose-200/80 border-b-[3.5px] border-b-rose-300/80 text-rose-700 text-[11px] font-black rounded-full flex items-center gap-1 transition-all cursor-pointer select-none shadow-sm"
+                            >
+                              <span className="bg-white px-1.5 py-0.5 rounded-full border border-rose-200/50 shadow-xs text-[9px] font-black text-rose-800">
+                                {digit}
+                              </span>
+                              <span className="truncate max-w-[80px] font-black">
+                                {associated?.romanUrdu || "Unknown"}
+                              </span>
+                              {appState.showScript && (
+                                <span
+                                  className={`font-urdu leading-none pt-0.5 text-xs font-bold ${
+                                    appState.isDarkMode
+                                      ? "text-rose-200/90"
+                                      : "text-rose-800/80"
+                                  }`}
+                                >
+                                  {associated?.nativeScript}
+                                </span>
+                              )}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Archived Training Fields Section */}
+                  {appState.archivedArenaFields &&
+                    appState.archivedArenaFields.length > 0 && (
+                      <div className="flex flex-col items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 w-full max-w-sm mx-auto">
+                        <h4 className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-slate-400 flex items-center gap-1.5 font-mono">
+                          <Archive className="w-3.5 h-3.5" />
+                          <span>Archived Training Fields</span>
+                        </h4>
+                        <div className="flex flex-wrap justify-center gap-2 mt-1">
+                          {appState.archivedArenaFields.map((fieldKey) => {
+                            const [minStr, maxStr] = fieldKey.split("-");
+                            const min = parseInt(minStr);
+                            const max = parseInt(maxStr);
+                            return (
+                              <button
+                                key={fieldKey}
+                                onClick={() => {
+                                  playSoundSynth("progress");
+                                  saveState((prev) => {
+                                    const existingArchived =
+                                      prev.archivedArenaFields || [];
+                                    const nextArchived =
+                                      existingArchived.filter(
+                                        (f) => f !== fieldKey,
+                                      );
+                                    return {
+                                      ...prev,
+                                      archivedArenaFields: nextArchived,
+                                      arenaMin: min,
+                                      arenaMax: max,
+                                      arenaStarted: true,
+                                      arenaCompleted: true,
+                                      arenaStageProgress: 5,
+                                    };
+                                  });
+                                  showToast(
+                                    `Restored Training Arena range ${min}–${max}! ⚔️`,
+                                  );
+                                }}
+                                title="Click to restore this practice field"
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 dark:bg-slate-900/60 dark:hover:bg-emerald-950/40 border border-slate-200 hover:border-emerald-300 dark:border-slate-800 dark:hover:border-emerald-900 rounded-xl text-[10.5px] font-black text-slate-600 hover:text-emerald-800 dark:text-slate-300 dark:hover:text-emerald-200 cursor-pointer active:scale-95 flex items-center gap-1 transition-all"
+                              >
+                                <span>
+                                  {min}–{max}
+                                </span>
+                                <span className="text-[9px] opacity-70">
+                                  ↩️
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
+                  {/* Reset progress options beautifully positioned at bottom scale link */}
+                  <div className="flex justify-center pt-1 pb-4">
                     <button
-                      onClick={() => {
-                        const mode = recoveryState.originalMode;
-                        const uId = recoveryState.unitId;
-
-                        // Determine and play audio feedback immediately on tap
-                        const isStage5JourneyLevelUp = (mode === "journey_stage5" && uId && !appState.completedUnits.includes(uId));
-                        if (isStage5JourneyLevelUp) {
-                          playSoundSynth("levelUp");
-                        } else {
-                          playSoundSynth("click");
-                        }
-
-                        // Delay the state updates and navigation slightly so the button has time to animate its physical press & return transition
-                        setTimeout(() => {
-                          let leveledUp = false;
-                          if (mode === "journey_stage2" && uId) {
-                            leveledUp = saveUnitStageProgress(uId, 2);
-                            setStageQuizIdx(5); // Show stage end screen
-                          } else if (mode === "journey_stage3" && uId) {
-                            leveledUp = saveUnitStageProgress(uId, 3);
-                            setStageListIdx(5); // Show stage end screen
-                          } else if (mode === "journey_stage5" && uId) {
-                            const isNewCompletion = !appState.completedUnits.includes(uId);
-                            const unitsArray = isNewCompletion
-                              ? [...appState.completedUnits, uId]
-                              : appState.completedUnits;
-
-                            const nextJourneyProgress = {
-                              ...(appState.unitStagesProgress ?? {}),
-                              [uId]: 5,
-                            };
-
-                            const updated = {
-                              ...appState,
-                              completedUnits: unitsArray,
-                              totalXP: appState.totalXP + 50,
-                              unitStagesProgress: nextJourneyProgress,
-                            };
-
-                            saveState(updated);
-                            leveledUp = true;
-                            const celebratoryMsg = getMithuUnitCompletionMessage(recentMithuMessagesRef.current);
-                            trackMithuMessage(celebratoryMsg);
-                            showToast(`${celebratoryMsg} Stage 5 Cleared! You have Mastered the whole Unit! 🏆✨`);
-                            setCompletedUnitPopup(uId);
-                            setActiveScreen("dashboard");
-                          } else if (mode === "placement_challenge" && uId) {
-                            const isNewCompletion = !appState.completedUnits.includes(uId);
-                            const unitsArray = isNewCompletion
-                              ? [...appState.completedUnits, uId]
-                              : appState.completedUnits;
-
-                            const placementsArray = appState.placementCompletedUnits && !appState.placementCompletedUnits.includes(uId)
-                              ? [...appState.placementCompletedUnits, uId]
-                              : appState.placementCompletedUnits || [uId];
-
-                            const nextJourneyProgress = {
-                              ...(appState.unitStagesProgress ?? {}),
-                              [uId]: 5,
-                            };
-
-                            const updated = {
-                              ...appState,
-                              completedUnits: unitsArray,
-                              placementCompletedUnits: placementsArray,
-                              totalXP: appState.totalXP + 50,
-                              unitStagesProgress: nextJourneyProgress,
-                            };
-
-                            saveState(updated);
-                            leveledUp = true;
-                            
-                            // Check if there is a next unit to focus
-                            const currentIndex = UNITS.findIndex((u) => u.id === uId);
-                            const nextUnitAvailable = currentIndex !== -1 && currentIndex + 1 < UNITS.length ? UNITS[currentIndex + 1] : null;
-                            if (nextUnitAvailable) {
-                              setNextUnitToFocus(nextUnitAvailable.id);
-                            }
-                            
-                            setCompletedUnitPopup(uId);
-                            setActiveScreen("dashboard");
-                            setPlacementState(null);
-                          } else if (mode === "arena_stage2") {
-                            leveledUp = saveArenaStageProgress(2);
-                            setArenaQuizIdx(5); // Show stage end screen
-                          } else if (mode === "arena_stage3") {
-                            leveledUp = saveArenaStageProgress(3);
-                            setArenaListIdx(5); // Show stage end screen
-                          } else if (mode === "arena_stage5") {
-                            leveledUp = saveArenaStageProgress(5);
-                            setArenaQuizIdx(10); // Show stage end screen
-                          }
-
-                          setRecoveryState(null);
-                        }, 180);
-                      }}
-                      className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all duration-150 ${
-                        appState.isDarkMode 
-                          ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2 active:scale-[0.99]" 
-                          : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5 active:scale-[0.99]"
-                      }`}
+                      id="reset-app-progress-btn"
+                      onClick={flushAppProgress}
+                      className="destructive-tactile-link"
                     >
-                      Save Progress & Complete 🎉
+                      <Trash2 className="w-3 h-3" />
+                      <span>Reset Application Progress</span>
                     </button>
-                  </motion.div>
-                </div>
+                  </div>
+                </motion.div>
               );
-            }
+            })()}
 
-            if (!currentQ) return null;
+          {/* =============================================================================
+            SCREEN B: PRACTICE ARENA (QUIZ MODE)
+            ============================================================================= */}
+          {!recoveryState && activeScreen === "practice" && quizState && (
+            <motion.div
+              id="screen-practice"
+              key="practice"
+              initial={{ opacity: 0, scale: 0.98, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -15 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col gap-2.5 sm:gap-3.5"
+            >
+              {quizState.showHeartsRefill ? (
+                <div className="modern-card p-6 text-center flex flex-col items-center gap-4 bg-white max-w-sm mx-auto animate-scale-up">
+                  <MithuMascot mood="sad" />
+                  <h3 className="text-lg font-black text-rose-700 leading-tight">
+                    Out of Hearts!
+                  </h3>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    "Oh no! Ginti lives depleted. But don't fret—Ginti is a safe
+                    place to learn. Would you like me to unlock your lesson?"
+                  </p>
 
-            return (
-              <motion.div
-                id="screen-recovery"
-                key="recovery-step"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col flex-1 gap-4 min-h-[78vh] sm:min-h-[82vh]"
-              >
-                {/* Top Section: Header & Progress */}
-                <div className="flex flex-col gap-3.5 shrink-0">
-                  {/* Header */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <button 
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setRecoveryState(null);
-                      }}
+                  <div className="flex flex-col gap-2 w-full mt-2">
+                    <button
+                      onClick={() => refillHearts(true)}
+                      disabled={appState.totalXP < 20}
+                      className="w-full btn-gold py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <span>❤️ Save with 20 XP</span>
+                      <span className="bg-amber-950/20 text-slate-900 px-1.5 py-0.5 rounded text-[10px]">
+                        Your XP: {appState.totalXP}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => refillHearts(false)}
+                      className="w-full btn-secondary py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>🦜 Mithu's Magic (Free Refill!)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Practice Header with back route */}
+                  <div
+                    className="flex items-center justify-between border-b border-slate-100 pb-2"
+                    id="practice-header"
+                  >
+                    <button
+                      id="practice-back-btn"
+                      onClick={exitQuiz}
                       className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer active:scale-95"
                     >
-                      <Home className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Exit Drill</span>
+                      <Home className="w-3.5 h-3.5" />
+                      <span>Exit</span>
                     </button>
-                    
+
                     <div className="flex flex-col items-end gap-0.5">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                        Card {recoveryState.currentIndex + 1} of {recoveryState.questions.length}
+                      <span
+                        id="question-counter"
+                        className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none"
+                      >
+                        Card {quizState.currentIndex + 1} of{" "}
+                        {quizState.questions.length}
                       </span>
-                      <span className="text-[10px] font-extrabold uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 rounded-full py-0.5 tracking-wider flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                        🛡️ Correction
-                      </span>
+                      {/* Red Duolingo-styled hearts */}
+                      <HeartsDisplay
+                        hearts={quizState.hearts}
+                        isDarkMode={appState.isDarkMode}
+                      />
                     </div>
                   </div>
 
-                  {/* Progress bar */}
-                  <div className="w-full bg-slate-100 dark:bg-slate-850 h-3 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800/80">
+                  {/* Visual Mini Progress Bar */}
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
                     <div
-                      className="bg-[#ffc800] h-full rounded-full transition-all duration-300"
-                      style={{ width: `${((recoveryState.currentIndex + 1) / recoveryState.questions.length) * 100}%` }}
+                      className="h-full bg-gradient-to-r from-emerald-600 to-emerald-700 transition-all duration-350"
+                      style={{
+                        width: `${((quizState.currentIndex + 1) / quizState.questions.length) * 100}%`,
+                      }}
                     />
                   </div>
-                </div>
 
-                {/* Center Content Area (Vertically Balanced & Centered) */}
-                <div className="flex-1 flex flex-col justify-center gap-3.5 sm:gap-4 py-4 sm:py-6">
-                  {/* Prompt Card */}
-                  <div id="prompt-card" className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative overflow-hidden bg-white dark:bg-slate-900/65 min-h-[145px] sm:min-h-[165px] gap-2.5">
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-[10px] font-mono uppercase font-black text-slate-400 tracking-wider">
-                        Correction Round
+                  {/* MAIN PROMPT CARD - Height optimized to avoid layout shifts */}
+                  <div
+                    id="prompt-card"
+                    className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative bg-white min-h-[145px] sm:min-h-[165px] gap-2.5"
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="text-[9px] font-mono uppercase font-black text-slate-400 tracking-wider text-left">
+                        Evaluate Translation
                       </span>
-                      {renderMithuHelpBadge(currentQ.entry.digit)}
+                      {renderMithuHelpBadge(
+                        quizState.questions[quizState.currentIndex].entry.digit,
+                      )}
                     </div>
-                    
-                    <div 
+
+                    <div
+                      id="prompt-display"
                       className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 ${
-                        appState.isDarkMode ? 'text-white' : 'text-slate-900'
+                        appState.isDarkMode ? "text-white" : "text-slate-900"
                       } ${
                         appState.showScript &&
-                        typeof getDisplayPromptValue(currentQ) === 'string' && 
-                        (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/)
-                          ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? 'text-white' : 'text-emerald-800'}`
-                          : 'text-4xl sm:text-[3.25rem] leading-none py-2'
+                        typeof getDisplayPromptValue(
+                          quizState.questions[quizState.currentIndex],
+                        ) === "string" &&
+                        (
+                          getDisplayPromptValue(
+                            quizState.questions[quizState.currentIndex],
+                          ) as string
+                        ).match(/[\u0600-\u06FF]/)
+                          ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? "text-white" : "text-emerald-800"}`
+                          : "text-4xl sm:text-[3.25rem] leading-none py-2"
                       }`}
                     >
-                      {formatValueForDisplay(getDisplayPromptValue(currentQ))}
+                      {formatValueForDisplay(
+                        getDisplayPromptValue(
+                          quizState.questions[quizState.currentIndex],
+                        ),
+                      )}
                     </div>
 
                     {/* Redesigned interactive tactile speaker button */}
                     <div className="flex flex-col items-center gap-1">
                       <button
-                        onClick={() => playWordAudio(currentQ.entry)}
+                        id="prompt-audio-btn"
+                        onClick={() =>
+                          playWordAudio(
+                            quizState.questions[quizState.currentIndex].entry,
+                          )
+                        }
                         disabled={speechActive}
                         className={`w-[2.35rem] h-[2.35rem] rounded-full border-2 border-emerald-100 bg-emerald-50/40 flex items-center justify-center shadow-xs transition hover:scale-105 active:scale-95 disabled:opacity-50 text-emerald-800 cursor-pointer border-b-[3.5px] border-b-emerald-200 active:translate-y-[1.5px] active:border-b-[1.5px] ${
-                          speechActive ? 'pulse-primary-emerald' : ''
+                          speechActive ? "pulse-primary-emerald" : ""
                         }`}
+                        aria-label="Hear correct pronunciation"
                         title="Hear pronunciation audio"
                       >
                         <PremiumSpeakerIcon className="w-4 h-4 text-emerald-700" />
                       </button>
-                      <p className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wider">
+                      <p
+                        id="prompt-text-fallback"
+                        className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wider"
+                      >
                         Tap speaker to hear pronunciation
                       </p>
                     </div>
                   </div>
 
-                  {/* Choice buttons */}
-                  <div id="choice-grid" className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                    {currentQ.choices.map((choice: any, index: number) => {
-                      const isSelected = recoveryState.userAnswer === choice;
-                      const isCorrectVal = choice === currentQ.correctAnswer;
-                      
+                  {/* Quiz Instructions Helper Banner */}
+                  {quizState.unitId === "unit1" && (
+                    <div
+                      id="first-lesson-hint"
+                      className="py-1.5 px-3 bg-emerald-50/50 border border-emerald-100/50 rounded-xl text-center"
+                    >
+                      <span className="text-[10px] font-bold text-emerald-800 block leading-normal">
+                        Identify the perfect match translation choice card
+                        located below.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Mithu Learning Assistant Suggestion Banner */}
+                  {showMithuSuggestDigit ===
+                    quizState.questions[quizState.currentIndex].entry.digit && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="py-2.5 px-4 bg-amber-55 border-2 border-amber-200 dark:border-amber-900/40 rounded-2xl flex items-center justify-between text-left shadow-xs transition-all"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🦜</span>
+                        <div>
+                          <p className="text-xs font-black text-amber-950 dark:text-amber-200 leading-tight">
+                            Need help with this word?
+                          </p>
+                          <p className="text-[10px] font-bold text-amber-850 dark:text-amber-300/80 leading-none mt-0.5">
+                            Mithu can help with clues!
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setMithuExplanationDigit(showMithuSuggestDigit);
+                          setShowMithuSuggestDigit(null);
+                        }}
+                        className={`px-3 py-1.5 border rounded-full font-black text-[10px] cursor-pointer active:scale-95 transition-all shadow-xs flex items-center gap-1 ${
+                          appState.isDarkMode
+                            ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300"
+                            : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800"
+                        }`}
+                      >
+                        <span>🦜 Clues</span>
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* CHOICE GRID - Controlled dimensions and row spans */}
+                  <div
+                    id="choice-grid"
+                    className="grid grid-cols-2 gap-2.5 sm:gap-3"
+                  >
+                    {quizState.questions[quizState.currentIndex].choices.map(
+                      (choice, idx) => {
+                        const isCorrectVal =
+                          choice ===
+                          quizState.questions[quizState.currentIndex]
+                            .correctAnswer;
+                        const isSelected = choice === quizState.userAnswer;
+                        const hasBeenAnswered = quizState.isAnswered;
+
+                        // Build reactive feedback card styling classes using modern tactile classes
+                        let cardStyle = "ginti-choice-btn";
+                        if (hasBeenAnswered) {
+                          if (isCorrectVal) {
+                            cardStyle = "ginti-choice-btn-correct";
+                          } else if (isSelected) {
+                            cardStyle = "ginti-choice-btn-incorrect";
+                          } else {
+                            cardStyle = "ginti-choice-btn-dimmed";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={idx}
+                            className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                            onClick={() => chooseQuizAnswer(choice)}
+                            disabled={hasBeenAnswered}
+                            data-index={idx}
+                          >
+                            <span
+                              className={
+                                appState.showScript &&
+                                typeof choice === "string" &&
+                                choice.match(/[\u0600-\u06FF]/)
+                                  ? "text-2xl font-urdu select-none leading-none"
+                                  : ""
+                              }
+                            >
+                              {formatValueForDisplay(choice)}
+                            </span>
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+
+                  {/* RESULT PANEL FOOTER TRAY - Reserved height container to eliminate layout shift */}
+                  <div className="mt-4 shrink-0 min-h-[116px] sm:min-h-[68px] flex flex-col justify-center w-full">
+                    <AnimatePresence mode="wait">
+                      {quizState.isAnswered ? (
+                        <motion.div
+                          key="answered"
+                          id="practice-footer"
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          transition={{ duration: 0.2 }}
+                          className={`p-2 sm:p-2.5 px-3.5 sm:px-4 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3.5 w-full ${
+                            quizState.userAnswer ===
+                            quizState.questions[quizState.currentIndex]
+                              .correctAnswer
+                              ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
+                              : "bg-rose-50 border-rose-300 text-rose-950 border-b-[5px] border-b-rose-400/90 shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 text-left w-full sm:w-auto">
+                            {/* Reactive avatar response */}
+                            <div
+                              id="mithu-avatar"
+                              className={`scale-[0.58] -my-5 -mx-2.5 select-none shrink-0 ${mascotAnimation}`}
+                            >
+                              <MithuMascot
+                                mood={
+                                  quizState.userAnswer ===
+                                  quizState.questions[quizState.currentIndex]
+                                    .correctAnswer
+                                    ? "sparkly"
+                                    : "sad"
+                                }
+                              />
+                            </div>
+
+                            {quizState.userAnswer ===
+                            quizState.questions[quizState.currentIndex]
+                              .correctAnswer ? (
+                              <div className="min-w-0 flex-1">
+                                <div
+                                  id="answer-feedback-msg"
+                                  className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                  <span>
+                                    {quizState.mithuFeedback?.title ??
+                                      "Shabash!"}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                    appState.isDarkMode
+                                      ? "text-emerald-300"
+                                      : "text-emerald-950"
+                                  }`}
+                                >
+                                  {quizState.mithuFeedback?.subtitle ??
+                                    "Your Urdu intuition is growing sharp!"}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="min-w-0 flex-1">
+                                <div
+                                  id="answer-feedback-msg"
+                                  className="text-[12.5px] font-black flex items-center gap-1 text-rose-950 leading-tight"
+                                >
+                                  <X className="w-3.5 h-3.5 text-rose-600 bg-rose-100 dark:text-rose-100 dark:bg-rose-900/80 rounded-full p-0.5 shrink-0" />
+                                  <span>
+                                    {quizState.mithuFeedback?.title ??
+                                      "Koi baat nahi."}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[9.5px] block leading-tight mt-1 font-bold ${
+                                    appState.isDarkMode
+                                      ? "text-rose-300"
+                                      : "text-rose-950"
+                                  }`}
+                                >
+                                  {quizState.mithuFeedback?.subtitle ??
+                                    "Correct answer:"}{" "}
+                                  <strong
+                                    className={`font-extrabold px-1 py-0.5 rounded shadow-xs border ${
+                                      appState.isDarkMode
+                                        ? "bg-rose-950 text-rose-200 border-rose-900/60"
+                                        : "bg-rose-100/70 text-rose-950 border-rose-200"
+                                    }`}
+                                  >
+                                    {formatValueForDisplay(
+                                      quizState.questions[
+                                        quizState.currentIndex
+                                      ].correctAnswer,
+                                    )}
+                                  </strong>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            id="next-question-btn"
+                            onClick={progressPractice}
+                            className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                          >
+                            <span>
+                              {quizState.currentIndex + 1 >=
+                              quizState.questions.length
+                                ? "Finish"
+                                : "Next Card"}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <div
+                          key="placeholder"
+                          className="h-[116px] sm:h-[68px] w-full"
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+
+          {/* =============================================================================
+            SCREEN C: ARCADE BLITZ SPEED CHALLENGE
+            ============================================================================= */}
+          {!recoveryState && activeScreen === "arcade" && arcadeState && (
+            <motion.div
+              id="screen-arcade"
+              key="arcade"
+              initial={{ opacity: 0, scale: 0.98, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -15 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              className={`max-w-xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-3.5 sm:gap-4.5 text-center relative ${arcadeState.isDone ? "min-h-[70vh] sm:min-h-[75vh] justify-center" : ""}`}
+            >
+              {/* PRESSURE HEADER CONTROLS */}
+              <div
+                className="flex items-center justify-between border-b border-slate-100 pb-3"
+                id="arcade-header"
+              >
+                <div className="text-left">
+                  <span
+                    id="arcade-timer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-sm rounded-full shadow-inner leading-none"
+                  >
+                    ⏱️{" "}
+                    <span id="timer-display" className="font-mono text-base">
+                      {arcadeState.timeLeft}
+                    </span>
+                    s
+                  </span>
+                </div>
+
+                <div className="text-right flex items-center gap-4">
+                  <span
+                    id="arcade-score"
+                    className="text-sm font-bold text-slate-700"
+                  >
+                    Score:{" "}
+                    <strong
+                      id="arcade-score-display"
+                      className="text-base text-emerald-800 font-black"
+                    >
+                      {arcadeState.score}
+                    </strong>{" "}
+                    pts
+                  </span>
+
+                  <button
+                    onClick={closeArcadeFrame}
+                    className={`p-1 px-3 border aspect-square rounded-full flex items-center justify-center text-xs font-bold transition cursor-pointer ${
+                      appState.isDarkMode
+                        ? "border-rose-900/50 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 hover:border-rose-800"
+                        : "border-rose-100 text-rose-500 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-200"
+                    }`}
+                    title="Abandon match"
+                  >
+                    Abandon
+                  </button>
+                </div>
+              </div>
+
+              {/* GAME CORE ACTIVE CONTENT SWITCH */}
+              {!arcadeState.isGameOver ? (
+                <div className="flex flex-col gap-6">
+                  {/* PROMPT BOX */}
+                  <div
+                    id="arcade-prompt"
+                    className="bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950 text-white rounded-2xl sm:rounded-3xl p-5 md:p-6 flex flex-col items-center justify-center min-h-[110px] sm:min-h-[130px] relative shadow-xl border border-slate-800 overflow-hidden"
+                  >
+                    {/* Time Warning Pulsating Overlay Integrated with Question Card */}
+                    <AnimatePresence>
+                      {arcadeState.timeLeft <= 5 && !arcadeState.isGameOver && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.12, ease: "easeOut" }}
+                          className="absolute top-0 left-0 right-0 z-20 pointer-events-none"
+                        >
+                          <div className="animate-pulse text-rose-600 dark:text-rose-400 font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-widest bg-rose-50/95 dark:bg-rose-950/95 border-b border-rose-200/60 dark:border-rose-900/40 py-1.5 px-3 text-center shadow-xs">
+                            ⚠️ RAPID INTUITION: TIMER CRITICALLY LOW!
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-extrabold text-left">
+                        RAPID-FIRE CHIP
+                      </span>
+                      {renderMithuHelpBadge(
+                        arcadeState.activeQuestion.entry.digit,
+                      )}
+                    </div>
+
+                    <div
+                      id="arcade-prompt-display"
+                      className={`font-black tracking-tight my-1.5 sm:my-2 ${
+                        appState.showScript &&
+                        typeof getDisplayPromptValue(
+                          arcadeState.activeQuestion,
+                        ) === "string" &&
+                        (
+                          getDisplayPromptValue(
+                            arcadeState.activeQuestion,
+                          ) as string
+                        ).match(/[\u0600-\u06FF]/)
+                          ? "text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 text-[#fefce8] flex items-center justify-center text-center"
+                          : "text-4xl sm:text-5xl md:text-6xl text-[#fefce8]"
+                      }`}
+                    >
+                      {formatValueForDisplay(
+                        getDisplayPromptValue(arcadeState.activeQuestion),
+                      )}
+                    </div>
+
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-normal">
+                      Double speed matches (+10 pts reward, -5 pts crash
+                      penalties)
+                    </span>
+                  </div>
+
+                  {/* ARCADE OPTION DECKS */}
+                  <div
+                    id="arcade-choice-grid"
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    {arcadeState.activeQuestion?.choices.map((choice, idx) => {
+                      const isCorrectVal =
+                        choice === arcadeState.activeQuestion?.correctAnswer;
+                      const isSelected = choice === arcadeState.selectedAnswer;
+                      const hasBeenAnswered = arcadeState.isAnswered;
+
                       let cardStyle = "ginti-choice-btn";
-                      if (recoveryState.isAnswered) {
+                      if (hasBeenAnswered) {
                         if (isCorrectVal) {
                           cardStyle = "ginti-choice-btn-correct";
                         } else if (isSelected) {
@@ -6335,12 +9276,21 @@ export default function App() {
 
                       return (
                         <button
-                          key={index}
-                          disabled={recoveryState.isAnswered}
-                          onClick={() => handleRecoveryAnswer(choice)}
-                          className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                          key={idx}
+                          className={`arcade-btn py-3 sm:py-4 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[58px] sm:min-h-[64px] ${cardStyle}`}
+                          onClick={() => selectArcadeOption(choice)}
+                          disabled={hasBeenAnswered}
+                          data-index={idx}
                         >
-                          <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none leading-none' : ''}>
+                          <span
+                            className={
+                              appState.showScript &&
+                              typeof choice === "string" &&
+                              choice.match(/[\u0600-\u06FF]/)
+                                ? "text-xl sm:text-2xl font-urdu leading-none"
+                                : ""
+                            }
+                          >
                             {formatValueForDisplay(choice)}
                           </span>
                         </button>
@@ -6348,4098 +9298,3124 @@ export default function App() {
                     })}
                   </div>
                 </div>
-
-                {/* Bottom: Feedback Footer - Reserved height container to eliminate layout shift */}
-                <div className="shrink-0 min-h-[116px] sm:min-h-[68px] flex flex-col justify-center w-full">
-                  <AnimatePresence mode="wait">
-                    {recoveryState.isAnswered ? (
-                      <motion.div
-                        key="recovery-answered"
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ duration: 0.2 }}
-                        className={`p-2.5 sm:p-3 px-4 sm:px-5 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-3 w-full ${
-                          recoveryState.userAnswer === currentQ.correctAnswer
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
-                            : "bg-rose-50 border-rose-300 text-rose-955 border-b-[5px] border-b-rose-450 shadow-sm"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 text-left w-full sm:w-auto">
-                          <div className="scale-[0.58] -my-5 -mx-2.5 select-none shrink-0" id="recovery-avatar">
-                            <MithuMascot mood={recoveryState.userAnswer === currentQ.correctAnswer ? "sparkly" : "sad"} />
-                          </div>
-                          
-                          {recoveryState.userAnswer === currentQ.correctAnswer ? (
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                                <span>{recoveryState.mithuFeedback?.title ?? "Correct Answer! Shabash!"}</span>
-                              </div>
-                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                                appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
-                              }`}>
-                                {recoveryState.mithuFeedback?.subtitle ?? "You corrected this mistake card successfully."}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[12.5px] font-black flex items-center gap-1 text-rose-900 leading-tight">
-                                <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-300 shrink-0" />
-                                <span>{recoveryState.mithuFeedback?.title ?? "Incorrect! Let's reinforce."}</span>
-                              </div>
-                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                                appState.isDarkMode ? "text-rose-300" : "text-rose-950"
-                              }`}>
-                                Correct answer:{" "}
-                                <span className={`font-extrabold rounded px-1 border ${
-                                  appState.isDarkMode
-                                    ? "bg-rose-950 text-rose-200 border-rose-900/60"
-                                    : "bg-rose-100/70 text-rose-950 border-rose-200"
-                                }`}>
-                                  {formatValueForDisplay(currentQ.correctAnswer)}
-                                </span>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={() => advanceRecoveryRound()}
-                          className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
-                        >
-                          <span>Continue</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <div key="placeholder" className="h-[116px] sm:h-[68px] w-full" />
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            );
-          })()}
-
-          {!recoveryState && activeScreen === "dashboard" && (() => {
-            const hasProgress = appState.completedUnits.length > 0 || 
-              Object.values(appState.unitStagesProgress || {}).some(progress => (progress as number) > 1) ||
-              appState.totalXP > 0;
-
-            const nextUnit = UNITS.find(u => !appState.completedUnits.includes(u.id)) || UNITS[0];
-            const recommendedProgress = getUnitProgress(nextUnit.id);
-            const isNextUnitCompleted = appState.completedUnits.includes(nextUnit.id);
-            const nextUnitPercent = isNextUnitCompleted ? 100 : Math.round(((recommendedProgress - 1) / 5) * 100);
-
-            // Construct smart, contextual recommendations based on user progress and specified priorities
-            let recTitle = "Mithu Recommends";
-            let recSubtitle = nextUnit.title;
-            let recText = "";
-            let recProgressPercent = nextUnitPercent;
-            let recButtonText = "Start Learning";
-            let recAction = () => startUnitJourney(nextUnit.id);
-
-            if (!isNextUnitCompleted) {
-              if (recommendedProgress > 1) {
-                // Priority 1 & 2: Continue unfinished stage / unit
-                recTitle = `🦜 Continue Stage ${recommendedProgress}`;
-                recSubtitle = nextUnit.title;
-                recProgressPercent = nextUnitPercent;
-                recText = `You are already ${nextUnitPercent}% through! Let's keep your streak active and clear Stage ${recommendedProgress} in ${nextUnit.title} right now.`;
-                recButtonText = `Resume Stage ${recommendedProgress}`;
-              } else {
-                // Priority 3 & 4: Start the next unlocked unit / Unit ready
-                const hasCompletedAny = appState.completedUnits.length > 0;
-                recTitle = hasCompletedAny ? `🦜 ${nextUnit.title} is ready!` : "Mithu Recommends";
-                recSubtitle = nextUnit.title;
-                recProgressPercent = 0;
-                recText = `Ready to master Urdu counting in the range of ${nextUnit.numbersRange}? Let's jump in!`;
-                recButtonText = "Start Learning";
-              }
-            } else {
-              // Priority 5: If all currently available units are completed:
-              // - Recommend Blitz Mode.
-              // - Recommend Training Arena.
-              // - Recommend improving previous performance.
-              const blitzScore = appState.highScore || 0;
-              const hasPlayedBlitz = blitzScore > 0;
-
-              if (!hasPlayedBlitz) {
-                recTitle = "🦜 Try Blitz Mode for a speed challenge! ⚡";
-                recSubtitle = "Arcade Blitz Challenge";
-                recProgressPercent = 100;
-                recText = "All units completed! Test your speed and reflexes in our high-energy Ginti Blitz challenge.";
-                recButtonText = "Play Ginti Blitz";
-                recAction = () => {
-                  const blitzBtn = document.querySelector(".ginti-blitz-play-btn") as HTMLElement;
-                  if (blitzBtn) {
-                    blitzBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-                    setTimeout(() => blitzBtn.click(), 500);
-                  }
-                };
-              } else if (blitzScore < 30) {
-                recTitle = "🦜 Can you beat your best Blitz score? ⚡";
-                recSubtitle = "Break Your Record";
-                recProgressPercent = 100;
-                recText = `Your current best Blitz score is ${blitzScore} hits! Challenge yourself to beat your record and sharpen your rapid reflexes.`;
-                recButtonText = "Play Blitz Again";
-                recAction = () => {
-                  const blitzBtn = document.querySelector(".ginti-blitz-play-btn") as HTMLElement;
-                  if (blitzBtn) {
-                    blitzBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-                    setTimeout(() => blitzBtn.click(), 500);
-                  }
-                };
-              } else {
-                recTitle = "🦜 Challenge yourself in Training Arena! 🎯";
-                recSubtitle = "Practice & Pronunciation";
-                recProgressPercent = 100;
-                recText = "Sharpen your skills, pronunciation, and spelling in the targeted Training Arena stages.";
-                recButtonText = "Enter Arena";
-                recAction = () => {
-                  setActiveScreen("training-arena");
-                  window.scrollTo({ top: 0 });
-                };
-              }
-            }
-
-            return (
-              <motion.div
-                id="screen-dashboard"
-                key="dashboard"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className="max-w-xl md:max-w-2xl mx-auto w-full flex flex-col gap-4.5 sm:gap-6"
-              >
-              
-              {/* Mascot Welcome & Direct Recommended Next Step (Duolingo/Mimo-styled high-impact pathway start) */}
-              {hasProgress && (
-                <div className="bg-gradient-to-br from-emerald-800 via-emerald-850 to-emerald-900 text-white p-3.5 sm:p-5 rounded-[1.75rem] sm:rounded-[2rem] border-2 border-emerald-600 border-b-[5px] sm:border-b-[6px] border-b-emerald-950 shadow-[0_4px_0_#042414] sm:shadow-[0_6px_0_#042414] relative overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-5">
-                  {/* Backglow decoration for modernist depth */}
-                  <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-emerald-700/35 rounded-full blur-2xl pointer-events-none" />
-                  <div className={`absolute -left-12 -top-12 w-32 h-32 ${appState.isDarkMode ? "bg-emerald-500/20" : "bg-amber-400/10"} rounded-full blur-xl pointer-events-none`} />
-                  
-                  {/* Visual Top Row for Mobile (Mascot & Text side-by-side to save excessive vertical height) */}
-                  <div className="flex items-center gap-3.5 sm:gap-4.5 flex-1 min-w-0">
-                    {/* Integrated Mascot Pedestal Group */}
-                    <div className={`relative shrink-0 flex items-center justify-center p-0.5 sm:p-1 rounded-full border border-white/5 shadow-inner ${
-                      appState.isDarkMode 
-                        ? "bg-gradient-to-br from-emerald-500/20 to-emerald-600/5" 
-                        : "bg-gradient-to-br from-amber-400/15 to-amber-500/5"
-                    }`}>
-                      <div className={`absolute inset-0 rounded-full blur-sm ${
-                        appState.isDarkMode 
-                          ? "bg-emerald-500/15" 
-                          : "bg-amber-400/10"
-                      }`} />
-                      <div id="ginti-mascot-container" className={`relative z-10 scale-75 sm:scale-100 filter drop-shadow-md origin-center -m-1.5 sm:m-0 ${mascotAnimation}`}>
-                        <MithuMascot mood={appState.weakAreas.length > 2 ? "thinking" : "happy"} />
+              ) : (
+                /* ARCADE DISMISSED END SCREEN CARD */
+                <div
+                  id="arcade-end-screen"
+                  className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-slate-200 border-b-[6px] border-b-slate-350 p-6 sm:p-8 flex-1 flex flex-col items-center justify-center text-center relative shadow-xl max-w-md mx-auto w-full animate-fade-in animate-scale-up my-auto"
+                >
+                  {/* 3D Circular Crown/Pedestal */}
+                  {arcadeState.score >= appState.highScore &&
+                  arcadeState.score > 0 ? (
+                    <div className="w-18 h-18 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-amber-950 border-2 border-amber-300 border-b-[5px] border-b-amber-800 shadow-md relative mb-3 animate-bounce select-none">
+                      <Star className="w-9 h-9 fill-amber-100 text-amber-950" />
+                      <div className="absolute -top-2 bg-rose-500 text-white font-black text-[8px] px-2 py-0.5 rounded-full border border-rose-450 uppercase tracking-wider animate-pulse whitespace-nowrap">
+                        👑 Record
                       </div>
-                      <span className={`absolute -bottom-0.5 -right-0.5 bg-gradient-to-r from-amber-400 to-amber-500 border-2 border-emerald-600 dark:border-[#0b3a22] text-[8px] sm:text-[9.5px] ${
-                        activeLevel >= 10 
-                          ? "px-1.5 sm:px-2 min-w-5 h-5 sm:min-w-6.5 sm:h-6.5" 
-                          : "w-5 h-5 sm:w-6.5 sm:h-6.5"
-                      } flex items-center justify-center rounded-full font-black text-slate-905 dark:text-[#0b2414] shadow-md select-none tracking-tight`}>
-                        Lv{activeLevel}
+                    </div>
+                  ) : (
+                    <div className="w-18 h-18 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-full flex items-center justify-center text-white border-2 border-emerald-400 border-b-[5px] border-b-emerald-900 shadow-sm relative mb-4 select-none">
+                      <Award className="w-9 h-9 text-amber-300 fill-amber-300/15" />
+                    </div>
+                  )}
+
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-none mb-1">
+                    Blitz Completed!
+                  </h2>
+
+                  <p className="text-[10.5px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                    Standard Speed Reflex Report
+                  </p>
+
+                  {/* Score & Best */}
+                  <div className="my-4 text-center">
+                    <div className="text-4xl sm:text-5xl font-black text-slate-800 font-mono tracking-tight leading-none flex items-center justify-center gap-1">
+                      <span>{arcadeState.score}</span>
+                      <span className="text-lg font-black text-slate-400 font-sans tracking-wide">
+                        PTS
                       </span>
                     </div>
-                    
-                    {/* Clean, Scannable Content Block */}
-                    <div className="flex-1 min-w-0 flex flex-col gap-0.5 sm:gap-1">
-                      <div>
-                        <span className="text-[8px] sm:text-[9.5px] text-amber-300 font-black uppercase tracking-wider mb-0.5 block">
-                          {recTitle}
-                        </span>
-                        <h3 className="text-xs sm:text-base font-black text-white leading-tight truncate">
-                          {recSubtitle}
-                        </h3>
+                    <p className="text-[11px] font-extrabold text-slate-500 mt-1">
+                      Personal Best:{" "}
+                      <strong className="text-emerald-700 font-black">
+                        {appState.highScore} pts
+                      </strong>
+                    </p>
+                  </div>
+
+                  {/* Performance Badge / Message */}
+                  <div className="w-full mb-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl leading-snug">
+                    <p className="text-xs sm:text-sm font-black text-slate-700">
+                      {(() => {
+                        const correct =
+                          arcadeState.totalAnswered - arcadeState.wrongCount;
+                        const accuracy =
+                          arcadeState.totalAnswered > 0
+                            ? correct / arcadeState.totalAnswered
+                            : 0;
+                        if (accuracy === 1 && correct > 0)
+                          return "⚡ Lightning Reflexes! Absolute Master!";
+                        if (accuracy >= 0.8 && correct > 0)
+                          return "🔥 Ginti Champion! Outstanding speed!";
+                        if (accuracy >= 0.5 && correct > 0)
+                          return "✨ Solid Momentum! Keep counting!";
+                        if (correct > 0)
+                          return "👍 Standard Effort! Keep training your reflexes!";
+                        return "🌱 Keep practicing! Focus and speed up next time!";
+                      })()}
+                    </p>
+                  </div>
+
+                  {/* High Record broken banner */}
+                  {arcadeState.score >= appState.highScore &&
+                    arcadeState.score > 0 && (
+                      <div className="w-full bg-amber-50 border-2 border-amber-200 border-b-[3px] border-b-amber-400 rounded-xl py-1.5 px-3 mb-4 text-[10px] font-black text-amber-850 uppercase tracking-widest flex items-center justify-center gap-1 shadow-xs animate-pulse">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>👑 NEW ALL-TIME RECORD SHATTERED!</span>
                       </div>
-                      
-                      <p className="text-[9.5px] sm:text-[11px] text-emerald-100/90 font-medium leading-normal max-w-sm sm:max-w-none line-clamp-2 sm:line-clamp-none">
-                        {recText}
-                      </p>
-                      
-                      {/* Visual mini progress inline */}
-                      <div className="flex items-center gap-2 w-full max-w-[200px] sm:max-w-[250px] mt-0.5">
-                        <div className="flex-1 bg-emerald-950/40 h-1.5 sm:h-2.5 rounded-full overflow-hidden border border-emerald-700 p-[1px] sm:p-[1.5px] shadow-inner">
-                          <div 
-                            className="h-full bg-gradient-to-r from-amber-400 to-amber-300 rounded-full transition-all duration-500" 
-                            style={{ width: `${recProgressPercent}%` }} 
-                          />
-                        </div>
-                        <span className="text-[8px] sm:text-[9px] font-extrabold text-amber-300 tracking-wide font-mono">
-                          {recProgressPercent}%
-                        </span>
-                      </div>
+                    )}
+
+                  {/* Tactical Stats Grid - Same Ginti Design Language */}
+                  <div className="grid grid-cols-2 gap-3 w-full mb-6">
+                    {/* Stat Card 1: Experience */}
+                    <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
+                        ⭐ Earned
+                      </span>
+                      <span className="text-sm font-black text-slate-700 font-mono">
+                        +{arcadeState.score} XP
+                      </span>
+                    </div>
+
+                    {/* Stat Card 2: Precision Accuracy */}
+                    <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
+                        🎯 Precision
+                      </span>
+                      <span className="text-sm font-black text-emerald-700 font-mono">
+                        {(() => {
+                          const correct =
+                            arcadeState.totalAnswered - arcadeState.wrongCount;
+                          return arcadeState.totalAnswered > 0
+                            ? Math.round(
+                                (correct / arcadeState.totalAnswered) * 100,
+                              )
+                            : 0;
+                        })()}
+                        %
+                      </span>
+                    </div>
+
+                    {/* Stat Card 3: Matches Correct */}
+                    <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
+                        ✅ Correct
+                      </span>
+                      <span className="text-sm font-black text-blue-750 font-mono">
+                        {arcadeState.totalAnswered - arcadeState.wrongCount}{" "}
+                        matches
+                      </span>
+                    </div>
+
+                    {/* Stat Card 4: Action Mistake Count */}
+                    <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
+                        ❌ Mistakes
+                      </span>
+                      <span className="text-sm font-black text-rose-700 font-mono">
+                        {arcadeState.wrongCount} times
+                      </span>
                     </div>
                   </div>
 
-                  {/* Balanced CTA Button - Compact height on mobile, full size on desktop */}
-                  <button
-                    onClick={recAction}
-                    className="w-full sm:w-auto px-4 py-2 sm:px-5 sm:py-2.5 bg-amber-400 hover:bg-amber-300 active:translate-y-[1px] sm:active:translate-y-[2px] active:border-b-2 text-emerald-950 rounded-xl font-black text-xs sm:text-sm tracking-tight border-2 border-amber-300 border-b-[3px] sm:border-b-[4px] border-b-amber-600 transition-all duration-100 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 z-10 shadow-md"
-                  >
-                    <span>
-                      {recButtonText}
-                    </span>
-                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-950 fill-emerald-950 stroke-none" />
-                  </button>
+                  {/* Tactile Actions Deck */}
+                  <div className="flex flex-col gap-3 w-full">
+                    <button
+                      id="arcade-restart-btn"
+                      onClick={startArcadeMode}
+                      className="w-full btn-gold py-3.5 px-6 rounded-full text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-md select-none tracking-wide"
+                    >
+                      <Play className="w-4 h-4 fill-amber-950 stroke-none" />
+                      <span>RETRY BLITZ MATCH</span>
+                    </button>
+
+                    <button
+                      id="arcade-home-btn"
+                      onClick={closeArcadeFrame}
+                      className="w-full btn-secondary py-3.5 px-6 rounded-full text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-sm select-none tracking-wide"
+                    >
+                      <span>BACK TO DASHBOARD</span>
+                    </button>
+                  </div>
                 </div>
               )}
+            </motion.div>
+          )}
 
-              {/* Grid layout separating search learning tool and premium arcade game action */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 relative z-30">
-                
-                {/* 1. Instant Lookup Card (Search Learning Tool) */}
-                <section 
-                  id="panic-search-hub" 
-                  className="bg-white col-span-12 sm:col-span-8 rounded-[1.75rem] border-2 border-slate-200/90 border-b-[6px] border-b-slate-350 relative p-4 sm:p-5 flex flex-col gap-3 transition-all duration-200 shadow-sm animate-fade-in"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-150 pb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="p-1 rounded-lg bg-emerald-50 text-emerald-800 shrink-0">
-                        <Search className="w-4 h-4" />
-                      </span>
+          {/* =============================================================================
+            SCREEN D: UNIT JOURNEY WORKFLOW
+            ============================================================================= */}
+          {!recoveryState &&
+            activeScreen === "unit-journey" &&
+            selectedJourneyUnitId &&
+            (() => {
+              const unit = UNITS.find((u) => u.id === selectedJourneyUnitId);
+              if (!unit) return null;
+
+              const progress = getUnitProgress(selectedJourneyUnitId);
+
+              // If activeStageIndex is null, we display the Journey Stages selection map
+              if (activeStageIndex === null) {
+                return (
+                  <motion.div
+                    key="unit-journey-map"
+                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    id="screen-unit-journey"
+                    className="max-w-md mx-auto w-full p-4 flex flex-col gap-5"
+                  >
+                    {/* Header block */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          playSoundSynth("click");
+                          setActiveScreen("dashboard");
+                        }}
+                        className="p-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition active:scale-95"
+                      >
+                        <ArrowLeft className="w-5 h-5 text-slate-700" />
+                      </button>
                       <div>
-                        <h3 className="text-xs sm:text-sm font-black text-slate-800 leading-none">
-                          Instant Lookup
+                        <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider flex items-center gap-1">
+                          {unit.emoji} {unit.numbersRange} Learn Journey
+                        </span>
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1">
+                          {unit.title}
+                        </h2>
+                      </div>
+                    </div>
+
+                    {/* Card with description of unit */}
+                    <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-2xl p-4 flex gap-3.5 items-start">
+                      <MithuMascot mood="thinking" />
+                      <div className="flex-1">
+                        <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
+                          {unit.description}
+                        </p>
+                        <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                          <span>
+                            Completed units unlock automatically! Progress:
+                          </span>
+                          <span className="text-amber-750 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 font-extrabold">
+                            Stage{" "}
+                            {progress === 5
+                              ? "5/5 (Ready for Test)"
+                              : `${progress - 1}/5 Completed`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vertical Step Road map ladder */}
+                    <div className="relative flex flex-col gap-4 mt-2">
+                      {/* Visual central vertical path line matching dashboard roadmap */}
+                      <div className="absolute left-[39px] -translate-x-1/2 w-[10px] top-[39px] bottom-[39px] pointer-events-none z-0">
+                        {/* Muted outer track background */}
+                        <div className="w-full h-full ginti-roadmap-track-bg rounded-full" />
+                        {/* Emerald progress track fill */}
+                        <div
+                          className="absolute top-0 left-0 w-full ginti-roadmap-track-fill rounded-full transition-all duration-500"
+                          style={{ height: `${((progress - 1) / 4) * 100}%` }}
+                        />
+                      </div>
+
+                      {[
+                        {
+                          id: 1,
+                          name: "Stage 1: Learning Introduction",
+                          desc: "Study the standard Roman Urdu spellings, pronunciation dynamics & script matching.",
+                          icon: (
+                            <BookOpen className="w-5 h-5 text-emerald-600" />
+                          ),
+                        },
+                        {
+                          id: 2,
+                          name: "Stage 2: Word & Digit Matching",
+                          desc: "Complete the interactive 5-question visual recognition deck to construct mental associations.",
+                          icon: <Zap className="w-5 h-5 text-amber-500" />,
+                        },
+                        {
+                          id: 3,
+                          name: "Stage 3: Pronunciation & Auditory",
+                          desc: "Tackle 5 vocal sound prompts to lock dynamic listening comprehension.",
+                          icon: (
+                            <PremiumSpeakerIcon className="w-5 h-5 text-rose-500" />
+                          ),
+                        },
+                        {
+                          id: 4,
+                          name: "Stage 4: Rapid Blitz Arcade",
+                          desc: "Perform under a 30-second rapid stopwatch to lock speed matching reflexes.",
+                          icon: (
+                            <Sparkles className="w-5 h-5 text-indigo-500" />
+                          ),
+                        },
+                        {
+                          id: 5,
+                          name: "Stage 5: Final Mastery Test",
+                          desc: "Tackle a comprehensive mixed-challenge assessment to fully master this unit! (+50 XP)",
+                          icon: <Star className="w-5 h-5 text-amber-600" />,
+                        },
+                      ].map((stg) => {
+                        const isUnlocked = stg.id <= progress;
+                        const isDone = stg.id < progress;
+                        const isCurrent = stg.id === progress;
+
+                        let cardBg =
+                          "bg-slate-50/50 border-slate-200/50 opacity-60";
+
+                        if (isDone) {
+                          cardBg =
+                            "bg-white hover:bg-slate-50/50 border-slate-200 hover:border-slate-350 cursor-pointer shadow-xs transition-all";
+                        } else if (isCurrent) {
+                          cardBg =
+                            "bg-gradient-to-r from-amber-50/50 to-white hover:from-amber-50 hover:to-slate-50/50 border-amber-300 hover:border-amber-400 cursor-pointer shadow-sm active:scale-[0.98] transition-all";
+                        }
+
+                        return (
+                          <div
+                            key={stg.id}
+                            className="flex gap-4 items-center relative z-10 animate-fade-in"
+                            id={`journey-stage-row-${stg.id}`}
+                          >
+                            {/* Circular Milestone Node with 3D tactile design */}
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.94 }}
+                              onClick={() => {
+                                if (!isUnlocked) {
+                                  playSoundSynth("incorrect");
+                                  showToast(
+                                    `Stage ${stg.id} is locked! Clear previous stages first. 🔒`,
+                                  );
+                                  return;
+                                }
+                                console.log(
+                                  `Starting Stage ${stg.id} inside unit ${selectedJourneyUnitId}`,
+                                );
+                                if (stg.id === 1) {
+                                  playSoundSynth("navigation");
+                                  setActiveStageIndex(1);
+                                }
+                                if (stg.id === 2)
+                                  setupStage2Quiz(selectedJourneyUnitId);
+                                if (stg.id === 3)
+                                  setupStage3Listening(selectedJourneyUnitId);
+                                if (stg.id === 4) startStage4Arcade();
+                                if (stg.id === 5)
+                                  setupStage5Quiz(selectedJourneyUnitId);
+                              }}
+                              className={`w-[78px] h-[78px] p-0 m-0 rounded-full flex flex-col items-center justify-center font-black text-center shrink-0 select-none transition relative z-10 cursor-pointer ${
+                                isDone
+                                  ? "ginti-node-finished"
+                                  : isCurrent
+                                    ? "ginti-node-current ginti-pulse-active"
+                                    : "ginti-node-locked cursor-not-allowed"
+                              }`}
+                            >
+                              <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-80 leading-none text-center w-full block pl-[0.05em] m-0">
+                                Stage
+                              </span>
+                              <span className="text-2xl font-black mt-0.5 text-center w-full block tabular-nums m-0">
+                                {stg.id}
+                              </span>
+
+                              {/* Status Overlay Badge on bottom-right of the circle node */}
+                              {isCurrent ? (
+                                <span
+                                  className="absolute -bottom-1 -right-1 w-[26px] h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
+                                  style={{
+                                    boxShadow:
+                                      "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)",
+                                  }}
+                                >
+                                  <Zap className="w-3.5 h-3.5 text-[#451a03] fill-[#451a03]" />
+                                </span>
+                              ) : (
+                                <span
+                                  className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
+                                    isDone
+                                      ? "bg-emerald-700 text-amber-300"
+                                      : "bg-slate-300 text-slate-500 ginti-status-badge-locked"
+                                  }`}
+                                >
+                                  {isDone ? "✓" : "🔒"}
+                                </span>
+                              )}
+                            </motion.button>
+
+                            {/* Description Card */}
+                            <div
+                              className={`flex-1 rounded-2xl border p-4 flex gap-3.5 items-center select-none ${cardBg}`}
+                              onClick={() => {
+                                if (!isUnlocked) {
+                                  playSoundSynth("incorrect");
+                                  showToast(
+                                    `Stage ${stg.id} is locked! Clear previous stages first. 🔒`,
+                                  );
+                                  return;
+                                }
+                                console.log(
+                                  `Starting Stage ${stg.id} inside unit ${selectedJourneyUnitId}`,
+                                );
+                                if (stg.id === 1) {
+                                  playSoundSynth("navigation");
+                                  setActiveStageIndex(1);
+                                }
+                                if (stg.id === 2)
+                                  setupStage2Quiz(selectedJourneyUnitId);
+                                if (stg.id === 3)
+                                  setupStage3Listening(selectedJourneyUnitId);
+                                if (stg.id === 4) startStage4Arcade();
+                                if (stg.id === 5)
+                                  setupStage5Quiz(selectedJourneyUnitId);
+                              }}
+                            >
+                              <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center self-start shrink-0">
+                                {stg.icon}
+                              </div>
+                              <div>
+                                <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                                  <span>{stg.name}</span>
+                                  {isDone && (
+                                    <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 dark:border dark:border-emerald-800/50 px-1.5 py-0.5 rounded-md font-bold leading-none">
+                                      Done
+                                    </span>
+                                  )}
+                                  {isCurrent && (
+                                    <span className="text-[9px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md font-black animate-pulse leading-none">
+                                      Play
+                                    </span>
+                                  )}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 leading-normal mt-1">
+                                  {stg.desc}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bottom Reset Section */}
+                    <div className="flex justify-center mt-6">
+                      <button
+                        onClick={() => {
+                          playSoundSynth("navigation");
+                          setActiveScreen("dashboard");
+                        }}
+                        className="btn-secondary py-3 px-6 rounded-xl text-xs font-bold w-full cursor-pointer"
+                      >
+                        Back to Main Roadmap
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              const filteredList = NUMBERS.filter(
+                (n) => n.unitId === selectedJourneyUnitId,
+              );
+
+              // STAGE 1: INTRO STUDY SHEET
+              if (activeStageIndex === 1) {
+                return (
+                  <motion.div
+                    key="stage-1-deck"
+                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="max-w-md mx-auto w-full"
+                  >
+                    <div
+                      id="screen-journey-stage-1"
+                      className="max-w-md mx-auto w-full p-4 flex flex-col gap-4"
+                    >
+                      {/* Header sub block */}
+                      <div
+                        className="flex items-center justify-between border-b border-slate-100 pb-3"
+                        id="stage1-header"
+                      >
+                        <button
+                          onClick={() => {
+                            playSoundSynth("navigation");
+                            setActiveStageIndex(null);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          <span>Back to Stages</span>
+                        </button>
+                        <div className="text-right">
+                          <span className="text-[9px] font-black text-emerald-600 block">
+                            STAGE 1/5 • DIALECT MAP
+                          </span>
+                          <span className="text-xs font-black text-slate-800">
+                            Learn Urdu Phrases
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-center bg-slate-50 border border-slate-200/50 rounded-2xl p-4 flex flex-col items-center">
+                        <MithuMascot mood="happy" />
+                        <h3 className="text-sm font-black text-slate-800 mt-2 leading-none">
+                          Vocalize and Memorize!
                         </h3>
-                        <p className="text-[9px] text-slate-450 font-bold leading-none mt-1">
-                          Type any number or phonetic Urdu
+                        <p className="text-[10px] text-slate-500 leading-normal mt-1.5 max-w-xs">
+                          Tap the cards below to play clear speech
+                          pronunciations! Pay close attention to romanizations.
                         </p>
                       </div>
-                    </div>
-                    <span className="text-[9.5px] font-mono font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-100/50 px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-xs">
-                      1-5000
-                    </span>
-                  </div>
 
-                  {/* Input and Overlay container */}
-                  <div className="relative w-full z-45">
-                    <div className="flex gap-1.5">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          id="ginti-search"
-                          placeholder="Search number, word, or Urdu (e.g., 35, paintees...)"
-                          value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setSelectedSearchEntry(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              const matches = handleQuerySearch();
-                              if (matches.length > 0) {
-                                saveSearchToHistory(searchQuery);
-                              }
-                            }
-                          }}
-                          onBlur={() => {
-                            const matches = handleQuerySearch();
-                            if (matches.length > 0) {
-                              saveSearchToHistory(searchQuery);
-                            }
-                          }}
-                          className="w-full bg-slate-50 focus:bg-white text-xs text-slate-900 px-3.5 py-2.5 pl-9 rounded-xl border-2 border-slate-200 focus:border-emerald-600 focus:outline-none transition-all duration-150 font-semibold shadow-inner"
-                        />
-                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        
-                        {searchQuery && (
-                          <button 
+                      {/* Grid list of terms */}
+                      <div
+                        ref={journeyStage1ScrollRef}
+                        onScroll={checkJourneyScroll}
+                        className="grid grid-cols-1 gap-2.5 max-h-[385px] overflow-y-auto pt-3 px-1.5 pb-2 pr-1 border-b border-dashed border-slate-200/50"
+                        id="stage1-cards-grid"
+                      >
+                        {filteredList.map((item) => (
+                          <div
+                            key={item.digit}
                             onClick={() => {
-                              playSoundSynth("navigation");
-                              setSearchQuery("");
-                              setSelectedSearchEntry(null);
+                              playSoundSynth("click");
+                              playWordAudio(item);
                             }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-200/60 hover:bg-slate-200 rounded-full text-slate-500 cursor-pointer flex items-center justify-center w-5 h-5"
+                            className="bg-white hover:bg-emerald-50/10 border border-slate-200 hover:border-emerald-500/30 rounded-2xl p-3 flex items-center justify-between transition-all duration-200 cursor-pointer shadow-xs active:scale-[0.98]"
                           >
-                            <X className="w-2.5 h-2.5 text-slate-500" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-sm font-black text-slate-800 shadow-inner">
+                                {item.digit}
+                              </div>
+                              <div>
+                                <div className="text-xs font-black text-slate-800 uppercase tracking-tight flex items-center gap-1.5 leading-none">
+                                  <span>{item.romanUrdu}</span>
+                                </div>
+                                <div className="text-[9px] font-mono text-slate-400 mt-1 uppercase">
+                                  Numerical Code Index Key
+                                </div>
+                              </div>
+                            </div>
 
-                    {/* Recent Search History Pills */}
-                    {recentSearches.length > 0 && (
-                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[10px] w-full">
-                        <span className="text-slate-400 font-bold flex items-center gap-1 shrink-0 mr-1 select-none">
-                          <Clock className="w-3 h-3 text-slate-400" /> Recent
-                        </span>
-                        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
-                          {recentSearches.map((query) => (
-                            <div
-                              key={query}
-                              className="inline-flex items-center bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-full text-slate-600 hover:text-emerald-800 text-[9px] font-black transition select-none overflow-hidden"
-                            >
-                              <button
-                                onClick={() => {
-                                  playSoundSynth("click");
-                                  setSearchQuery(query);
-                                  setSelectedSearchEntry(null);
-                                  saveSearchToHistory(query);
-                                }}
-                                className="pl-2.5 pr-2 py-1 font-black transition cursor-pointer select-none outline-none text-left"
-                              >
-                                {query}
-                              </button>
+                            {/* Right Hand Urudu native transcription */}
+                            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                              {/* Mithu persistent Help trigger */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   playSoundSynth("click");
-                                  removeSearchFromHistory(query);
+                                  setMithuExplanationDigit(item.digit);
                                 }}
-                                className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:scale-115 active:scale-95 transition cursor-pointer select-none outline-none font-black text-[11px] border-l border-slate-200/40 leading-none"
-                                title="Remove search"
+                                className={`px-1.5 py-0.5 sm:px-2.5 sm:py-1 border rounded-full text-[9px] sm:text-[10px] font-black flex items-center gap-0.5 hover:scale-105 active:scale-95 transition cursor-pointer select-none shadow-xs ${
+                                  appState.isDarkMode
+                                    ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300"
+                                    : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800"
+                                }`}
+                                title="See Mithu's decoding clues!"
                               >
-                                ×
+                                <span>🦜 Clues</span>
                               </button>
-                            </div>
-                          ))}
-                        </div>
-                        {recentSearches.length >= 3 && (
-                          <button
-                            onClick={clearAllSearchHistory}
-                            className="text-slate-400 hover:text-rose-500 text-[8px] font-extrabold uppercase tracking-wider ml-auto select-none cursor-pointer hover:underline transition-colors"
-                          >
-                            Clear All
-                          </button>
-                        )}
-                      </div>
-                    )}
 
-                    {/* Common Confusions Shortcuts */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[10px]">
-                      <span className="text-slate-400 font-bold flex items-center gap-0.5 shrink-0 mr-1">
-                        💡 Confused?
-                      </span>
-                      {[
-                        { label: "88", term: "atasi" },
-                        { label: "87", term: "satasi" },
-                        { label: "77", term: "sathattar" },
-                        { label: "99", term: "ninanwe" },
-                        { label: "69", term: "unhattar" },
-                        { label: "150", term: "derh sau" }
-                      ].map((btn) => (
-                        <button
-                          key={btn.label}
-                          onClick={() => {
-                            playSoundSynth("click");
-                            setSearchQuery(btn.term);
-                            setSelectedSearchEntry(null);
-                          }}
-                          className="px-2.5 py-1 bg-slate-50 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200 rounded-full text-slate-600 hover:text-emerald-800 text-[9px] font-black transition cursor-pointer select-none"
-                        >
-                          {btn.label}
-                        </button>
-                      ))}
-                    </div>
-                    {/* Search Outcomes Absolute Floating Overlay */}
-                    <AnimatePresence>
-                      {searchQuery && (
-                        <motion.div 
-                          key="search-outcomes-overlay"
-                          initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 5, scale: 0.99 }}
-                          transition={{ type: "spring", duration: 0.25 }}
-                          className="absolute left-0 right-0 top-full mt-2.5 p-3.5 sm:p-4.5 bg-slate-100 border-2 border-slate-200 border-b-[8px] border-b-slate-350 shadow-[0_16px_40px_rgba(15,23,42,0.16)] rounded-[2.25rem] z-50 flex flex-col gap-3.5 max-h-[385px] overflow-y-auto overflow-x-hidden"
-                        >
-                          
-                          {/* Top standby / banner style for the absolute top match */}
-                          {matchingSearchResults.length > 0 && (
-                            <div className="bg-gradient-to-r from-emerald-900 to-emerald-950 text-white rounded-[1.5rem] p-3 flex items-center justify-between gap-2 border-2 border-emerald-700 border-b-[5px] border-b-emerald-950 shadow-md">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="text-xs font-mono bg-amber-400 font-extrabold text-emerald-950 border border-amber-300 border-b-[3px] border-b-amber-600 px-2.5 py-0.5 rounded-[0.75rem] shadow-xs shrink-0 select-none">
-                                  {matchingSearchResults[0].digit}
-                                </span>
-                                <div className="truncate">
-                                  <span className="text-xs font-black truncate text-amber-300 block">
-                                    {matchingSearchResults[0].romanUrdu}
-                                  </span>
-                                  {appState.showScript && (
-                                    <span className="text-[10px] font-urdu leading-none text-emerald-250/90 font-medium">
-                                      {matchingSearchResults[0].nativeScript}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => playWordAudio(matchingSearchResults[0])}
-                                className="p-2 bg-emerald-800 hover:bg-emerald-700 active:translate-y-[1px] active:border-b-2 border-2 border-emerald-600 border-b-4 border-b-emerald-955 rounded-[0.75rem] text-white transition cursor-pointer shrink-0 shadow-xs"
+                              <span
+                                className={`text-xl sm:text-2xl font-normal font-urdu tracking-wide leading-none select-none ${
+                                  appState.isDarkMode
+                                    ? "text-white"
+                                    : "text-emerald-800"
+                                }`}
                               >
-                                <PremiumSpeakerIcon className="w-3.5 h-3.5 text-emerald-300 fill-emerald-300/10" style={{ fill: "currentColor" }} />
-                              </button>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                            {/* Matching results feed list */}
-                            <div className="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-1">
-                              <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest pl-1">
-                                Matches ({matchingSearchResults.length})
+                                {item.nativeScript}
+                              </span>
+                              <div className="p-1 sm:p-1.5 bg-slate-50 border border-slate-200/50 rounded-lg text-slate-400 hover:text-emerald-600 transition shrink-0">
+                                <PremiumSpeakerIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800" />
                               </div>
-
-                              {matchingSearchResults.length === 0 ? (
-                                <div className="p-4 text-center text-slate-500 flex flex-col items-center justify-center gap-1 bg-white rounded-[1.5rem] border-2 border-dashed border-slate-200">
-                                  <SearchX className="w-6 h-6 text-slate-300" />
-                                  <span className="text-[11px] font-bold">No matching numbers found.</span>
-                                  <span className="text-[9px] text-slate-400">
-                                    Try alternate spelling configurations.
-                                  </span>
-                                </div>
-                              ) : (
-                                matchingSearchResults.map((ent) => {
-                                  const isSelected = selectedSearchEntry?.digit === ent.digit;
-                                  return (
-                                    <div
-                                      key={ent.digit}
-                                      onClick={() => {
-                                        playSoundSynth("click");
-                                        setSelectedSearchEntry(ent);
-                                        saveSearchToHistory(searchQuery);
-                                      }}
-                                      className={`p-2.5 text-left rounded-[1.25rem] border-2 transition duration-75 cursor-pointer flex items-center justify-between active:translate-y-[1.5px] active:border-b-[2px] ${
-                                        isSelected
-                                          ? "bg-emerald-50 border-emerald-500 border-b-[5px] border-b-emerald-700 font-bold shadow-xs text-emerald-950"
-                                          : "bg-white border-slate-200 border-b-[4px] border-b-slate-300 hover:bg-slate-50/50 hover:border-slate-300 hover:border-b-[4.5px]"
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <span className={`font-extrabold text-[10px] w-7 h-7 border rounded-[0.75rem] flex items-center justify-center shrink-0 shadow-xs ${
-                                          isSelected ? "bg-emerald-200 border-emerald-300 text-emerald-950 dark:!text-[#0b2414]" : "bg-slate-50 border-slate-200"
-                                        }`}>
-                                          {ent.digit}
-                                        </span>
-                                        <div className="truncate">
-                                          <div className={`text-xs font-black leading-tight ${isSelected ? "text-emerald-950" : "text-slate-800"}`}>
-                                            {ent.romanUrdu}
-                                          </div>
-                                          <div className="text-[8.5px] text-slate-400 font-semibold font-mono leading-none mt-0.5 truncate">
-                                            {ent.searchKeys.filter(a => a !== ent.digit.toString()).slice(0, 2).join(", ")}
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        {appState.showScript && (
-                                          <span className={`text-[10px] font-urdu leading-none pt-0.5 pr-2 border-r ${
-                                            isSelected ? "border-emerald-200 font-bold" : "border-slate-150"
-                                          }`}>
-                                            {ent.nativeScript}
-                                          </span>
-                                        )}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            playWordAudio(ent);
-                                          }}
-                                          className={`p-1.5 border-2 rounded-[0.75rem] text-slate-700 cursor-pointer transition-all duration-75 ${
-                                            isSelected 
-                                              ? "bg-emerald-600 hover:bg-emerald-550 border-emerald-700 border-b-[4px] hover:border-b-[5px] active:translate-y-[2px] active:border-b-2 text-white" 
-                                              : "bg-slate-100 hover:bg-slate-150 border-slate-300 border-b-[4px] hover:border-b-[5px] active:translate-y-[2px] active:border-b-2"
-                                          }`}
-                                        >
-                                          <PremiumSpeakerIcon className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-emerald-850"}`} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-
-                            {/* Detail viewer panel for selected item */}
-                            <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 border-b-[6px] border-b-slate-350 p-3.5 flex flex-col items-center justify-center relative select-none">
-                              <AnimatePresence mode="wait">
-                                {selectedSearchEntry ? (
-                                  <motion.div 
-                                    key={selectedSearchEntry.digit}
-                                    initial={{ opacity: 0, scale: 0.97 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.97 }}
-                                    className="w-full text-center flex flex-col items-center gap-2 animate-scale-up"
-                                  >
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full select-none border border-emerald-100">
-                                      Card Detail
-                                    </span>
-
-                                    <div className="text-3.5xl font-black text-slate-800 leading-none">
-                                      {selectedSearchEntry.digit}
-                                    </div>
-
-                                    <div className="text-sm font-black text-slate-800 flex items-center gap-1.5 justify-center leading-none">
-                                      <span>{selectedSearchEntry.romanUrdu}</span>
-                                      <button
-                                        onClick={() => playWordAudio(selectedSearchEntry)}
-                                        className="p-1.5 bg-amber-400 hover:bg-amber-300 active:translate-y-[2px] active:border-b-2 border-2 border-amber-300 border-b-4 border-b-amber-600 rounded-[0.75rem] text-amber-955 hover:scale-105 shadow-xs shrink-0 cursor-pointer transition-all duration-75"
-                                      >
-                                        <PremiumSpeakerIcon className="w-3.5 h-3.5 fill-amber-100/10 text-amber-955" style={{ fill: "currentColor" }} />
-                                      </button>
-                                    </div>
-
-                                    {appState.showScript && (
-                                      <div className={`text-xl font-urdu font-black leading-normal pt-0.5 ${
-                                        appState.isDarkMode ? "text-white" : "text-emerald-850"
-                                      }`}>
-                                        {selectedSearchEntry.nativeScript}
-                                      </div>
-                                    )}
-
-                                    <div className="text-[9.5px] text-slate-450 leading-tight font-medium max-w-[170px] mx-auto">
-                                      {selectedSearchEntry.context || "Standard counting vocabulary element."}
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        playSoundSynth("click");
-                                        setMithuExplanationDigit(selectedSearchEntry.digit);
-                                      }}
-                                      className="mt-2.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-800 rounded-full text-[10px] font-black flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs"
-                                    >
-                                      <span>🦜</span>
-                                      <span>View Clues</span>
-                                    </button>
-                                  </motion.div>
-                                ) : (
-                                  <div className="text-slate-400 text-[10px] flex flex-col items-center gap-2 py-3 text-center">
-                                    <HelpCircle className="w-7 h-7 text-emerald-800/60 animate-pulse" />
-                                    <span className="font-bold text-slate-500">Pick any card</span>
-                                    <span className="text-[9px] text-slate-400 max-w-[155px]">
-                                      Select an item from the list to reveal audio, script, and contextual learning details.
-                                    </span>
-                                  </div>
-                                )}
-                              </AnimatePresence>
                             </div>
                           </div>
+                        ))}
+                      </div>
 
+                      {/* Dynamic Finish Line Overlay Takeover */}
+                      {journeyStage1Finished ? (
+                        <motion.div
+                          key="journey-stage-1-finished-overlay"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-emerald-50/95 border-2 border-emerald-500 rounded-3xl p-6 text-center shadow-lg flex flex-col items-center justify-center gap-4 mt-2"
+                        >
+                          <MithuMascot mood="happy" />
+
+                          <h3 className="text-base font-black text-slate-800 leading-tight">
+                            You have completed the exploration! 🎉
+                          </h3>
+
+                          <p className="text-xs text-slate-600 leading-relaxed max-w-xs">
+                            Mithu has recorded your training history. What is
+                            your next play?
+                          </p>
+
+                          <div className="flex flex-col gap-3 w-full mt-2">
+                            {/* Option Button A (Progress Forward) */}
+                            <button
+                              onClick={() => {
+                                const leveledUp = saveUnitStageProgress(
+                                  selectedJourneyUnitId!,
+                                  1,
+                                );
+                                if (!leveledUp) {
+                                  playSoundSynth("click");
+                                }
+                                setTimeout(() => {
+                                  setJourneyStage1Finished(false);
+                                  setNextStageToFocus(2);
+                                  setActiveStageIndex(null);
+                                }, 180);
+                              }}
+                              className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
+                                appState.isDarkMode
+                                  ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                  : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                              }`}
+                            >
+                              CONTINUE TO NEXT STAGE
+                            </button>
+
+                            {/* Option Button B (Loop Reset Review) */}
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setTimeout(() => {
+                                  setJourneyStage1Finished(false);
+                                  if (journeyStage1ScrollRef.current) {
+                                    journeyStage1ScrollRef.current.scrollTop = 0;
+                                  }
+                                }, 180);
+                              }}
+                              className="w-full bg-white hover:bg-slate-50 text-slate-700 rounded-2xl py-3.5 px-5 font-bold uppercase text-xs tracking-wider border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
+                            >
+                              REVIEW EXPLORARENA AGAIN
+                            </button>
+                          </div>
                         </motion.div>
+                      ) : (
+                        <div className="text-center py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/60 mt-1">
+                          <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1.5 animate-pulse">
+                            ↕️ Scroll all the way to complete this module
+                          </span>
+                        </div>
                       )}
-                    </AnimatePresence>
-                  </div>
-                </section>
+                    </div>
+                  </motion.div>
+                );
+              }
 
-                {/* 2. Blitz Premium Game Card */}
-                <div 
-                  className="col-span-12 sm:col-span-4 bg-gradient-to-br from-amber-50 to-amber-100/40 rounded-[1.75rem] border-2 border-amber-200 border-b-[6px] border-b-amber-400 p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in text-justify"
-                >
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-1.5 justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="p-1 rounded-lg bg-amber-400 text-amber-950 animate-pulse shrink-0 ginti-blitz-zap-container">
-                          <Zap className="w-4 h-4 fill-amber-900 stroke-none" />
+              // STAGE 2: MULTIPLE CHOICE RECOGNITION DECK
+              if (activeStageIndex === 2) {
+                const hasFinishedQuiz =
+                  stageQuizIdx >= stageQuizQuestions.length;
+                const currentQ = stageQuizQuestions[stageQuizIdx];
+                if (!hasFinishedQuiz && !currentQ) return null;
+
+                return (
+                  <motion.div
+                    key={`stage-2-deck-${hasFinishedQuiz ? "end" : "gameplay"}`}
+                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className={`max-w-md mx-auto w-full ${hasFinishedQuiz ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
+                  >
+                    {hasFinishedQuiz ? (
+                      <div
+                        id="screen-journey-stage-2-end"
+                        className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto"
+                      >
+                        <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 border border-amber-200 mb-1 shadow-sm animate-bounce">
+                          <Star className="w-7 h-7 fill-amber-300" />
+                        </div>
+
+                        <h3 className="text-xl font-black text-slate-800 font-extrabold">
+                          Stage 2 Matches Completed!
+                        </h3>
+                        <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                          Splendid translation recognition matches! Your
+                          scorecard logged{" "}
+                          <span className="font-extrabold text-slate-800">
+                            {stageQuizScore} / {stageQuizQuestions.length}{" "}
+                            correct
+                          </span>
+                          .
+                        </p>
+
+                        <div className="flex flex-col gap-2.5 w-full mt-2">
+                          <button
+                            onClick={() => {
+                              const leveledUp = saveUnitStageProgress(
+                                selectedJourneyUnitId,
+                                2,
+                              );
+                              if (!leveledUp) {
+                                playSoundSynth("click");
+                              } else {
+                                playSoundSynth("levelUp");
+                              }
+                              setTimeout(() => {
+                                setNextStageToFocus(3);
+                                setActiveStageIndex(null);
+                              }, 180);
+                            }}
+                            className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black cursor-pointer shadow-md"
+                          >
+                            Unlock Stage 3: Listening (+15 XP) 🎉
+                          </button>
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setTimeout(() => {
+                                setupStage2Quiz(selectedJourneyUnitId);
+                              }, 180);
+                            }}
+                            className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
+                          >
+                            Retry Recognition Match
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        id="screen-journey-stage-2"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in"
+                      >
+                        {/* Header sub block */}
+                        <div
+                          className="flex items-center justify-between border-b border-slate-100 pb-3"
+                          id="stage2-header"
+                        >
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setTimeout(() => {
+                                setActiveStageIndex(null);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }, 180);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Exit Stage</span>
+                          </button>
+                          <div className="text-right">
+                            <span className="text-[9px] font-black text-amber-500 block">
+                              STAGE 2/5 • RECOGNITION
+                            </span>
+                            <span className="text-xs font-black text-slate-800">
+                              Question {stageQuizIdx + 1} of 5
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress bar line */}
+                        <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                          <div
+                            className="bg-emerald-600 h-full transition-all duration-300"
+                            style={{
+                              width: `${((stageQuizIdx + 1) / 5) * 100}%`,
+                            }}
+                          />
+                        </div>
+
+                        {/* Question query box */}
+                        <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
+                          <div className="flex items-center justify-between w-full mb-2">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
+                              Translate value:
+                            </span>
+                            {renderMithuHelpBadge(currentQ.entry.digit)}
+                          </div>
+                          <div
+                            className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
+                              appState.showScript &&
+                              typeof getDisplayPromptValue(currentQ) ===
+                                "string" &&
+                              (getDisplayPromptValue(currentQ) as string).match(
+                                /[\u0600-\u06FF]/,
+                              )
+                                ? "font-urdu"
+                                : ""
+                            } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}
+                          >
+                            {formatValueForDisplay(
+                              getDisplayPromptValue(currentQ),
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Interactive choice grid list */}
+                        <div
+                          className="grid grid-cols-2 gap-3 mt-2"
+                          id="stage2-choices-grid"
+                        >
+                          {currentQ.choices.map((choice, index) => {
+                            const isSelected = stageQuizSelected === choice;
+                            const isCorrectVal =
+                              choice === currentQ.correctAnswer;
+
+                            let cardStyle = "ginti-choice-btn";
+                            if (stageQuizAnswered) {
+                              if (isCorrectVal) {
+                                cardStyle = "ginti-choice-btn-correct";
+                              } else if (isSelected) {
+                                cardStyle = "ginti-choice-btn-incorrect";
+                              } else {
+                                cardStyle = "ginti-choice-btn-dimmed";
+                              }
+                            }
+
+                            return (
+                              <button
+                                key={index}
+                                disabled={stageQuizAnswered}
+                                onClick={() => {
+                                  const isCorrect =
+                                    choice === currentQ.correctAnswer;
+                                  if (isCorrect) {
+                                    incrementMasteryStreak();
+                                  } else {
+                                    resetMasteryStreak(currentQ.entry.digit);
+                                  }
+                                  playSoundSynth(
+                                    isCorrect ? "correct" : "incorrect",
+                                  );
+                                  setStageQuizSelected(choice);
+                                  setStageQuizAnswered(true);
+
+                                  if (isCorrect) {
+                                    setStageQuizScore((s) => s + 1);
+                                  } else {
+                                    setStageQuizMistakes((prev) => [
+                                      ...prev,
+                                      currentQ,
+                                    ]);
+                                  }
+
+                                  // Auto advance after short timer frame
+                                  setTimeout(() => {
+                                    setStageQuizSelected(null);
+                                    setStageQuizAnswered(false);
+                                    setStageQuizIdx((prev) => {
+                                      const nextIdx = prev + 1;
+                                      if (
+                                        nextIdx >= stageQuizQuestions.length
+                                      ) {
+                                        playSoundSynth("levelUp");
+                                      }
+                                      return nextIdx;
+                                    });
+                                  }, 1200);
+                                }}
+                                className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                              >
+                                <span
+                                  className={
+                                    appState.showScript &&
+                                    typeof choice === "string" &&
+                                    choice.match(/[\u0600-\u06FF]/)
+                                      ? "text-2xl font-urdu select-none leading-none"
+                                      : ""
+                                  }
+                                >
+                                  {formatValueForDisplay(choice)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              }
+
+              // STAGE 3: LISTENING PRONUNCIATION SELECTOR
+              if (activeStageIndex === 3) {
+                const hasFinishedListening =
+                  stageListIdx >= stageListQuestions.length;
+                const currentQ = stageListQuestions[stageListIdx];
+                if (!hasFinishedListening && !currentQ) return null;
+
+                return (
+                  <motion.div
+                    key={`stage-3-deck-${hasFinishedListening ? "end" : "gameplay"}`}
+                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className={`max-w-md mx-auto w-full ${hasFinishedListening ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
+                  >
+                    {hasFinishedListening ? (
+                      <div
+                        id="screen-journey-stage-3-end"
+                        className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800"
+                      >
+                        <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 border border-rose-200 mb-1 shadow-sm animate-bounce">
+                          <Star className="w-7 h-7 fill-rose-300" />
+                        </div>
+
+                        <h3 className="text-xl font-black text-slate-800 font-extrabold">
+                          Stage 3 Listening Cleared!
+                        </h3>
+                        <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
+                          Terrific dialect phonology matches! You parsed oral
+                          Urdu sounds like a real native!
+                        </p>
+
+                        <div className="flex flex-col gap-2.5 w-full mt-2">
+                          <button
+                            onClick={() => {
+                              const leveledUp = saveUnitStageProgress(
+                                selectedJourneyUnitId,
+                                3,
+                              );
+                              if (!leveledUp) {
+                                playSoundSynth("click");
+                              } else {
+                                playSoundSynth("levelUp");
+                              }
+                              setTimeout(() => {
+                                setNextStageToFocus(4);
+                                setActiveStageIndex(null);
+                              }, 180);
+                            }}
+                            className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black animate-pulse shadow-md cursor-pointer"
+                          >
+                            Unlock Stage 4: Arcade Blitz (+15 XP) 🎉
+                          </button>
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setTimeout(() => {
+                                setupStage3Listening(selectedJourneyUnitId);
+                              }, 180);
+                            }}
+                            className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
+                          >
+                            Retry Sound Listening Loop
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        id="screen-journey-stage-3"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in"
+                      >
+                        {/* Header sub block */}
+                        <div
+                          className="flex items-center justify-between border-b border-slate-100 pb-3"
+                          id="stage3-header"
+                        >
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setTimeout(() => {
+                                setActiveStageIndex(null);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }, 180);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Exit Stage</span>
+                          </button>
+                          <div className="text-right">
+                            <span className="text-[9px] font-black text-rose-600 block">
+                              STAGE 3/5 • LISTEN COMPREHENSION
+                            </span>
+                            <span className="text-xs font-black text-slate-800">
+                              Question {stageListIdx + 1} of 5
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress bar line */}
+                        <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                          <div
+                            className="bg-emerald-600 h-full transition-all duration-300"
+                            style={{
+                              width: `${((stageListIdx + 1) / 5) * 100}%`,
+                            }}
+                          />
+                        </div>
+
+                        {/* Big speaker audio activator button box */}
+                        <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
+                          <div className="flex items-center justify-between w-full mb-3">
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-left">
+                              Listen comprehension:
+                            </span>
+                            {renderMithuHelpBadge(currentQ.entry.digit)}
+                          </div>
+
+                          {/* Clean layout container with outline removed as requested */}
+                          <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
+                            <button
+                              disabled={speechActive}
+                              onClick={() => {
+                                if (speechActive) return;
+                                playSoundSynth("click");
+                                playWordAudio(currentQ.entry);
+                                setStageListSpeakerAnimate(true);
+                                const timer = setTimeout(() => {
+                                  setStageListSpeakerAnimate(false);
+                                }, 1200);
+                              }}
+                              className="w-20 h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center border-2 border-rose-500 border-b-[6px] border-b-rose-800 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
+                            >
+                              <PremiumSpeakerIcon
+                                className={`w-9 h-9 text-white ${stageListSpeakerAnimate ? "animate-bounce" : ""}`}
+                              />
+                            </button>
+                          </div>
+
+                          <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 mt-4 uppercase tracking-widest animate-pulse">
+                            🔊 Tap speaker to vocalize sound
+                          </span>
+                        </div>
+
+                        {/* Option targets choice buttons */}
+                        <div
+                          className="grid grid-cols-2 gap-3 mt-2"
+                          id="stage3-choices-grid"
+                        >
+                          {currentQ.choices.map(
+                            (choice: any, index: number) => {
+                              const isSelected = stageListSelected === choice;
+                              const isCorrectVal =
+                                choice === currentQ.correctAnswer;
+
+                              let cardStyle = "ginti-choice-btn";
+                              if (stageListAnswered) {
+                                if (isCorrectVal) {
+                                  cardStyle = "ginti-choice-btn-correct";
+                                } else if (isSelected) {
+                                  cardStyle = "ginti-choice-btn-incorrect";
+                                } else {
+                                  cardStyle = "ginti-choice-btn-dimmed";
+                                }
+                              }
+
+                              return (
+                                <button
+                                  key={index}
+                                  disabled={stageListAnswered}
+                                  onClick={() => {
+                                    const isCorrect =
+                                      choice === currentQ.correctAnswer;
+                                    if (isCorrect) {
+                                      incrementMasteryStreak();
+                                    } else {
+                                      resetMasteryStreak();
+                                    }
+                                    playSoundSynth(
+                                      isCorrect ? "correct" : "incorrect",
+                                    );
+                                    setStageListSelected(choice);
+                                    setStageListAnswered(true);
+
+                                    if (!isCorrect) {
+                                      setStageListMistakes((prev) => [
+                                        ...prev,
+                                        currentQ,
+                                      ]);
+                                    }
+
+                                    // Advance state
+                                    setTimeout(() => {
+                                      setStageListSelected(null);
+                                      setStageListAnswered(false);
+                                      setStageListIdx((prev) => {
+                                        const nextIdx = prev + 1;
+                                        if (
+                                          nextIdx >= stageListQuestions.length
+                                        ) {
+                                          playSoundSynth("levelUp");
+                                        }
+                                        return nextIdx;
+                                      });
+                                    }, 1200);
+                                  }}
+                                  className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                                >
+                                  {choice}
+                                </button>
+                              );
+                            },
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              }
+
+              // STAGE 4: SPEED ARCADE BLITZ CHALLENGE
+              if (activeStageIndex === 4) {
+                const currentQ = stageArcadeActiveQ;
+                if (stageArcadeOver) {
+                  const pass = stageArcadeScore >= 3;
+                  return (
+                    <motion.div
+                      key="stage-4-deck-end"
+                      initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                      transition={{ duration: 0.12, ease: "easeOut" }}
+                      className="max-w-md mx-auto w-full min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center"
+                    >
+                      <div
+                        id="screen-journey-stage-4-end"
+                        className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800"
+                      >
+                        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-200 mb-1 shadow-sm">
+                          {pass ? (
+                            <Star className="w-7 h-7 fill-indigo-300 text-indigo-500" />
+                          ) : (
+                            <Lock className="w-7 h-7 text-slate-400" />
+                          )}
+                        </div>
+
+                        <h3 className="text-xl font-black text-slate-800 font-extrabold">
+                          {pass
+                            ? "Stage 4 Blitz Completed!"
+                            : "Need 3 Hits to Clear!"}
+                        </h3>
+
+                        <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
+                          {pass
+                            ? `Fantastic reaction reflexes! You completed the stopwatch run with a grand total of ${stageArcadeScore} correct matched parameters!`
+                            : `You finished with ${stageArcadeScore} matches. Keep practicing and aim for at least 3 correct matches to unlock the Final Mastery Test!`}
+                        </p>
+
+                        <div className="flex flex-col gap-2.5 w-full mt-2">
+                          {pass ? (
+                            <button
+                              onClick={() => {
+                                const leveledUp = saveUnitStageProgress(
+                                  selectedJourneyUnitId,
+                                  4,
+                                );
+                                if (!leveledUp) {
+                                  playSoundSynth("click");
+                                } else {
+                                  playSoundSynth("levelUp");
+                                }
+                                setTimeout(() => {
+                                  setNextStageToFocus(5);
+                                  setActiveStageIndex(null);
+                                }, 180);
+                              }}
+                              className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black uppercase shadow-md cursor-pointer animate-pulse"
+                            >
+                              Proceed to Stage 5: Mastery Test (+15 XP) 🎉
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setTimeout(() => {
+                                  startStage4Arcade();
+                                }, 180);
+                              }}
+                              className="w-full btn-gold py-3.5 px-5 rounded-2xl text-xs font-black uppercase cursor-pointer"
+                            >
+                              Play Blitz Stage Again
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setTimeout(() => {
+                                setActiveStageIndex(null);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }, 180);
+                            }}
+                            className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
+                          >
+                            Exit Speed Challenge
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                }
+
+                if (!currentQ) return null;
+
+                return (
+                  <motion.div
+                    key="stage-4-deck-gameplay"
+                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="max-w-md mx-auto w-full"
+                  >
+                    <div
+                      id="screen-journey-stage-4"
+                      className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in"
+                    >
+                      {/* Header sub block */}
+                      <div
+                        className="flex items-center justify-between border-b border-slate-100 pb-3"
+                        id="stage4-header"
+                      >
+                        <button
+                          onClick={() => {
+                            playSoundSynth("click");
+                            setStageArcadeOver(true);
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                        >
+                          <span>Quit Match</span>
+                        </button>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
+                            ⏱️{" "}
+                            <span className="font-mono text-indigo-700 font-extrabold">
+                              {stageArcadeTime}s
+                            </span>
+                          </span>
+                          <span className="text-xs font-black text-rose-900 bg-rose-50 rounded-full px-2.5 py-1 select-none">
+                            ⚡{" "}
+                            <span className="font-semibold text-rose-700">
+                              {stageArcadeScore} hits
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress Visual Timer horizontal line bar */}
+                      <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                        <div
+                          className="bg-emerald-600 h-full transition-all duration-300"
+                          style={{ width: `${(stageArcadeTime / 30) * 100}%` }}
+                        />
+                      </div>
+
+                      {/* Active challenge focus question */}
+                      <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
+                            Speedy translation:
+                          </span>
+                          {renderMithuHelpBadge(currentQ.entry.digit)}
+                        </div>
+                        <div
+                          className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
+                            appState.showScript &&
+                            typeof getDisplayPromptValue(currentQ) ===
+                              "string" &&
+                            (getDisplayPromptValue(currentQ) as string).match(
+                              /[\u0600-\u06FF]/,
+                            )
+                              ? "font-urdu"
+                              : ""
+                          } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}
+                        >
+                          {formatValueForDisplay(
+                            getDisplayPromptValue(currentQ),
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Choices choices option grid container */}
+                      <div
+                        className="grid grid-cols-2 gap-3 mt-2"
+                        id="stage4-choices-grid"
+                      >
+                        {currentQ.choices.map((choice, index) => {
+                          const isSelected = stageArcadeSelected === choice;
+                          const isCorrectVal =
+                            choice === currentQ.correctAnswer;
+                          let bStyle =
+                            "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
+
+                          if (stageArcadeAnswered) {
+                            if (isCorrectVal) {
+                              bStyle =
+                                "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
+                            } else if (isSelected) {
+                              bStyle =
+                                "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
+                            } else {
+                              bStyle =
+                                "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={index}
+                              disabled={stageArcadeAnswered}
+                              onClick={() => {
+                                const isCorrect =
+                                  choice === currentQ.correctAnswer;
+                                if (isCorrect) {
+                                  incrementMasteryStreak();
+                                } else {
+                                  resetMasteryStreak();
+                                }
+                                playSoundSynth(
+                                  isCorrect ? "correct" : "incorrect",
+                                );
+                                setStageArcadeSelected(choice);
+                                setStageArcadeAnswered(true);
+
+                                if (isCorrect) {
+                                  setStageArcadeScore((s) => s + 1);
+                                }
+
+                                // Rapid speed change mechanics (400ms flash gap)
+                                setTimeout(() => {
+                                  setStageArcadeSelected(null);
+                                  setStageArcadeAnswered(false);
+                                  const nextQ = makeSingleUnitArcadeQuestion(
+                                    selectedJourneyUnitId,
+                                  );
+                                  setStageArcadeActiveQ(nextQ);
+                                }, 400);
+                              }}
+                              className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                            >
+                              <span
+                                className={
+                                  appState.showScript &&
+                                  typeof choice === "string" &&
+                                  choice.match(/[\u0600-\u06FF]/)
+                                    ? "text-2xl font-urdu select-none"
+                                    : ""
+                                }
+                              >
+                                {formatValueForDisplay(choice)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              return null;
+            })()}
+
+          {/* =============================================================================
+            SCREEN F: PLACEMENT CHALLENGE WORKFLOW
+            ============================================================================= */}
+          {!recoveryState &&
+            activeScreen === "placement-challenge" &&
+            placementState &&
+            (() => {
+              const unit = UNITS.find((u) => u.id === placementState.unitId);
+              if (!unit) return null;
+
+              const isCompleted =
+                placementState.currentIndex >= 15 ||
+                placementState.showResultPopup;
+
+              if (isCompleted) {
+                const correctCount = placementState.score;
+                const percentage = Math.round((correctCount / 15) * 100);
+                const passed = correctCount >= 14; // 90% of 15 is 13.5 -> so at least 14 correct (14/15 = 93.3%)
+                const attemptCount =
+                  appState.placementAttempts?.[placementState.unitId] ?? 0;
+                const hasFailedTwice = attemptCount >= 2;
+
+                return (
+                  <motion.div
+                    key="placement-challenge-summary"
+                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="w-full max-w-md mx-auto p-4 flex flex-col gap-4"
+                  >
+                    <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-[2.25rem] p-6 shadow-xl text-center flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950 rounded-full flex items-center justify-center border-2 border-amber-300 shadow-md">
+                        <span className="text-3xl">{passed ? "🏆" : "🐣"}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                          Assessment Complete
                         </span>
-                        <div>
-                          <h3 className="text-xs sm:text-sm font-black text-amber-955 text-justify">Ginti Blitz</h3>
-                          <p className="text-[9px] text-amber-805 font-bold leading-none mt-0.5 text-justify">
-                            Speed Play
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5 tracking-tight">
+                          {passed
+                            ? "Placement Passed! 🎉"
+                            : "Challenge Complete!"}
+                        </h2>
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 w-full text-center border border-slate-150 dark:border-slate-750">
+                        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                          Your Score
+                        </p>
+                        <p className="text-3xl font-black text-slate-900 dark:text-white mt-0.5 font-mono">
+                          {correctCount} / 15{" "}
+                          <span className="text-sm font-semibold text-slate-400">
+                            ({percentage}%)
+                          </span>
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-400 mt-1">
+                          {passed
+                            ? "Aap ne Kamaal kar Diya! 90% Requirement Met."
+                            : "Required: 90% (14 correct answers) to pass."}
+                        </p>
+                      </div>
+
+                      {/* Mithu companion message */}
+                      <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center text-left w-full">
+                        <MithuMascot mood={passed ? "sparkly" : "thinking"} />
+                        <div className="flex-1">
+                          <p className="text-[12px] text-slate-700 dark:text-slate-300 font-extrabold leading-tight">
+                            {passed
+                              ? `"Wah! Aap to pehle se hi mahir hain! Aap is unit ko bypass kar sakte hain."`
+                              : hasFailedTwice
+                                ? `"Looks like this unit still has a few surprises for us. Let's learn it together first!"`
+                                : `"Koi baat nahi! Hum mil kar seekhein ge. Thori aur practice se aap pass kar lein ge!"`}
                           </p>
                         </div>
                       </div>
-                      <span className={`text-[8px] font-mono font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                        appState.isDarkMode 
-                          ? "text-amber-200 bg-amber-950/60 border border-amber-700/60" 
-                          : "text-amber-905 bg-amber-200/50 border border-amber-300/40"
-                      }`}>
-                        Arcade
-                      </span>
-                    </div>
-                    
-                    <p className={`text-[10.5px] leading-normal font-bold mt-1 text-justify ${
-                      appState.isDarkMode 
-                        ? "text-amber-100" 
-                        : "text-amber-900/90"
-                    }`}>
-                      Match fast under timer pressure! Keep your streak and set a high score.
-                    </p>
-                  </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-[9px] font-bold text-amber-805 px-1">
-                      <span>Personal Best:</span>
-                      <span className={`font-black ${
-                        appState.isDarkMode 
-                          ? "text-amber-300" 
-                          : "text-amber-950"
-                      }`}>{appState.highScore} pts</span>
-                    </div>
-                    <button 
-                      onClick={startArcadeMode}
-                      className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 active:translate-y-[2px] active:border-b-2 text-amber-950 text-xs font-black border-2 border-amber-300 border-b-[4px] border-b-amber-600 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-100 shadow-xs ginti-blitz-play-btn"
-                    >
-                      <Play className="w-3.5 h-3.5 text-amber-900 fill-amber-900/20" />
-                      <span>Start Ginti Blitz</span>
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
-              <section 
-                id="training-arena-panel" 
-                className="bg-gradient-to-br from-emerald-900 to-emerald-950 rounded-[2rem] border-[4px] border-emerald-800 border-b-[12px] border-b-emerald-955 relative pt-[18px] pb-[18px] px-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-[18px] sm:gap-5 text-white shadow-xl overflow-hidden"
-              >
-                {/* 3D background grid pattern overlay */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-0" />
-                
-                <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 relative z-10 text-center sm:text-left">
-                  <div className="w-14 h-14 bg-amber-400 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-3xl shrink-0 border-2 border-amber-300 border-b-[5px] border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none">
-                    ⭐
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-center sm:justify-start gap-2">
-                      <h3 className="text-xl font-black text-amber-300 tracking-tight leading-none uppercase">
-                        Training Arena
-                      </h3>
-                      <span className="text-[9px] uppercase font-black text-amber-400 bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-700 font-mono shadow-inner select-none whitespace-nowrap hidden xs:inline-block">
-                        Personal Practice
-                      </span>
-                    </div>
-                    <p className="text-xs text-emerald-100 font-medium leading-relaxed max-w-sm mt-[7px] sm:mt-2">
-                      Design your own custom battlefield. Set dynamic boundaries from 0 to 100 to practice and strengthen your target list of Urdu numbers.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="relative z-10 w-full sm:w-auto shrink-0">
-                  {appState.arenaStarted || appState.arenaCompleted ? (
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setActiveScreen("training-arena");
-                        setArenaActiveStage(null);
-                      }}
-                      className="w-full sm:w-auto py-2.5 px-6 bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-black text-xs sm:text-sm rounded-2xl uppercase tracking-wider border-2 border-amber-300 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-[3px] cursor-pointer shadow-md transition-all duration-100 flex flex-col items-center justify-center select-none"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span>{appState.arenaCompleted ? "Revisit Arena" : "Continue Arena"}</span>
-                        <Play className="w-3.5 h-3.5 text-emerald-950 fill-emerald-950/20" />
-                      </div>
-                      <span className="text-[10px] text-emerald-950/80 font-bold tracking-tight normal-case mt-0.5">
-                        {(appState.arenaMin !== undefined ? appState.arenaMin : 30)}–{(appState.arenaMax !== undefined ? appState.arenaMax : 100)} • {appState.arenaCompleted ? "Fully Mastered 🏆" : `Stage ${appState.arenaStageProgress ?? 1}`}
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setIsArenaSetupOpen(true);
-                      }}
-                      className="w-full sm:w-auto py-3 px-6 bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-emerald-950 font-black text-xs sm:text-sm rounded-2xl uppercase tracking-wider border-2 border-amber-300 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-[3px] cursor-pointer shadow-md transition-all duration-100 flex items-center justify-center gap-1.5 select-none"
-                    >
-                      <span>Enter Arena</span>
-                      <Play className="w-3.5 h-3.5 text-emerald-950 fill-emerald-950/20" />
-                    </button>
-                  )}
-                </div>
-              </section>
-
-              {/* Interactive Practice Units list */}
-              <section id="milestone-roadmap" className="flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
-                    <BookMarked className="w-4 h-4 text-emerald-800 mr-0.5" />
-                    <span>Your Learning Journey</span>
-                  </h3>
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                    {appState.completedUnits.length} / 5 Mastered
-                  </span>
-                </div>
-
-                {/* Vertical roadmap track container */}
-                <div id="units-feed" className="milestone-roadmap relative flex flex-col gap-5 sm:gap-6 pl-4 py-1.5">
-
-                  {UNITS.map((unit, index) => {
-                    const isFinished = appState.completedUnits.includes(unit.id);
-                    const isCurrent = nextUnit.id === unit.id;
-                    const isLocked = !isFinished && !isCurrent;
-                    const count = NUMBERS.filter(n => n.unitId === unit.id).length;
-                    const unitProgressVal = getUnitProgress(unit.id);
-                    const unitPercent = isFinished 
-                      ? 100 
-                      : isCurrent 
-                        ? Math.max(0, Math.round(((unitProgressVal - 1) / 5) * 100))
-                        : 0;
-                    const isHighlighted = highlightedUnitId === unit.id;
-
-                    return (
-                      <div 
-                        key={unit.id}
-                        data-unit-id={unit.id}
-                        className="milestone-row relative z-10 flex gap-3 sm:gap-5 items-center w-full"
-                      >
-                        {/* Compact Circular 3D Step Node on the left */}
-                        <div className="milestone-node shrink-0 relative w-14 sm:w-[76px] self-stretch flex items-center justify-center">
-                          {/* Row-segmented connection track line going upwards */}
-                          {index > 0 && (
-                            <div className="absolute left-1/2 -translate-x-1/2 w-[8px] sm:w-[10px] top-0 h-1/2 pointer-events-none z-0">
-                              <div className={`w-full h-full ginti-roadmap-track-bg ${index === UNITS.length - 1 ? 'rounded-b-full' : ''}`} />
-                              {index <= appState.completedUnits.length && (
-                                <div className={`absolute inset-0 ginti-roadmap-track-fill transition-all duration-500 ${index === UNITS.length - 1 ? 'rounded-b-full' : ''}`} />
-                              )}
-                            </div>
-                          )}
-
-                          {/* Row-segmented connection track line going downwards */}
-                          {index < UNITS.length - 1 && (
-                            <div className="absolute left-1/2 -translate-x-1/2 w-[8px] sm:w-[10px] top-1/2 h-1/2 pointer-events-none z-0">
-                              <div className={`w-full h-full ginti-roadmap-track-bg ${index === 0 ? 'rounded-t-full' : ''}`} />
-                              {index < appState.completedUnits.length && (
-                                <div className={`absolute inset-0 ginti-roadmap-track-fill transition-all duration-500 ${index === 0 ? 'rounded-t-full' : ''}`} />
-                              )}
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => {
-                              if (isLocked) {
-                                playSoundSynth("incorrect");
-                                showToast(`Master the active unit first to unlock ${unit.title}! 🔒`);
-                                return;
+                      {/* Action Choices */}
+                      <div className="flex flex-col gap-2.5 w-full mt-2">
+                        {passed ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                passPlacementChallengeDirectly(
+                                  placementState.unitId,
+                                )
                               }
-                              startUnitJourney(unit.id);
-                            }}
-                            className={`w-14 h-14 sm:w-[76px] sm:h-[76px] rounded-full flex items-center justify-center select-none cursor-pointer relative text-xl sm:text-2xl z-10 ${
-                              isFinished
-                                ? "ginti-node-finished"
-                                : isCurrent
-                                  ? "ginti-node-current ginti-pulse-active"
-                                  : "ginti-node-locked cursor-not-allowed"
-                            }`}
-                          >
-                            <span className="drop-shadow-[0_2.5px_2px_rgba(0,0,0,0.38)] filter select-none">
-                              {unit.emoji}
-                            </span>
-
-                            {/* Status Overlay Badge on bottom-right of the circle node */}
-                            {isCurrent ? (
-                              <span 
-                                className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-[20px] h-[20px] sm:w-[26px] sm:h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-[1.5px] sm:border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
-                                style={{
-                                  boxShadow: "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)"
-                                }}
-                              >
-                                <Zap className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-[#451a03] fill-[#451a03]" />
-                              </span>
-                            ) : (
-                              <span className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4.5 h-4.5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-[8.5px] sm:text-[10px] font-black border border-white shadow-xs ${
-                                isFinished
-                                  ? "bg-emerald-700 text-amber-300"
-                                  : "bg-slate-250 text-slate-500 ginti-status-badge-locked"
-                              }`}>
-                                {isFinished ? "✓" : "🔒"}
-                              </span>
-                            )}
-                          </button>
-                        </div>
-
-                        {/* Interactive Step Card on the right */}
-                        <article 
-                          id={`unit-card-${unit.id}`}
-                          className={`flex-1 relative overflow-hidden rounded-2xl p-3 sm:p-4.5 transition-all duration-300 border-2 flex flex-col justify-between ${
-                            isCurrent 
-                              ? "bg-gradient-to-br from-emerald-50/10 via-white to-amber-50/15 border-amber-400/90 border-b-[5px] border-b-amber-500 shadow-md ring-4 ring-amber-400/5"
-                              : isFinished 
-                                ? "bg-emerald-50/5 hover:bg-emerald-50/10 border-emerald-600/20 hover:border-emerald-600/35 hover:shadow-sm"
-                                : "bg-white border-slate-200/65 opacity-70 cursor-not-allowed"
-                          }`}
-                        >
-                          {isFinished && (
-                            <div className="absolute top-0 right-0 bg-emerald-700 text-amber-300 font-extrabold text-[8px] sm:text-[9px] tracking-wider px-3 py-1 rounded-bl-xl uppercase flex items-center gap-0.5 shadow-xs select-none border-l border-b border-emerald-600/20">
-                              <span>Mastered</span>
-                              <CheckCircle2 className="w-3 h-3 text-amber-350" />
-                            </div>
-                          )}
-                          
-                          {isCurrent && (
-                            <div className="absolute top-0 right-0 bg-amber-400 text-emerald-950 font-black text-[8px] sm:text-[9px] tracking-widest px-3 py-1 rounded-bl-xl uppercase select-none flex items-center gap-1 border-l border-b border-amber-500/35">
-                              <Sparkles className="w-2.5 h-2.5 animate-pulse text-emerald-950 fill-emerald-950/20" />
-                              <span>Next up</span>
-                            </div>
-                          )}
-
-                          {isLocked && (
-                            <div className="absolute top-0 right-0 bg-slate-200 text-slate-500 font-bold text-[8px] sm:text-[9px] tracking-wider px-2.5 py-1 rounded-bl-xl uppercase flex items-center gap-1 select-none border-l border-b border-slate-300/30">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>Locked</span>
-                            </div>
-                          )}
-
-                          <div className="flex flex-col gap-1 pr-[60px]">
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 leading-tight truncate">
-                                {unit.title}
-                              </h4>
-                              <span className="text-[8px] font-mono font-extrabold bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 inline-block uppercase mt-0.5 tracking-wider whitespace-nowrap">
-                                {unit.numbersRange} ({count} entries)
-                              </span>
-                            </div>
-
-                            <p className="text-[10.5px] text-slate-550 leading-relaxed font-semibold max-w-sm">
-                              {unit.description}
-                            </p>
-                          </div>
-
-                          {/* Progress sliders & active step buttons */}
-                          <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-3">
-                            <div className="flex-1 flex items-center gap-1.5">
-                              <div className="flex-1 bg-slate-120 h-2 rounded-full overflow-hidden border border-slate-200/40">
-                                <div 
-                                  className={`h-full transition-all duration-500 rounded-full ${isFinished ? 'bg-emerald-600' : isCurrent ? 'bg-gradient-to-r from-amber-400 to-amber-300 animate-pulse' : 'bg-slate-300'}`}
-                                  style={{ width: `${unitPercent}%` }} 
-                                />
-                              </div>
-                              <span className="text-[8.5px] font-black text-slate-400 font-mono">
-                                {isFinished ? "100%" : isCurrent ? `${unitPercent}%` : "0%"}
-                              </span>
-                            </div>
-
-                            {isCurrent && (
+                              className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer transition-all ${
+                                appState.isDarkMode
+                                  ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                  : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5"
+                              }`}
+                            >
+                              Continue to Next Unit 🚀
+                            </button>
+                            {correctCount < 15 && (
                               <button
-                                onClick={() => startUnitJourney(unit.id)}
-                                className={`unit-action-btn flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] rounded-xl transition-all cursor-pointer shadow-sm ${
-                                  appState.isDarkMode 
-                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                                    : "border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                onClick={() => launchPlacementRecovery()}
+                                className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-amber-950 border-b-4 border-b-amber-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-amber-400 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-0.5"
                                 }`}
                               >
-                                <span>{unitPercent > 0 ? "Continue" : "Start"}</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
+                                Review Missed Numbers 🔍
                               </button>
                             )}
-
-                            {isFinished && (
-                              <button
-                                onClick={() => startUnitJourney(unit.id)}
-                                className="unit-action-btn flex items-center gap-0.5 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 active:translate-y-[1px] border border-slate-250 hover:border-slate-300 text-slate-700 text-[10px] font-black rounded-xl cursor-pointer transition-all"
-                              >
-                                <span>Review</span>
-                                <RotateCcw className="w-2.5 h-2.5 ml-0.5 text-slate-400" />
-                              </button>
-                            )}
-
-                            {isLocked && (
-                              <button
-                                onClick={() => {
-                                  playSoundSynth("incorrect");
-                                  showToast(`Master the active unit first to unlock ${unit.title}! 🔒`);
-                                }}
-                                className="unit-action-btn flex items-center gap-0.5 px-3 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-bold cursor-not-allowed"
-                              >
-                                <span>Locked</span>
-                                <Lock className="w-2.5 h-2.5 ml-0.5 text-slate-400" />
-                              </button>
-                            )}
-                          </div>
-
-                          {isCurrent && unitPercent === 0 && (
-                            <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200/50 flex flex-col items-center text-center gap-1.5 sm:flex-row sm:items-center sm:justify-end sm:gap-2 sm:text-right w-full">
-                              <span className="text-[10px] sm:text-[10.5px] font-medium text-slate-500 dark:text-slate-400 leading-none">
-                                Already know this unit?
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  playSoundSynth("click");
-                                  setPlacementChallengeUnitId(unit.id);
-                                  setShowPlacementChallengePopup(true);
-                                }}
-                                className="group text-[11px] sm:text-[11.5px] font-semibold text-emerald-900 hover:text-emerald-950 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-0.5 cursor-pointer select-none transition-colors duration-150 leading-none"
-                              >
-                                <span>Take Placement Challenge</span>
-                                <span className="inline-block transition-transform duration-200 ease-out group-hover:translate-x-[3px] ml-0.5 select-none text-[12px] sm:text-[13px] leading-none">
-                                  →
-                                </span>
-                              </button>
-                            </div>
-                          )}
-
-                          {isFinished && appState.placementCompletedUnits?.includes(unit.id) && (
-                            <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200/50 flex items-center justify-center sm:justify-end w-full">
-                              <span className="text-[10px] sm:text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 select-none">
-                                <span>✓ Placement Challenge Passed</span>
-                              </span>
-                            </div>
-                          )}
-
-                        </article>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              {/* Stats & Streak Bento grid - Positioned right above targeted practice numbers */}
-              <div id="insights-panel" className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-                {/* Stat 1: Total XP */}
-                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-600/30 hover:shadow-md transition-all duration-200 select-none">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-800 shrink-0 shadow-xs">
-                    <Award className="w-5 h-5 text-emerald-700" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">Total XP</span>
-                    <span className="text-sm font-black text-slate-800 leading-none">
-                      <strong>{appState.totalXP}</strong> <span className="text-[10px] font-bold text-slate-400 font-mono">XP</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Stat 2: Mastery Streak */}
-                <button
-                  onClick={() => {
-                    playSoundSynth("click");
-                    setShowStreakPopup(true);
-                  }}
-                  className="flex items-center text-left gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-orange-500/30 hover:shadow-md transition-all duration-200 select-none cursor-pointer active:translate-y-[1px]"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shrink-0 shadow-xs ginti-stat-mastery-streak-box">
-                    <MasteryFlame streak={appState.masteryStreak ?? 0} size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">Mastery Streak</span>
-                    <span className="text-sm font-black text-slate-800 leading-none">
-                      <strong>{appState.masteryStreak ?? 0}</strong> <span className="text-[10px] font-bold text-slate-400 font-mono">In A Row</span>
-                    </span>
-                  </div>
-                </button>
-
-                {/* Stat 3: Arcade Blitz record - spanned on small screens for solid look */}
-                <div className="col-span-2 sm:col-span-1 flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-amber-400/35 hover:shadow-md transition-all duration-200 select-none">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0 shadow-xs ginti-stat-blitz-record-box">
-                    <Zap className="w-5 h-5 fill-amber-400 text-amber-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block leading-tight">Blitz Record</span>
-                    <span className="text-sm font-black text-slate-800 leading-none">
-                      <strong>{appState.highScore}</strong> <span className="text-[10px] font-bold text-slate-400 font-mono">pts</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Targeted mistakes list tray */}
-              <div className="bg-white rounded-[1.75rem] p-4.5 border border-slate-100 shadow-xs flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                    🎯 Targeted Practice Numbers ({appState.weakAreas.length})
-                  </h4>
-                  {appState.weakAreas.length > 0 && (
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        const cleared = { ...appState, weakAreas: [] };
-                        saveState(cleared);
-                        showToast("Mistakes history cleared.");
-                      }}
-                      className="text-[9px] text-slate-400 hover:text-slate-600 font-bold transition flex items-center gap-0.5 cursor-pointer"
-                    >
-                      <RotateCcw className="w-2.5 h-2.5" />
-                      <span>Clear history</span>
-                    </button>
-                  )}
-                </div>
-
-                {appState.weakAreas.length === 0 ? (
-                  <p id="weak-areas-empty-state" className="text-[11px] text-slate-400 italic">
-                    Splendid accuracy! Answer quiz options correctly to track milestones.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5" id="weak-areas-list">
-                    {appState.weakAreas.map((digit) => {
-                      const associated = NUMBERS.find(n => n.digit === digit);
-                      return (
-                        <span 
-                          key={digit}
-                          onClick={() => {
-                            if (associated) {
-                              playSoundSynth("click");
-                              setSelectedSearchEntry(associated);
-                              // Smoothly scroll to lookup
-                              const elementInput = document.getElementById("ginti-search");
-                              elementInput?.scrollIntoView({ behavior: "smooth" });
-                            }
-                          }}
-                          className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 active:translate-y-[1px] border border-rose-200/80 border-b-[3.5px] border-b-rose-300/80 text-rose-700 text-[11px] font-black rounded-full flex items-center gap-1 transition-all cursor-pointer select-none shadow-sm"
-                        >
-                          <span className="bg-white px-1.5 py-0.5 rounded-full border border-rose-200/50 shadow-xs text-[9px] font-black text-rose-800">
-                            {digit}
-                          </span>
-                          <span className="truncate max-w-[80px] font-black">{associated?.romanUrdu || "Unknown"}</span>
-                          {appState.showScript && (
-                            <span className={`font-urdu leading-none pt-0.5 text-xs font-bold ${
-                              appState.isDarkMode ? "text-rose-200/90" : "text-rose-800/80"
-                            }`}>
-                              {associated?.nativeScript}
-                            </span>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Archived Training Fields Section */}
-              {appState.archivedArenaFields && appState.archivedArenaFields.length > 0 && (
-                <div className="flex flex-col items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 w-full max-w-sm mx-auto">
-                  <h4 className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-slate-400 flex items-center gap-1.5 font-mono">
-                    <Archive className="w-3.5 h-3.5" />
-                    <span>Archived Training Fields</span>
-                  </h4>
-                  <div className="flex flex-wrap justify-center gap-2 mt-1">
-                    {appState.archivedArenaFields.map((fieldKey) => {
-                      const [minStr, maxStr] = fieldKey.split("-");
-                      const min = parseInt(minStr);
-                      const max = parseInt(maxStr);
-                      return (
-                        <button
-                          key={fieldKey}
-                          onClick={() => {
-                            playSoundSynth("progress");
-                            saveState((prev) => {
-                              const existingArchived = prev.archivedArenaFields || [];
-                              const nextArchived = existingArchived.filter((f) => f !== fieldKey);
-                              return {
-                                ...prev,
-                                archivedArenaFields: nextArchived,
-                                arenaMin: min,
-                                arenaMax: max,
-                                arenaStarted: true,
-                                arenaCompleted: true,
-                                arenaStageProgress: 5,
-                              };
-                            });
-                            showToast(`Restored Training Arena range ${min}–${max}! ⚔️`);
-                          }}
-                          title="Click to restore this practice field"
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 dark:bg-slate-900/60 dark:hover:bg-emerald-950/40 border border-slate-200 hover:border-emerald-300 dark:border-slate-800 dark:hover:border-emerald-900 rounded-xl text-[10.5px] font-black text-slate-600 hover:text-emerald-800 dark:text-slate-300 dark:hover:text-emerald-200 cursor-pointer active:scale-95 flex items-center gap-1 transition-all"
-                        >
-                          <span>{min}–{max}</span>
-                          <span className="text-[9px] opacity-70">↩️</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Reset progress options beautifully positioned at bottom scale link */}
-              <div className="flex justify-center pt-1 pb-4">
-                <button
-                  id="reset-app-progress-btn"
-                  onClick={flushAppProgress}
-                  className="destructive-tactile-link"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  <span>Reset Application Progress</span>
-                </button>
-              </div>
-
-            </motion.div>
-          );
-        })()}
-
-        {/* =============================================================================
-            SCREEN B: PRACTICE ARENA (QUIZ MODE)
-            ============================================================================= */}
-        {!recoveryState && activeScreen === "practice" && quizState && (
-          <motion.div
-            id="screen-practice"
-            key="practice"
-            initial={{ opacity: 0, scale: 0.98, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -15 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
-            className="max-w-md mx-auto w-full p-3.5 sm:p-5 flex flex-col gap-2.5 sm:gap-3.5"
-          >
-            
-            {quizState.showHeartsRefill ? (
-              <div className="modern-card p-6 text-center flex flex-col items-center gap-4 bg-white max-w-sm mx-auto animate-scale-up">
-                <MithuMascot mood="sad" />
-                <h3 className="text-lg font-black text-rose-700 leading-tight">Out of Hearts!</h3>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  "Oh no! Ginti lives depleted. But don't fret—Ginti is a safe place to learn. Would you like me to unlock your lesson?"
-                </p>
-                
-                <div className="flex flex-col gap-2 w-full mt-2">
-                  <button
-                    onClick={() => refillHearts(true)}
-                    disabled={appState.totalXP < 20}
-                    className="w-full btn-gold py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    <span>❤️ Save with 20 XP</span>
-                    <span className="bg-amber-950/20 text-slate-900 px-1.5 py-0.5 rounded text-[10px]">
-                      Your XP: {appState.totalXP}
-                    </span>
-                  </button>
-                  
-                  <button
-                    onClick={() => refillHearts(false)}
-                    className="w-full btn-secondary py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>🦜 Mithu's Magic (Free Refill!)</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Practice Header with back route */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2" id="practice-header">
-                  <button 
-                    id="practice-back-btn"
-                    onClick={exitQuiz}
-                    className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200/50 flex items-center gap-1 cursor-pointer active:scale-95"
-                  >
-                    <Home className="w-3.5 h-3.5" />
-                    <span>Exit</span>
-                  </button>
-                  
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span id="question-counter" className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                      Card {quizState.currentIndex + 1} of {quizState.questions.length}
-                    </span>
-                    {/* Red Duolingo-styled hearts */}
-                    <HeartsDisplay hearts={quizState.hearts} isDarkMode={appState.isDarkMode} />
-                  </div>
-                </div>
-
-                {/* Visual Mini Progress Bar */}
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
-                  <div 
-                    className="h-full bg-gradient-to-r from-emerald-600 to-emerald-700 transition-all duration-350"
-                    style={{ width: `${((quizState.currentIndex + 1) / quizState.questions.length) * 100}%` }}
-                  />
-                </div>
-
-                {/* MAIN PROMPT CARD - Height optimized to avoid layout shifts */}
-                <div id="prompt-card" className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative bg-white min-h-[145px] sm:min-h-[165px] gap-2.5">
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[9px] font-mono uppercase font-black text-slate-400 tracking-wider text-left">
-                      Evaluate Translation
-                    </span>
-                    {renderMithuHelpBadge(quizState.questions[quizState.currentIndex].entry.digit)}
-                  </div>
-
-                  <div 
-                    id="prompt-display" 
-                    className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 ${
-                      appState.isDarkMode ? 'text-white' : 'text-slate-900'
-                    } ${
-                      appState.showScript &&
-                      typeof getDisplayPromptValue(quizState.questions[quizState.currentIndex]) === 'string' && 
-                      (getDisplayPromptValue(quizState.questions[quizState.currentIndex]) as string).match(/[\u0600-\u06FF]/)
-                        ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? 'text-white' : 'text-emerald-800'}`
-                        : 'text-4xl sm:text-[3.25rem] leading-none py-2'
-                    }`}
-                  >
-                    {formatValueForDisplay(getDisplayPromptValue(quizState.questions[quizState.currentIndex]))}
-                  </div>
-
-                  {/* Redesigned interactive tactile speaker button */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      id="prompt-audio-btn"
-                      onClick={() => playWordAudio(quizState.questions[quizState.currentIndex].entry)}
-                      disabled={speechActive}
-                      className={`w-[2.35rem] h-[2.35rem] rounded-full border-2 border-emerald-100 bg-emerald-50/40 flex items-center justify-center shadow-xs transition hover:scale-105 active:scale-95 disabled:opacity-50 text-emerald-800 cursor-pointer border-b-[3.5px] border-b-emerald-200 active:translate-y-[1.5px] active:border-b-[1.5px] ${
-                        speechActive ? 'pulse-primary-emerald' : ''
-                      }`}
-                      aria-label="Hear correct pronunciation"
-                      title="Hear pronunciation audio"
-                    >
-                      <PremiumSpeakerIcon className="w-4 h-4 text-emerald-700" />
-                    </button>
-                    <p id="prompt-text-fallback" className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wider">
-                      Tap speaker to hear pronunciation
-                    </p>
-                  </div>
-                </div>
-
-                {/* Quiz Instructions Helper Banner */}
-                {quizState.unitId === "unit1" && (
-                  <div id="first-lesson-hint" className="py-1.5 px-3 bg-emerald-50/50 border border-emerald-100/50 rounded-xl text-center">
-                    <span className="text-[10px] font-bold text-emerald-800 block leading-normal">
-                      Identify the perfect match translation choice card located below.
-                    </span>
-                  </div>
-                )}
-
-                {/* Mithu Learning Assistant Suggestion Banner */}
-                {showMithuSuggestDigit === quizState.questions[quizState.currentIndex].entry.digit && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="py-2.5 px-4 bg-amber-55 border-2 border-amber-200 dark:border-amber-900/40 rounded-2xl flex items-center justify-between text-left shadow-xs transition-all"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">🦜</span>
-                      <div>
-                        <p className="text-xs font-black text-amber-950 dark:text-amber-200 leading-tight">Need help with this word?</p>
-                        <p className="text-[10px] font-bold text-amber-850 dark:text-amber-300/80 leading-none mt-0.5">Mithu can help with clues!</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setMithuExplanationDigit(showMithuSuggestDigit);
-                        setShowMithuSuggestDigit(null);
-                      }}
-                      className={`px-3 py-1.5 border rounded-full font-black text-[10px] cursor-pointer active:scale-95 transition-all shadow-xs flex items-center gap-1 ${
-                        appState.isDarkMode 
-                          ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300" 
-                          : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800"
-                      }`}
-                    >
-                      <span>🦜 Clues</span>
-                    </button>
-                  </motion.div>
-                )}
-
-                {/* CHOICE GRID - Controlled dimensions and row spans */}
-                <div id="choice-grid" className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                  {quizState.questions[quizState.currentIndex].choices.map((choice, idx) => {
-                    const isCorrectVal = choice === quizState.questions[quizState.currentIndex].correctAnswer;
-                    const isSelected = choice === quizState.userAnswer;
-                    const hasBeenAnswered = quizState.isAnswered;
-
-                    // Build reactive feedback card styling classes using modern tactile classes
-                    let cardStyle = "ginti-choice-btn";
-                    if (hasBeenAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                        onClick={() => chooseQuizAnswer(choice)}
-                        disabled={hasBeenAnswered}
-                        data-index={idx}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none leading-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* RESULT PANEL FOOTER TRAY - Reserved height container to eliminate layout shift */}
-                <div className="mt-4 shrink-0 min-h-[116px] sm:min-h-[68px] flex flex-col justify-center w-full">
-                  <AnimatePresence mode="wait">
-                    {quizState.isAnswered ? (
-                      <motion.div 
-                        key="answered"
-                        id="practice-footer"
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ duration: 0.2 }}
-                        className={`p-2 sm:p-2.5 px-3.5 sm:px-4 rounded-[1.75rem] border-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3.5 w-full ${
-                          quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-950 border-b-[5px] border-b-emerald-500/90 shadow-sm"
-                            : "bg-rose-50 border-rose-300 text-rose-950 border-b-[5px] border-b-rose-400/90 shadow-sm"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 text-left w-full sm:w-auto">
-                          {/* Reactive avatar response */}
-                          <div id="mithu-avatar" className={`scale-[0.58] -my-5 -mx-2.5 select-none shrink-0 ${mascotAnimation}`}>
-                            <MithuMascot mood={quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer ? "sparkly" : "sad"} />
-                          </div>
-                          
-                          {quizState.userAnswer === quizState.questions[quizState.currentIndex].correctAnswer ? (
-                            <div className="min-w-0 flex-1">
-                              <div id="answer-feedback-msg" className="text-[12.5px] font-black flex items-center gap-1 text-emerald-900 leading-tight">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                                <span>{quizState.mithuFeedback?.title ?? "Shabash!"}</span>
-                              </div>
-                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                                appState.isDarkMode ? "text-emerald-300" : "text-emerald-950"
-                              }`}>
-                                {quizState.mithuFeedback?.subtitle ?? "Your Urdu intuition is growing sharp!"}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="min-w-0 flex-1">
-                              <div id="answer-feedback-msg" className="text-[12.5px] font-black flex items-center gap-1 text-rose-950 leading-tight">
-                                <X className="w-3.5 h-3.5 text-rose-600 bg-rose-100 dark:text-rose-100 dark:bg-rose-900/80 rounded-full p-0.5 shrink-0" />
-                                <span>{quizState.mithuFeedback?.title ?? "Koi baat nahi."}</span>
-                              </div>
-                              <span className={`text-[9.5px] block leading-tight mt-1 font-bold ${
-                                appState.isDarkMode ? "text-rose-300" : "text-rose-950"
-                              }`}>
-                                {quizState.mithuFeedback?.subtitle ?? "Correct answer:"}{" "}
-                                <strong className={`font-extrabold px-1 py-0.5 rounded shadow-xs border ${
-                                  appState.isDarkMode
-                                    ? "bg-rose-950 text-rose-200 border-rose-900/60"
-                                    : "bg-rose-100/70 text-rose-950 border-rose-200"
-                                }`}>
-                                  {formatValueForDisplay(quizState.questions[quizState.currentIndex].correctAnswer)}
-                                </strong>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          id="next-question-btn"
-                          onClick={progressPractice}
-                          className="btn-primary w-full sm:w-auto px-4.5 py-2 rounded-xl text-[10.5px] font-black transition flex items-center justify-center gap-1 cursor-pointer shrink-0"
-                        >
-                          <span>{quizState.currentIndex + 1 >= quizState.questions.length ? "Finish" : "Next Card"}</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <div key="placeholder" className="h-[116px] sm:h-[68px] w-full" />
-                    )}
-                  </AnimatePresence>
-                </div>
-              </>
-            )}
-
-          </motion.div>
-        )}
-
-        {/* =============================================================================
-            SCREEN C: ARCADE BLITZ SPEED CHALLENGE
-            ============================================================================= */}
-        {!recoveryState && activeScreen === "arcade" && arcadeState && (
-          <motion.div
-            id="screen-arcade"
-            key="arcade"
-            initial={{ opacity: 0, scale: 0.98, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -15 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
-            className={`max-w-xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-3.5 sm:gap-4.5 text-center relative ${arcadeState.isDone ? "min-h-[70vh] sm:min-h-[75vh] justify-center" : ""}`}
-          >
-            
-            {/* PRESSURE HEADER CONTROLS */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="arcade-header">
-              
-              <div className="text-left">
-                <span id="arcade-timer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-sm rounded-full shadow-inner leading-none">
-                  ⏱️ <span id="timer-display" className="font-mono text-base">{arcadeState.timeLeft}</span>s
-                </span>
-              </div>
-
-              <div className="text-right flex items-center gap-4">
-                <span id="arcade-score" className="text-sm font-bold text-slate-700">
-                  Score: <strong id="arcade-score-display" className="text-base text-emerald-800 font-black">{arcadeState.score}</strong> pts
-                </span>
-                
-                <button
-                  onClick={closeArcadeFrame}
-                  className={`p-1 px-3 border aspect-square rounded-full flex items-center justify-center text-xs font-bold transition cursor-pointer ${
-                    appState.isDarkMode
-                      ? "border-rose-900/50 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 hover:border-rose-800"
-                      : "border-rose-100 text-rose-500 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-200"
-                  }`}
-                  title="Abandon match"
-                >
-                  Abandon
-                </button>
-              </div>
-
-            </div>
-
-            {/* GAME CORE ACTIVE CONTENT SWITCH */}
-            {!arcadeState.isGameOver ? (
-              <div className="flex flex-col gap-6">
-                
-                {/* PROMPT BOX */}
-                <div id="arcade-prompt" className="bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950 text-white rounded-2xl sm:rounded-3xl p-5 md:p-6 flex flex-col items-center justify-center min-h-[110px] sm:min-h-[130px] relative shadow-xl border border-slate-800 overflow-hidden">
-                  
-                  {/* Time Warning Pulsating Overlay Integrated with Question Card */}
-                  <AnimatePresence>
-                    {arcadeState.timeLeft <= 5 && !arcadeState.isGameOver && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.12, ease: "easeOut" }}
-                        className="absolute top-0 left-0 right-0 z-20 pointer-events-none"
-                      >
-                        <div className="animate-pulse text-rose-600 dark:text-rose-400 font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-widest bg-rose-50/95 dark:bg-rose-950/95 border-b border-rose-200/60 dark:border-rose-900/40 py-1.5 px-3 text-center shadow-xs">
-                          ⚠️ RAPID INTUITION: TIMER CRITICALLY LOW!
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-extrabold text-left">
-                      RAPID-FIRE CHIP
-                    </span>
-                    {renderMithuHelpBadge(arcadeState.activeQuestion.entry.digit)}
-                  </div>
-
-                  <div 
-                    id="arcade-prompt-display" 
-                    className={`font-black tracking-tight my-1.5 sm:my-2 ${
-                      appState.showScript &&
-                      typeof getDisplayPromptValue(arcadeState.activeQuestion) === 'string' &&
-                      (getDisplayPromptValue(arcadeState.activeQuestion) as string).match(/[\u0600-\u06FF]/)
-                        ? 'text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 text-[#fefce8] flex items-center justify-center text-center'
-                        : 'text-4xl sm:text-5xl md:text-6xl text-[#fefce8]'
-                    }`}
-                  >
-                    {formatValueForDisplay(getDisplayPromptValue(arcadeState.activeQuestion))}
-                  </div>
-
-                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-normal">
-                    Double speed matches (+10 pts reward, -5 pts crash penalties)
-                  </span>
-                </div>
-
-                 {/* ARCADE OPTION DECKS */}
-                <div id="arcade-choice-grid" className="grid grid-cols-2 gap-3">
-                  {arcadeState.activeQuestion?.choices.map((choice, idx) => {
-                    const isCorrectVal = choice === arcadeState.activeQuestion?.correctAnswer;
-                    const isSelected = choice === arcadeState.selectedAnswer;
-                    const hasBeenAnswered = arcadeState.isAnswered;
-
-                    let cardStyle = "ginti-choice-btn";
-                    if (hasBeenAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        className={`arcade-btn py-3 sm:py-4 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[58px] sm:min-h-[64px] ${cardStyle}`}
-                        onClick={() => selectArcadeOption(choice)}
-                        disabled={hasBeenAnswered}
-                        data-index={idx}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-xl sm:text-2xl font-urdu leading-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-              </div>
-            ) : (
-              
-              /* ARCADE DISMISSED END SCREEN CARD */
-              <div 
-                id="arcade-end-screen" 
-                className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-slate-200 border-b-[6px] border-b-slate-350 p-6 sm:p-8 flex-1 flex flex-col items-center justify-center text-center relative shadow-xl max-w-md mx-auto w-full animate-fade-in animate-scale-up my-auto"
-              >
-                
-                {/* 3D Circular Crown/Pedestal */}
-                {arcadeState.score >= appState.highScore && arcadeState.score > 0 ? (
-                  <div className="w-18 h-18 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-amber-950 border-2 border-amber-300 border-b-[5px] border-b-amber-800 shadow-md relative mb-3 animate-bounce select-none">
-                    <Star className="w-9 h-9 fill-amber-100 text-amber-950" />
-                    <div className="absolute -top-2 bg-rose-500 text-white font-black text-[8px] px-2 py-0.5 rounded-full border border-rose-450 uppercase tracking-wider animate-pulse whitespace-nowrap">
-                      👑 Record
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-18 h-18 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-full flex items-center justify-center text-white border-2 border-emerald-400 border-b-[5px] border-b-emerald-900 shadow-sm relative mb-4 select-none">
-                    <Award className="w-9 h-9 text-amber-300 fill-amber-300/15" />
-                  </div>
-                )}
-
-                <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-none mb-1">
-                  Blitz Completed!
-                </h2>
-
-                <p className="text-[10.5px] font-bold text-slate-400 uppercase tracking-widest font-mono">
-                  Standard Speed Reflex Report
-                </p>
-
-                {/* Score & Best */}
-                <div className="my-4 text-center">
-                  <div className="text-4xl sm:text-5xl font-black text-slate-800 font-mono tracking-tight leading-none flex items-center justify-center gap-1">
-                    <span>{arcadeState.score}</span>
-                    <span className="text-lg font-black text-slate-400 font-sans tracking-wide">PTS</span>
-                  </div>
-                  <p className="text-[11px] font-extrabold text-slate-500 mt-1">
-                    Personal Best: <strong className="text-emerald-700 font-black">{appState.highScore} pts</strong>
-                  </p>
-                </div>
-
-                {/* Performance Badge / Message */}
-                <div className="w-full mb-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl leading-snug">
-                  <p className="text-xs sm:text-sm font-black text-slate-700">
-                    {(() => {
-                      const correct = arcadeState.totalAnswered - arcadeState.wrongCount;
-                      const accuracy = arcadeState.totalAnswered > 0 ? (correct / arcadeState.totalAnswered) : 0;
-                      if (accuracy === 1 && correct > 0) return "⚡ Lightning Reflexes! Absolute Master!";
-                      if (accuracy >= 0.8 && correct > 0) return "🔥 Ginti Champion! Outstanding speed!";
-                      if (accuracy >= 0.5 && correct > 0) return "✨ Solid Momentum! Keep counting!";
-                      if (correct > 0) return "👍 Standard Effort! Keep training your reflexes!";
-                      return "🌱 Keep practicing! Focus and speed up next time!";
-                    })()}
-                  </p>
-                </div>
-
-                {/* High Record broken banner */}
-                {arcadeState.score >= appState.highScore && arcadeState.score > 0 && (
-                  <div className="w-full bg-amber-50 border-2 border-amber-200 border-b-[3px] border-b-amber-400 rounded-xl py-1.5 px-3 mb-4 text-[10px] font-black text-amber-850 uppercase tracking-widest flex items-center justify-center gap-1 shadow-xs animate-pulse">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    <span>👑 NEW ALL-TIME RECORD SHATTERED!</span>
-                  </div>
-                )}
-
-                {/* Tactical Stats Grid - Same Ginti Design Language */}
-                <div className="grid grid-cols-2 gap-3 w-full mb-6">
-                  
-                  {/* Stat Card 1: Experience */}
-                  <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
-                      ⭐ Earned
-                    </span>
-                    <span className="text-sm font-black text-slate-700 font-mono">
-                      +{arcadeState.score} XP
-                    </span>
-                  </div>
-
-                  {/* Stat Card 2: Precision Accuracy */}
-                  <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
-                      🎯 Precision
-                    </span>
-                    <span className="text-sm font-black text-emerald-700 font-mono">
-                      {(() => {
-                        const correct = arcadeState.totalAnswered - arcadeState.wrongCount;
-                        return arcadeState.totalAnswered > 0 
-                          ? Math.round((correct / arcadeState.totalAnswered) * 100) 
-                          : 0;
-                      })()}%
-                    </span>
-                  </div>
-
-                  {/* Stat Card 3: Matches Correct */}
-                  <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
-                      ✅ Correct
-                    </span>
-                    <span className="text-sm font-black text-blue-750 font-mono">
-                      {arcadeState.totalAnswered - arcadeState.wrongCount} matches
-                    </span>
-                  </div>
-
-                  {/* Stat Card 4: Action Mistake Count */}
-                  <div className="bg-slate-50 border-2 border-slate-200 border-b-[4px] border-b-slate-350 rounded-2xl p-2.5 flex flex-col items-center justify-center select-none">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">
-                      ❌ Mistakes
-                    </span>
-                    <span className="text-sm font-black text-rose-700 font-mono">
-                      {arcadeState.wrongCount} times
-                    </span>
-                  </div>
-
-                </div>
-
-                {/* Tactile Actions Deck */}
-                <div className="flex flex-col gap-3 w-full">
-                  <button
-                    id="arcade-restart-btn"
-                    onClick={startArcadeMode}
-                    className="w-full btn-gold py-3.5 px-6 rounded-full text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-md select-none tracking-wide"
-                  >
-                    <Play className="w-4 h-4 fill-amber-950 stroke-none" />
-                    <span>RETRY BLITZ MATCH</span>
-                  </button>
-
-                  <button
-                    id="arcade-home-btn"
-                    onClick={closeArcadeFrame}
-                    className="w-full btn-secondary py-3.5 px-6 rounded-full text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-sm select-none tracking-wide"
-                  >
-                    <span>BACK TO DASHBOARD</span>
-                  </button>
-                </div>
-
-              </div>
-            )}
-
-          </motion.div>
-        )}
-
-        {/* =============================================================================
-            SCREEN D: UNIT JOURNEY WORKFLOW
-            ============================================================================= */}
-        {!recoveryState && activeScreen === "unit-journey" && selectedJourneyUnitId && (() => {
-          const unit = UNITS.find((u) => u.id === selectedJourneyUnitId);
-          if (!unit) return null;
-
-          const progress = getUnitProgress(selectedJourneyUnitId);
-
-          // If activeStageIndex is null, we display the Journey Stages selection map
-          if (activeStageIndex === null) {
-            return (
-              <motion.div
-                key="unit-journey-map"
-                initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-unit-journey"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-5"
-              >
-                {/* Header block */}
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setActiveScreen("dashboard");
-                    }}
-                    className="p-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition active:scale-95"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-slate-700" />
-                  </button>
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider flex items-center gap-1">
-                      {unit.emoji} {unit.numbersRange} Learn Journey
-                    </span>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1">
-                      {unit.title}
-                    </h2>
-                  </div>
-                </div>
-
-                {/* Card with description of unit */}
-                <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-2xl p-4 flex gap-3.5 items-start">
-                  <MithuMascot mood="thinking" />
-                  <div className="flex-1">
-                    <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
-                      {unit.description}
-                    </p>
-                    <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                      <span>Completed units unlock automatically! Progress:</span>
-                      <span className="text-amber-750 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 font-extrabold">
-                        Stage {progress === 5 ? "5/5 (Ready for Test)" : `${progress - 1}/5 Completed`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Vertical Step Road map ladder */}
-                <div className="relative flex flex-col gap-4 mt-2">
-                  {/* Visual central vertical path line matching dashboard roadmap */}
-                  <div className="absolute left-[39px] -translate-x-1/2 w-[10px] top-[39px] bottom-[39px] pointer-events-none z-0">
-                    {/* Muted outer track background */}
-                    <div className="w-full h-full ginti-roadmap-track-bg rounded-full" />
-                    {/* Emerald progress track fill */}
-                    <div
-                      className="absolute top-0 left-0 w-full ginti-roadmap-track-fill rounded-full transition-all duration-500"
-                      style={{ height: `${((progress - 1) / 4) * 100}%` }}
-                    />
-                  </div>
-
-                  {[
-                    {
-                      id: 1,
-                      name: "Stage 1: Learning Introduction",
-                      desc: "Study the standard Roman Urdu spellings, pronunciation dynamics & script matching.",
-                      icon: <BookOpen className="w-5 h-5 text-emerald-600" />,
-                    },
-                    {
-                      id: 2,
-                      name: "Stage 2: Word & Digit Matching",
-                      desc: "Complete the interactive 5-question visual recognition deck to construct mental associations.",
-                      icon: <Zap className="w-5 h-5 text-amber-500" />,
-                    },
-                    {
-                      id: 3,
-                      name: "Stage 3: Pronunciation & Auditory",
-                      desc: "Tackle 5 vocal sound prompts to lock dynamic listening comprehension.",
-                      icon: <PremiumSpeakerIcon className="w-5 h-5 text-rose-500" />,
-                    },
-                    {
-                      id: 4,
-                      name: "Stage 4: Rapid Blitz Arcade",
-                      desc: "Perform under a 30-second rapid stopwatch to lock speed matching reflexes.",
-                      icon: <Sparkles className="w-5 h-5 text-indigo-500" />,
-                    },
-                    {
-                      id: 5,
-                      name: "Stage 5: Final Mastery Test",
-                      desc: "Tackle a comprehensive mixed-challenge assessment to fully master this unit! (+50 XP)",
-                      icon: <Star className="w-5 h-5 text-amber-600" />,
-                    },
-                  ].map((stg) => {
-                    const isUnlocked = stg.id <= progress;
-                    const isDone = stg.id < progress;
-                    const isCurrent = stg.id === progress;
-
-                    let cardBg = "bg-slate-50/50 border-slate-200/50 opacity-60";
-
-                    if (isDone) {
-                      cardBg = "bg-white hover:bg-slate-50/50 border-slate-200 hover:border-slate-350 cursor-pointer shadow-xs transition-all";
-                    } else if (isCurrent) {
-                      cardBg = "bg-gradient-to-r from-amber-50/50 to-white hover:from-amber-50 hover:to-slate-50/50 border-amber-300 hover:border-amber-400 cursor-pointer shadow-sm active:scale-[0.98] transition-all";
-                    }
-
-                    return (
-                      <div key={stg.id} className="flex gap-4 items-center relative z-10 animate-fade-in" id={`journey-stage-row-${stg.id}`}>
-                        {/* Circular Milestone Node with 3D tactile design */}
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.94 }}
-                          onClick={() => {
-                            if (!isUnlocked) {
-                              playSoundSynth("incorrect");
-                              showToast(`Stage ${stg.id} is locked! Clear previous stages first. 🔒`);
-                              return;
-                            }
-                            console.log(`Starting Stage ${stg.id} inside unit ${selectedJourneyUnitId}`);
-                            if (stg.id === 1) {
-                              playSoundSynth("navigation");
-                              setActiveStageIndex(1);
-                            }
-                            if (stg.id === 2) setupStage2Quiz(selectedJourneyUnitId);
-                            if (stg.id === 3) setupStage3Listening(selectedJourneyUnitId);
-                            if (stg.id === 4) startStage4Arcade();
-                            if (stg.id === 5) setupStage5Quiz(selectedJourneyUnitId);
-                          }}
-                          className={`w-[78px] h-[78px] p-0 m-0 rounded-full flex flex-col items-center justify-center font-black text-center shrink-0 select-none transition relative z-10 cursor-pointer ${
-                            isDone
-                              ? "ginti-node-finished"
-                              : isCurrent
-                                ? "ginti-node-current ginti-pulse-active"
-                                : "ginti-node-locked cursor-not-allowed"
-                          }`}
-                        >
-                          <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-80 leading-none text-center w-full block pl-[0.05em] m-0">Stage</span>
-                          <span className="text-2xl font-black mt-0.5 text-center w-full block tabular-nums m-0">{stg.id}</span>
-
-                          {/* Status Overlay Badge on bottom-right of the circle node */}
-                          {isCurrent ? (
-                            <span 
-                              className="absolute -bottom-1 -right-1 w-[26px] h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
-                              style={{
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)"
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setPlacementState(null);
+                                setActiveScreen("dashboard");
                               }}
+                              className={`w-full rounded-full py-2.5 px-5 font-black text-xs uppercase cursor-pointer transition-all ${
+                                appState.isDarkMode
+                                  ? "bg-slate-800 hover:bg-slate-800 text-slate-300 border border-slate-750"
+                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-200 border-b-[5px] border-b-slate-300 hover:border-slate-300 hover:border-b-[5px] active:translate-y-[2px] active:border-b-[3px] shadow-sm"
+                              }`}
                             >
-                              <Zap className="w-3.5 h-3.5 text-[#451a03] fill-[#451a03]" />
-                            </span>
-                          ) : (
-                            <span className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
-                              isDone
-                                ? "bg-emerald-700 text-amber-300"
-                                : "bg-slate-300 text-slate-500 ginti-status-badge-locked"
-                            }`}>
-                              {isDone ? "✓" : "🔒"}
-                            </span>
-                          )}
-                        </motion.button>
-
-                        {/* Description Card */}
-                        <div
-                          className={`flex-1 rounded-2xl border p-4 flex gap-3.5 items-center select-none ${cardBg}`}
-                          onClick={() => {
-                            if (!isUnlocked) {
-                              playSoundSynth("incorrect");
-                              showToast(`Stage ${stg.id} is locked! Clear previous stages first. 🔒`);
-                              return;
-                            }
-                            console.log(`Starting Stage ${stg.id} inside unit ${selectedJourneyUnitId}`);
-                            if (stg.id === 1) {
-                              playSoundSynth("navigation");
-                              setActiveStageIndex(1);
-                            }
-                            if (stg.id === 2) setupStage2Quiz(selectedJourneyUnitId);
-                            if (stg.id === 3) setupStage3Listening(selectedJourneyUnitId);
-                            if (stg.id === 4) startStage4Arcade();
-                            if (stg.id === 5) setupStage5Quiz(selectedJourneyUnitId);
-                          }}
-                        >
-                          <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center self-start shrink-0">
-                            {stg.icon}
-                          </div>
-                          <div>
-                            <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5 leading-none">
-                              <span>{stg.name}</span>
-                              {isDone && (
-                                <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 dark:border dark:border-emerald-800/50 px-1.5 py-0.5 rounded-md font-bold leading-none">
-                                  Done
-                                </span>
-                              )}
-                              {isCurrent && (
-                                <span className="text-[9px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md font-black animate-pulse leading-none">
-                                  Play
-                                </span>
-                              )}
-                            </h3>
-                            <p className="text-[10px] text-slate-500 leading-normal mt-1">
-                              {stg.desc}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Bottom Reset Section */}
-                <div className="flex justify-center mt-6">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("navigation");
-                      setActiveScreen("dashboard");
-                    }}
-                    className="btn-secondary py-3 px-6 rounded-xl text-xs font-bold w-full cursor-pointer"
-                  >
-                    Back to Main Roadmap
-                  </button>
-                </div>
-              </motion.div>
-            );
-          }
-
-          const filteredList = NUMBERS.filter((n) => n.unitId === selectedJourneyUnitId);
-
-          // STAGE 1: INTRO STUDY SHEET
-          if (activeStageIndex === 1) {
-            return (
-              <motion.div
-                key="stage-1-deck"
-                initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className="max-w-md mx-auto w-full"
-              >
-                <div id="screen-journey-stage-1" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4">
-                  {/* Header sub block */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage1-header">
-                    <button
-                      onClick={() => {
-                        playSoundSynth("navigation");
-                        setActiveStageIndex(null);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Back to Stages</span>
-                    </button>
-                    <div className="text-right">
-                      <span className="text-[9px] font-black text-emerald-600 block">STAGE 1/5 • DIALECT MAP</span>
-                      <span className="text-xs font-black text-slate-800">Learn Urdu Phrases</span>
-                    </div>
-                  </div>
-
-                  <div className="text-center bg-slate-50 border border-slate-200/50 rounded-2xl p-4 flex flex-col items-center">
-                    <MithuMascot mood="happy" />
-                    <h3 className="text-sm font-black text-slate-800 mt-2 leading-none">Vocalize and Memorize!</h3>
-                    <p className="text-[10px] text-slate-500 leading-normal mt-1.5 max-w-xs">
-                      Tap the cards below to play clear speech pronunciations! Pay close attention to romanizations.
-                    </p>
-                  </div>
-
-                  {/* Grid list of terms */}
-                  <div
-                    ref={journeyStage1ScrollRef}
-                    onScroll={checkJourneyScroll}
-                    className="grid grid-cols-1 gap-2.5 max-h-[385px] overflow-y-auto pt-3 px-1.5 pb-2 pr-1 border-b border-dashed border-slate-200/50"
-                    id="stage1-cards-grid"
-                  >
-                    {filteredList.map((item) => (
-                      <div
-                        key={item.digit}
-                        onClick={() => {
-                          playSoundSynth("click");
-                          playWordAudio(item);
-                        }}
-                        className="bg-white hover:bg-emerald-50/10 border border-slate-200 hover:border-emerald-500/30 rounded-2xl p-3 flex items-center justify-between transition-all duration-200 cursor-pointer shadow-xs active:scale-[0.98]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-sm font-black text-slate-800 shadow-inner">
-                            {item.digit}
-                          </div>
-                          <div>
-                            <div className="text-xs font-black text-slate-800 uppercase tracking-tight flex items-center gap-1.5 leading-none">
-                              <span>{item.romanUrdu}</span>
-                            </div>
-                            <div className="text-[9px] font-mono text-slate-400 mt-1 uppercase">
-                              Numerical Code Index Key
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right Hand Urudu native transcription */}
-                        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                          {/* Mithu persistent Help trigger */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playSoundSynth("click");
-                              setMithuExplanationDigit(item.digit);
-                            }}
-                            className={`px-1.5 py-0.5 sm:px-2.5 sm:py-1 border rounded-full text-[9px] sm:text-[10px] font-black flex items-center gap-0.5 hover:scale-105 active:scale-95 transition cursor-pointer select-none shadow-xs ${
-                              appState.isDarkMode 
-                                ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300" 
-                                : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800"
-                            }`}
-                            title="See Mithu's decoding clues!"
-                          >
-                            <span>🦜 Clues</span>
-                          </button>
-
-                          <span className={`text-xl sm:text-2xl font-normal font-urdu tracking-wide leading-none select-none ${
-                            appState.isDarkMode ? "text-white" : "text-emerald-800"
-                          }`}>
-                            {item.nativeScript}
-                          </span>
-                          <div className="p-1 sm:p-1.5 bg-slate-50 border border-slate-200/50 rounded-lg text-slate-400 hover:text-emerald-600 transition shrink-0">
-                            <PremiumSpeakerIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Dynamic Finish Line Overlay Takeover */}
-                  {journeyStage1Finished ? (
-                    <motion.div
-                      key="journey-stage-1-finished-overlay"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-emerald-50/95 border-2 border-emerald-500 rounded-3xl p-6 text-center shadow-lg flex flex-col items-center justify-center gap-4 mt-2"
-                    >
-                      <MithuMascot mood="happy" />
-                      
-                      <h3 className="text-base font-black text-slate-800 leading-tight">
-                        You have completed the exploration! 🎉
-                      </h3>
-                      
-                      <p className="text-xs text-slate-600 leading-relaxed max-w-xs">
-                        Mithu has recorded your training history. What is your next play?
-                      </p>
-
-                      <div className="flex flex-col gap-3 w-full mt-2">
-                        {/* Option Button A (Progress Forward) */}
-                        <button
-                          onClick={() => {
-                            const leveledUp = saveUnitStageProgress(selectedJourneyUnitId!, 1);
-                            if (!leveledUp) {
-                              playSoundSynth("click");
-                            }
-                            setTimeout(() => {
-                              setJourneyStage1Finished(false);
-                              setNextStageToFocus(2);
-                              setActiveStageIndex(null);
-                            }, 180);
-                          }}
-                          className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
-                            appState.isDarkMode 
-                              ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                              : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                          }`}
-                        >
-                          CONTINUE TO NEXT STAGE
-                        </button>
-
-                        {/* Option Button B (Loop Reset Review) */}
-                        <button
-                          onClick={() => {
-                            playSoundSynth("click");
-                            setTimeout(() => {
-                              setJourneyStage1Finished(false);
-                              if (journeyStage1ScrollRef.current) {
-                                journeyStage1ScrollRef.current.scrollTop = 0;
+                              Return to Dashboard
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {!hasFailedTwice && (
+                              <button
+                                onClick={() =>
+                                  startPlacementChallenge(placementState.unitId)
+                                }
+                                className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5"
+                                }`}
+                              >
+                                Try Again 🔄
+                              </button>
+                            )}
+                            <button
+                              onClick={() =>
+                                startLearningNormally(placementState.unitId)
                               }
-                            }, 180);
-                          }}
-                          className="w-full bg-white hover:bg-slate-50 text-slate-700 rounded-2xl py-3.5 px-5 font-bold uppercase text-xs tracking-wider border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
-                        >
-                          REVIEW EXPLORARENA AGAIN
-                        </button>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <div className="text-center py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/60 mt-1">
-                      <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1.5 animate-pulse">
-                        ↕️ Scroll all the way to complete this module
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            );
-          }
-
-          // STAGE 2: MULTIPLE CHOICE RECOGNITION DECK
-          if (activeStageIndex === 2) {
-            const hasFinishedQuiz = stageQuizIdx >= stageQuizQuestions.length;
-            const currentQ = stageQuizQuestions[stageQuizIdx];
-            if (!hasFinishedQuiz && !currentQ) return null;
-
-            return (
-              <motion.div
-                key={`stage-2-deck-${hasFinishedQuiz ? "end" : "gameplay"}`}
-                initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className={`max-w-md mx-auto w-full ${hasFinishedQuiz ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
-              >
-                {hasFinishedQuiz ? (
-                  <div id="screen-journey-stage-2-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto">
-                    <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 border border-amber-200 mb-1 shadow-sm animate-bounce">
-                      <Star className="w-7 h-7 fill-amber-300" />
-                    </div>
-
-                    <h3 className="text-xl font-black text-slate-800 font-extrabold">Stage 2 Matches Completed!</h3>
-                    <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
-                      Splendid translation recognition matches! Your scorecard logged <span className="font-extrabold text-slate-800">{stageQuizScore} / {stageQuizQuestions.length} correct</span>.
-                    </p>
-
-                    <div className="flex flex-col gap-2.5 w-full mt-2">
-                      <button
-                        onClick={() => {
-                          const leveledUp = saveUnitStageProgress(selectedJourneyUnitId, 2);
-                          if (!leveledUp) {
-                            playSoundSynth("click");
-                          } else {
-                            playSoundSynth("levelUp");
-                          }
-                          setTimeout(() => {
-                            setNextStageToFocus(3);
-                            setActiveStageIndex(null);
-                          }, 180);
-                        }}
-                        className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black cursor-pointer shadow-md"
-                      >
-                        Unlock Stage 3: Listening (+15 XP) 🎉
-                      </button>
-                      <button
-                        onClick={() => {
-                          playSoundSynth("click");
-                          setTimeout(() => {
-                            setupStage2Quiz(selectedJourneyUnitId);
-                          }, 180);
-                        }}
-                        className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
-                      >
-                        Retry Recognition Match
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div id="screen-journey-stage-2" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
-                    {/* Header sub block */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage2-header">
-                      <button
-                        onClick={() => {
-                          playSoundSynth("click");
-                          setTimeout(() => {
-                            setActiveStageIndex(null);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }, 180);
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                      >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                        <span>Exit Stage</span>
-                      </button>
-                      <div className="text-right">
-                        <span className="text-[9px] font-black text-amber-500 block">STAGE 2/5 • RECOGNITION</span>
-                        <span className="text-xs font-black text-slate-800">Question {stageQuizIdx + 1} of 5</span>
+                              className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
+                                appState.isDarkMode
+                                  ? "border-2 border-amber-950 border-b-4 border-b-amber-955 active:translate-y-[2px] active:border-b-2"
+                                  : "border-2 border-amber-400 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-0.5"
+                              }`}
+                            >
+                              Start Learning Normally 📚
+                            </button>
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setPlacementState(null);
+                                setActiveScreen("dashboard");
+                              }}
+                              className={`w-full rounded-full py-2.5 px-5 font-black text-xs uppercase cursor-pointer transition-all ${
+                                appState.isDarkMode
+                                  ? "bg-slate-800 hover:bg-slate-800 text-slate-300 border border-slate-750"
+                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-200 border-b-[5px] border-b-slate-300 hover:border-slate-300 hover:border-b-[5px] active:translate-y-[2px] active:border-b-[3px] shadow-sm"
+                              }`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
+                  </motion.div>
+                );
+              }
 
-                    {/* Progress bar line */}
-                    <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                      <div
-                        className="bg-emerald-600 h-full transition-all duration-300"
-                        style={{ width: `${((stageQuizIdx + 1) / 5) * 100}%` }}
-                      />
-                    </div>
+              const currentQuestion =
+                placementState.questions[placementState.currentIndex];
+              const unitPercent = Math.round(
+                (placementState.currentIndex / 15) * 100,
+              );
 
-                    {/* Question query box */}
-                    <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
-                      <div className="flex items-center justify-between w-full mb-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
-                          Translate value:
-                        </span>
-                        {renderMithuHelpBadge(currentQ.entry.digit)}
-                      </div>
-                      <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
-                        appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                      } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                        {formatValueForDisplay(getDisplayPromptValue(currentQ))}
-                      </div>
-                    </div>
-
-                    {/* Interactive choice grid list */}
-                    <div className="grid grid-cols-2 gap-3 mt-2" id="stage2-choices-grid">
-                      {currentQ.choices.map((choice, index) => {
-                        const isSelected = stageQuizSelected === choice;
-                        const isCorrectVal = choice === currentQ.correctAnswer;
-                        
-                        let cardStyle = "ginti-choice-btn";
-                        if (stageQuizAnswered) {
-                          if (isCorrectVal) {
-                            cardStyle = "ginti-choice-btn-correct";
-                          } else if (isSelected) {
-                            cardStyle = "ginti-choice-btn-incorrect";
-                          } else {
-                            cardStyle = "ginti-choice-btn-dimmed";
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={index}
-                            disabled={stageQuizAnswered}
-                            onClick={() => {
-                              const isCorrect = choice === currentQ.correctAnswer;
-                              if (isCorrect) {
-                                incrementMasteryStreak();
-                              } else {
-                                resetMasteryStreak(currentQ.entry.digit);
-                              }
-                              playSoundSynth(isCorrect ? "correct" : "incorrect");
-                              setStageQuizSelected(choice);
-                              setStageQuizAnswered(true);
-                              
-                              if (isCorrect) {
-                                setStageQuizScore((s) => s + 1);
-                              } else {
-                                setStageQuizMistakes((prev) => [...prev, currentQ]);
-                              }
-
-                              // Auto advance after short timer frame
-                              setTimeout(() => {
-                                setStageQuizSelected(null);
-                                setStageQuizAnswered(false);
-                                setStageQuizIdx((prev) => {
-                                  const nextIdx = prev + 1;
-                                  if (nextIdx >= stageQuizQuestions.length) {
-                                    playSoundSynth("levelUp");
-                                  }
-                                  return nextIdx;
-                                });
-                              }, 1200);
-                            }}
-                            className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                          >
-                            <span className={appState.showScript && typeof choice === "string" && choice.match(/[\u0600-\u06FF]/) ? "text-2xl font-urdu select-none leading-none" : ""}>
-                              {formatValueForDisplay(choice)}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
-          }
-
-          // STAGE 3: LISTENING PRONUNCIATION SELECTOR
-          if (activeStageIndex === 3) {
-            const hasFinishedListening = stageListIdx >= stageListQuestions.length;
-            const currentQ = stageListQuestions[stageListIdx];
-            if (!hasFinishedListening && !currentQ) return null;
-
-            return (
-              <motion.div
-                key={`stage-3-deck-${hasFinishedListening ? "end" : "gameplay"}`}
-                initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className={`max-w-md mx-auto w-full ${hasFinishedListening ? "min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center" : ""}`}
-              >
-                {hasFinishedListening ? (
-                  <div id="screen-journey-stage-3-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
-                    <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 border border-rose-200 mb-1 shadow-sm animate-bounce">
-                      <Star className="w-7 h-7 fill-rose-300" />
-                    </div>
-
-                    <h3 className="text-xl font-black text-slate-800 font-extrabold">Stage 3 Listening Cleared!</h3>
-                    <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
-                      Terrific dialect phonology matches! You parsed oral Urdu sounds like a real native!
-                    </p>
-
-                    <div className="flex flex-col gap-2.5 w-full mt-2">
-                      <button
-                        onClick={() => {
-                          const leveledUp = saveUnitStageProgress(selectedJourneyUnitId, 3);
-                          if (!leveledUp) {
-                            playSoundSynth("click");
-                          } else {
-                            playSoundSynth("levelUp");
-                          }
-                          setTimeout(() => {
-                            setNextStageToFocus(4);
-                            setActiveStageIndex(null);
-                          }, 180);
-                        }}
-                        className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black animate-pulse shadow-md cursor-pointer"
-                      >
-                        Unlock Stage 4: Arcade Blitz (+15 XP) 🎉
-                      </button>
-                      <button
-                        onClick={() => {
-                          playSoundSynth("click");
-                          setTimeout(() => {
-                            setupStage3Listening(selectedJourneyUnitId);
-                          }, 180);
-                        }}
-                        className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
-                      >
-                        Retry Sound Listening Loop
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div id="screen-journey-stage-3" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
-                    {/* Header sub block */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage3-header">
-                      <button
-                        onClick={() => {
-                          playSoundSynth("click");
-                          setTimeout(() => {
-                            setActiveStageIndex(null);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }, 180);
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                      >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                        <span>Exit Stage</span>
-                      </button>
-                      <div className="text-right">
-                        <span className="text-[9px] font-black text-rose-600 block">STAGE 3/5 • LISTEN COMPREHENSION</span>
-                        <span className="text-xs font-black text-slate-800">Question {stageListIdx + 1} of 5</span>
-                      </div>
-                    </div>
-
-                    {/* Progress bar line */}
-                    <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                      <div
-                        className="bg-emerald-600 h-full transition-all duration-300"
-                        style={{ width: `${((stageListIdx + 1) / 5) * 100}%` }}
-                      />
-                    </div>
-
-                    {/* Big speaker audio activator button box */}
-                    <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
-                      <div className="flex items-center justify-between w-full mb-3">
-                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-left">
-                          Listen comprehension:
-                        </span>
-                        {renderMithuHelpBadge(currentQ.entry.digit)}
-                      </div>
-                      
-                      {/* Clean layout container with outline removed as requested */}
-                      <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
-                        <button
-                          disabled={speechActive}
-                          onClick={() => {
-                            if (speechActive) return;
-                            playSoundSynth("click");
-                            playWordAudio(currentQ.entry);
-                            setStageListSpeakerAnimate(true);
-                            const timer = setTimeout(() => {
-                              setStageListSpeakerAnimate(false);
-                            }, 1200);
-                          }}
-                          className="w-20 h-20 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center border-2 border-rose-500 border-b-[6px] border-b-rose-800 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
-                        >
-                          <PremiumSpeakerIcon className={`w-9 h-9 text-white ${stageListSpeakerAnimate ? "animate-bounce" : ""}`} />
-                        </button>
-                      </div>
-
-                      <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 mt-4 uppercase tracking-widest animate-pulse">
-                        🔊 Tap speaker to vocalize sound
-                      </span>
-                    </div>
-
-                    {/* Option targets choice buttons */}
-                    <div className="grid grid-cols-2 gap-3 mt-2" id="stage3-choices-grid">
-                      {currentQ.choices.map((choice: any, index: number) => {
-                        const isSelected = stageListSelected === choice;
-                        const isCorrectVal = choice === currentQ.correctAnswer;
-                        
-                        let cardStyle = "ginti-choice-btn";
-                        if (stageListAnswered) {
-                          if (isCorrectVal) {
-                            cardStyle = "ginti-choice-btn-correct";
-                          } else if (isSelected) {
-                            cardStyle = "ginti-choice-btn-incorrect";
-                          } else {
-                            cardStyle = "ginti-choice-btn-dimmed";
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={index}
-                            disabled={stageListAnswered}
-                            onClick={() => {
-                              const isCorrect = choice === currentQ.correctAnswer;
-                              if (isCorrect) {
-                                incrementMasteryStreak();
-                              } else {
-                                resetMasteryStreak();
-                              }
-                              playSoundSynth(isCorrect ? "correct" : "incorrect");
-                              setStageListSelected(choice);
-                              setStageListAnswered(true);
-
-                              if (!isCorrect) {
-                                setStageListMistakes((prev) => [...prev, currentQ]);
-                              }
-
-                              // Advance state
-                              setTimeout(() => {
-                                setStageListSelected(null);
-                                setStageListAnswered(false);
-                                setStageListIdx((prev) => {
-                                  const nextIdx = prev + 1;
-                                  if (nextIdx >= stageListQuestions.length) {
-                                    playSoundSynth("levelUp");
-                                  }
-                                  return nextIdx;
-                                });
-                              }, 1200);
-                            }}
-                            className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                          >
-                            {choice}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
-          }
-
-          // STAGE 4: SPEED ARCADE BLITZ CHALLENGE
-          if (activeStageIndex === 4) {
-            const currentQ = stageArcadeActiveQ;
-            if (stageArcadeOver) {
-              const pass = stageArcadeScore >= 3;
               return (
                 <motion.div
-                  key="stage-4-deck-end"
+                  id="screen-placement-challenge"
+                  key="placement-challenge-questions"
                   initial={{ opacity: 0, scale: 0.98, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: -15 }}
                   transition={{ duration: 0.12, ease: "easeOut" }}
-                  className="max-w-md mx-auto w-full min-h-[70vh] sm:min-h-[75vh] flex flex-col justify-center"
+                  className="max-w-md mx-auto w-full p-4 flex flex-col gap-4"
                 >
-                  <div id="screen-journey-stage-4-end" className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 animate-scale-up py-6 sm:py-8 my-auto text-slate-800">
-                    <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-200 mb-1 shadow-sm">
-                      {pass ? (
-                        <Star className="w-7 h-7 fill-indigo-300 text-indigo-500" />
-                      ) : (
-                        <Lock className="w-7 h-7 text-slate-400" />
-                      )}
-                    </div>
-
-                    <h3 className="text-xl font-black text-slate-800 font-extrabold">
-                      {pass ? "Stage 4 Blitz Completed!" : "Need 3 Hits to Clear!"}
-                    </h3>
-                    
-                    <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed font-semibold">
-                      {pass 
-                        ? `Fantastic reaction reflexes! You completed the stopwatch run with a grand total of ${stageArcadeScore} correct matched parameters!`
-                        : `You finished with ${stageArcadeScore} matches. Keep practicing and aim for at least 3 correct matches to unlock the Final Mastery Test!`}
-                    </p>
-
-                    <div className="flex flex-col gap-2.5 w-full mt-2">
-                      {pass ? (
-                        <button
-                          onClick={() => {
-                            const leveledUp = saveUnitStageProgress(selectedJourneyUnitId, 4);
-                            if (!leveledUp) {
-                              playSoundSynth("click");
-                            } else {
-                              playSoundSynth("levelUp");
-                            }
-                            setTimeout(() => {
-                              setNextStageToFocus(5);
-                              setActiveStageIndex(null);
-                            }, 180);
-                          }}
-                          className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black uppercase shadow-md cursor-pointer animate-pulse"
-                        >
-                          Proceed to Stage 5: Mastery Test (+15 XP) 🎉
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            playSoundSynth("click");
-                            setTimeout(() => {
-                              startStage4Arcade();
-                            }, 180);
-                          }}
-                          className="w-full btn-gold py-3.5 px-5 rounded-2xl text-xs font-black uppercase cursor-pointer"
-                        >
-                          Play Blitz Stage Again
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          playSoundSynth("click");
-                          setTimeout(() => {
-                            setActiveStageIndex(null);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }, 180);
-                        }}
-                        className="w-full btn-secondary py-3 px-5 rounded-2xl text-xs font-bold cursor-pointer"
-                      >
-                        Exit Speed Challenge
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            }
-
-            if (!currentQ) return null;
-
-            return (
-              <motion.div
-                key="stage-4-deck-gameplay"
-                initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className="max-w-md mx-auto w-full"
-              >
-                <div id="screen-journey-stage-4" className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 animate-fade-in">
-                  {/* Header sub block */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="stage4-header">
+                  {/* Header block */}
+                  <div
+                    className="flex items-center justify-between border-b border-slate-100 pb-3"
+                    id="placement-header"
+                  >
                     <button
                       onClick={() => {
                         playSoundSynth("click");
-                        setStageArcadeOver(true);
+                        setPlacementState(null);
+                        setActiveScreen("dashboard");
                       }}
                       className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
                     >
-                      <span>Quit Match</span>
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Exit Assessment</span>
                     </button>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
-                        ⏱️ <span className="font-mono text-indigo-700 font-extrabold">{stageArcadeTime}s</span>
+                    <div className="text-right">
+                      <span className="text-[9px] font-black text-emerald-600 block">
+                        PLACEMENT CHALLENGE
                       </span>
-                      <span className="text-xs font-black text-rose-900 bg-rose-50 rounded-full px-2.5 py-1 select-none">
-                        ⚡ <span className="font-semibold text-rose-700">{stageArcadeScore} hits</span>
+                      <span
+                        className={`text-xs font-black ${appState.isDarkMode ? "text-slate-200" : "text-slate-900"}`}
+                      >
+                        Question {placementState.currentIndex + 1} of 15
                       </span>
                     </div>
                   </div>
 
-                  {/* Progress Visual Timer horizontal line bar */}
-                  <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                  {/* Progress bar line */}
+                  <div
+                    className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/50 flex"
+                    id="placement-progress-container"
+                  >
                     <div
-                      className="bg-emerald-600 h-full transition-all duration-300"
-                      style={{ width: `${(stageArcadeTime / 30) * 100}%` }}
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300 rounded-full"
+                      style={{ width: `${unitPercent}%` }}
                     />
                   </div>
 
-                  {/* Active challenge focus question */}
-                  <div className="modern-card p-5 text-center bg-slate-50 border border-slate-200/80 rounded-2xl shadow-inner mt-2 flex flex-col items-center relative">
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
-                        Speedy translation:
-                      </span>
-                      {renderMithuHelpBadge(currentQ.entry.digit)}
-                    </div>
-                    <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
-                      appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                    } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                      {formatValueForDisplay(getDisplayPromptValue(currentQ))}
+                  {/* Companion Feedback strip (Mithu) */}
+                  <div
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/80 dark:bg-slate-800/50 border border-emerald-100 dark:border-slate-800 w-full animate-fade-in"
+                    style={
+                      appState.isDarkMode
+                        ? {}
+                        : { backgroundColor: "#ecfdf5", borderColor: "#a7f3d0" }
+                    }
+                  >
+                    <MithuMascot
+                      mood={
+                        mascotAnimation ||
+                        (placementState.isAnswered
+                          ? placementState.userAnswer ===
+                            currentQuestion.correctAnswer
+                            ? "happy"
+                            : "sad"
+                          : "neutral")
+                      }
+                    />
+                    <div className="flex-1">
+                      <p
+                        className="text-[12.5px] font-extrabold text-emerald-900 dark:text-slate-150 leading-tight"
+                        style={appState.isDarkMode ? {} : { color: "#065f46" }}
+                      >
+                        {placementState.isAnswered
+                          ? placementState.userAnswer ===
+                            currentQuestion.correctAnswer
+                            ? "Bohat Acha! Correct Answer!"
+                            : "Oops! Missed this one."
+                          : "Translate the number! No hints or learn cards allowed."}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Choices choices option grid container */}
-                  <div className="grid grid-cols-2 gap-3 mt-2" id="stage4-choices-grid">
-                    {currentQ.choices.map((choice, index) => {
-                      const isSelected = stageArcadeSelected === choice;
-                      const isCorrectVal = choice === currentQ.correctAnswer;
-                      let bStyle = "bg-white border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800";
+                  {/* Question Card */}
+                  <div
+                    id="prompt-card"
+                    className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative bg-white dark:bg-slate-900/65 min-h-[145px] sm:min-h-[165px] gap-2.5"
+                  >
+                    {/* Visual badge for current challenge */}
+                    <div className="absolute top-0 left-3.5 sm:left-4.5 -translate-y-1/2 bg-slate-100 dark:bg-slate-800 border-2 border-[var(--card-border)] rounded-full px-1.5 py-[1px] text-[7px] font-mono font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest z-10 whitespace-nowrap">
+                      UNIT SKIP CHALLENGE
+                    </div>
 
-                      if (stageArcadeAnswered) {
-                        if (isCorrectVal) {
-                          bStyle = "bg-emerald-500 border-emerald-600 text-white shadow-emerald-200 shadow-md";
-                        } else if (isSelected) {
-                          bStyle = "bg-rose-500 border-rose-600 text-white shadow-rose-200 shadow-md";
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="text-[9px] font-mono uppercase font-black text-slate-400 tracking-wider text-left">
+                        {currentQuestion.promptType === "digit_to_roman" ||
+                        currentQuestion.promptType === "digit_to_script"
+                          ? "Translate this number digit"
+                          : "Which number digit is this?"}
+                      </span>
+                    </div>
+
+                    {/* Huge prompt representation matching normal quiz typography */}
+                    <div
+                      id="placement-prompt-display"
+                      className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 select-none ${
+                        appState.isDarkMode ? "text-white" : "text-slate-900"
+                      } ${
+                        appState.showScript &&
+                        typeof getDisplayPromptValue(currentQuestion) ===
+                          "string" &&
+                        (
+                          getDisplayPromptValue(currentQuestion) as string
+                        ).match(/[\u0600-\u06FF]/)
+                          ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? "text-white" : "text-emerald-800"}`
+                          : "text-4xl sm:text-[3.25rem] leading-none py-2"
+                      }`}
+                    >
+                      {formatValueForDisplay(
+                        getDisplayPromptValue(currentQuestion),
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Answer Choices Matrix */}
+                  <div
+                    className="grid grid-cols-2 gap-3"
+                    id="placement-choices-grid"
+                  >
+                    {currentQuestion.choices.map((choice, i) => {
+                      const isUserChosen =
+                        placementState.isAnswered &&
+                        String(placementState.userAnswer) === String(choice);
+                      const isCorrectAnswer =
+                        placementState.isAnswered &&
+                        String(choice) ===
+                          String(currentQuestion.correctAnswer);
+
+                      let cardStyle = "ginti-choice-btn";
+                      if (placementState.isAnswered) {
+                        if (isCorrectAnswer) {
+                          cardStyle = "ginti-choice-btn-correct";
+                        } else if (isUserChosen) {
+                          cardStyle = "ginti-choice-btn-incorrect";
                         } else {
-                          bStyle = "bg-slate-50/50 border-slate-100/50 text-slate-400 opacity-60";
+                          cardStyle = "ginti-choice-btn-dimmed";
                         }
                       }
 
                       return (
                         <button
-                          key={index}
-                          disabled={stageArcadeAnswered}
-                          onClick={() => {
-                            const isCorrect = choice === currentQ.correctAnswer;
-                            if (isCorrect) {
-                              incrementMasteryStreak();
-                            } else {
-                              resetMasteryStreak();
-                            }
-                            playSoundSynth(isCorrect ? "correct" : "incorrect");
-                            setStageArcadeSelected(choice);
-                            setStageArcadeAnswered(true);
-
-                            if (isCorrect) {
-                              setStageArcadeScore((s) => s + 1);
-                            }
-
-                            // Rapid speed change mechanics (400ms flash gap)
-                            setTimeout(() => {
-                              setStageArcadeSelected(null);
-                              setStageArcadeAnswered(false);
-                              const nextQ = makeSingleUnitArcadeQuestion(selectedJourneyUnitId);
-                              setStageArcadeActiveQ(nextQ);
-                            }, 400);
-                          }}
-                          className={`py-4 px-3 rounded-2xl border-2 text-center text-base sm:text-lg md:text-xl font-black transition-all flex flex-col items-center justify-center min-h-[72px] cursor-pointer shadow-xs ${bStyle}`}
+                          key={i}
+                          disabled={placementState.isAnswered}
+                          onClick={() => choosePlacementAnswer(choice)}
+                          className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
                         >
-                          <span className={appState.showScript && typeof choice === "string" && choice.match(/[\u0600-\u06FF]/) ? "text-2xl font-urdu select-none" : ""}>
+                          <span
+                            className={
+                              typeof choice === "string" &&
+                              choice.match(/[\u0600-\u06FF]/)
+                                ? "text-2xl font-urdu select-none leading-none"
+                                : ""
+                            }
+                          >
                             {formatValueForDisplay(choice)}
                           </span>
                         </button>
                       );
                     })}
                   </div>
-                </div>
-              </motion.div>
-            );
-          }
+                </motion.div>
+              );
+            })()}
 
-          return null;
-        })()}
-
-        {/* =============================================================================
-            SCREEN F: PLACEMENT CHALLENGE WORKFLOW
-            ============================================================================= */}
-        {!recoveryState && activeScreen === "placement-challenge" && placementState && (() => {
-          const unit = UNITS.find((u) => u.id === placementState.unitId);
-          if (!unit) return null;
-
-          const isCompleted = placementState.currentIndex >= 15 || placementState.showResultPopup;
-
-          if (isCompleted) {
-            const correctCount = placementState.score;
-            const percentage = Math.round((correctCount / 15) * 100);
-            const passed = correctCount >= 14; // 90% of 15 is 13.5 -> so at least 14 correct (14/15 = 93.3%)
-            const attemptCount = appState.placementAttempts?.[placementState.unitId] ?? 0;
-            const hasFailedTwice = attemptCount >= 2;
-
-            return (
-              <motion.div
-                key="placement-challenge-summary"
-                initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                className="w-full max-w-md mx-auto p-4 flex flex-col gap-4"
-              >
-                <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-[2.25rem] p-6 shadow-xl text-center flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950 rounded-full flex items-center justify-center border-2 border-amber-300 shadow-md">
-                    <span className="text-3xl">{passed ? "🏆" : "🐣"}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-                      Assessment Complete
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                      {passed ? "Placement Passed! 🎉" : "Challenge Complete!"}
-                    </h2>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 w-full text-center border border-slate-150 dark:border-slate-750">
-                    <p className="text-[11.5px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Your Score</p>
-                    <p className="text-3xl font-black text-slate-900 dark:text-white mt-0.5 font-mono">
-                      {correctCount} / 15 <span className="text-sm font-semibold text-slate-400">({percentage}%)</span>
-                    </p>
-                    <p className="text-[11px] font-bold text-slate-400 mt-1">
-                      {passed ? "Aap ne Kamaal kar Diya! 90% Requirement Met." : "Required: 90% (14 correct answers) to pass."}
-                    </p>
-                  </div>
-
-                  {/* Mithu companion message */}
-                  <div className="bg-gradient-to-br from-emerald-800/10 to-teal-800/5 border border-emerald-800/15 rounded-2xl p-3 sm:p-3.5 flex gap-3.5 items-center text-left w-full">
-                    <MithuMascot mood={passed ? "sparkly" : "thinking"} />
-                    <div className="flex-1">
-                      <p className="text-[12px] text-slate-700 dark:text-slate-300 font-extrabold leading-tight">
-                        {passed 
-                          ? `"Wah! Aap to pehle se hi mahir hain! Aap is unit ko bypass kar sakte hain."`
-                          : hasFailedTwice
-                            ? `"Looks like this unit still has a few surprises for us. Let's learn it together first!"`
-                            : `"Koi baat nahi! Hum mil kar seekhein ge. Thori aur practice se aap pass kar lein ge!"`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Action Choices */}
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    {passed ? (
-                      <>
-                        <button
-                          onClick={() => passPlacementChallengeDirectly(placementState.unitId)}
-                          className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer transition-all ${
-                            appState.isDarkMode
-                              ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
-                              : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5"
-                          }`}
-                        >
-                          Continue to Next Unit 🚀
-                        </button>
-                        {correctCount < 15 && (
-                          <button
-                            onClick={() => launchPlacementRecovery()}
-                            className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
-                              appState.isDarkMode
-                                ? "border-2 border-amber-950 border-b-4 border-b-amber-955 active:translate-y-[2px] active:border-b-2"
-                                : "border-2 border-amber-400 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-0.5"
-                            }`}
-                          >
-                            Review Missed Numbers 🔍
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            playSoundSynth("click");
-                            setPlacementState(null);
-                            setActiveScreen("dashboard");
-                          }}
-                          className={`w-full rounded-full py-2.5 px-5 font-black text-xs uppercase cursor-pointer transition-all ${
-                            appState.isDarkMode
-                              ? "bg-slate-800 hover:bg-slate-800 text-slate-300 border border-slate-750"
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-200 border-b-[5px] border-b-slate-300 hover:border-slate-300 hover:border-b-[5px] active:translate-y-[2px] active:border-b-[3px] shadow-sm"
-                          }`}
-                        >
-                          Return to Dashboard
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {!hasFailedTwice && (
-                          <button
-                            onClick={() => startPlacementChallenge(placementState.unitId)}
-                            className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
-                              appState.isDarkMode
-                                ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
-                                : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:border-b-[2px] active:translate-y-0.5"
-                            }`}
-                          >
-                            Try Again 🔄
-                          </button>
-                        )}
-                        <button
-                          onClick={() => startLearningNormally(placementState.unitId)}
-                          className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all rounded-full py-2.5 px-5 font-black tracking-wide text-xs uppercase cursor-pointer ${
-                            appState.isDarkMode
-                              ? "border-2 border-amber-950 border-b-4 border-b-amber-955 active:translate-y-[2px] active:border-b-2"
-                              : "border-2 border-amber-400 border-b-[5px] border-b-amber-700 active:border-b-[2px] active:translate-y-0.5"
-                          }`}
-                        >
-                          Start Learning Normally 📚
-                        </button>
-                        <button
-                          onClick={() => {
-                            playSoundSynth("click");
-                            setPlacementState(null);
-                            setActiveScreen("dashboard");
-                          }}
-                          className={`w-full rounded-full py-2.5 px-5 font-black text-xs uppercase cursor-pointer transition-all ${
-                            appState.isDarkMode
-                              ? "bg-slate-800 hover:bg-slate-800 text-slate-300 border border-slate-750"
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-200 border-b-[5px] border-b-slate-300 hover:border-slate-300 hover:border-b-[5px] active:translate-y-[2px] active:border-b-[3px] shadow-sm"
-                          }`}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          }
-
-          const currentQuestion = placementState.questions[placementState.currentIndex];
-          const unitPercent = Math.round((placementState.currentIndex / 15) * 100);
-
-          return (
-            <motion.div
-              id="screen-placement-challenge"
-              key="placement-challenge-questions"
-              initial={{ opacity: 0, scale: 0.98, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: -15 }}
-              transition={{ duration: 0.12, ease: "easeOut" }}
-              className="max-w-md mx-auto w-full p-4 flex flex-col gap-4"
-            >
-              {/* Header block */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="placement-header">
-                <button
-                  onClick={() => {
-                    playSoundSynth("click");
-                    setPlacementState(null);
-                    setActiveScreen("dashboard");
-                  }}
-                  className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Exit Assessment</span>
-                </button>
-                <div className="text-right">
-                  <span className="text-[9px] font-black text-emerald-600 block">PLACEMENT CHALLENGE</span>
-                  <span className={`text-xs font-black ${appState.isDarkMode ? "text-slate-200" : "text-slate-900"}`}>Question {placementState.currentIndex + 1} of 15</span>
-                </div>
-              </div>
-
-              {/* Progress bar line */}
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/50 flex" id="placement-progress-container">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300 rounded-full" 
-                  style={{ width: `${unitPercent}%` }} 
-                />
-              </div>
-
-              {/* Companion Feedback strip (Mithu) */}
-              <div 
-                className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/80 dark:bg-slate-800/50 border border-emerald-100 dark:border-slate-800 w-full animate-fade-in"
-                style={appState.isDarkMode ? {} : { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }}
-              >
-                <MithuMascot mood={mascotAnimation || (placementState.isAnswered ? (placementState.userAnswer === currentQuestion.correctAnswer ? "happy" : "sad") : "neutral")} />
-                <div className="flex-1">
-                  <p 
-                    className="text-[12.5px] font-extrabold text-emerald-900 dark:text-slate-150 leading-tight"
-                    style={appState.isDarkMode ? {} : { color: '#065f46' }}
-                  >
-                    {placementState.isAnswered ? (
-                      placementState.userAnswer === currentQuestion.correctAnswer ? "Bohat Acha! Correct Answer!" : "Oops! Missed this one."
-                    ) : (
-                      "Translate the number! No hints or learn cards allowed."
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              {/* Question Card */}
-              <div 
-                id="prompt-card" 
-                className="modern-card p-4 sm:p-5 flex flex-col items-center justify-center text-center relative bg-white dark:bg-slate-900/65 min-h-[145px] sm:min-h-[165px] gap-2.5"
-              >
-                {/* Visual badge for current challenge */}
-                <div className="absolute top-0 left-3.5 sm:left-4.5 -translate-y-1/2 bg-slate-100 dark:bg-slate-800 border-2 border-[var(--card-border)] rounded-full px-1.5 py-[1px] text-[7px] font-mono font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest z-10 whitespace-nowrap">
-                  UNIT SKIP CHALLENGE
-                </div>
-
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[9px] font-mono uppercase font-black text-slate-400 tracking-wider text-left">
-                    {currentQuestion.promptType === "digit_to_roman" || currentQuestion.promptType === "digit_to_script"
-                      ? "Translate this number digit"
-                      : "Which number digit is this?"}
-                  </span>
-                </div>
-                
-                {/* Huge prompt representation matching normal quiz typography */}
-                <div 
-                  id="placement-prompt-display"
-                  className={`font-black tracking-tight flex items-center justify-center transition-all duration-150 select-none ${
-                    appState.isDarkMode ? 'text-white' : 'text-slate-900'
-                  } ${
-                    appState.showScript &&
-                    typeof getDisplayPromptValue(currentQuestion) === 'string' && 
-                    (getDisplayPromptValue(currentQuestion) as string).match(/[\u0600-\u06FF]/)
-                      ? `text-5xl sm:text-[3.75rem] font-urdu leading-none pt-3 pb-5 -translate-y-2 sm:-translate-y-2.5 ${appState.isDarkMode ? 'text-white' : 'text-emerald-800'}`
-                      : 'text-4xl sm:text-[3.25rem] leading-none py-2'
-                  }`}
-                >
-                  {formatValueForDisplay(getDisplayPromptValue(currentQuestion))}
-                </div>
-              </div>
-
-              {/* Answer Choices Matrix */}
-              <div className="grid grid-cols-2 gap-3" id="placement-choices-grid">
-                {currentQuestion.choices.map((choice, i) => {
-                  const isUserChosen = placementState.isAnswered && String(placementState.userAnswer) === String(choice);
-                  const isCorrectAnswer = placementState.isAnswered && String(choice) === String(currentQuestion.correctAnswer);
-
-                  let cardStyle = "ginti-choice-btn";
-                  if (placementState.isAnswered) {
-                    if (isCorrectAnswer) {
-                      cardStyle = "ginti-choice-btn-correct";
-                    } else if (isUserChosen) {
-                      cardStyle = "ginti-choice-btn-incorrect";
-                    } else {
-                      cardStyle = "ginti-choice-btn-dimmed";
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={i}
-                      disabled={placementState.isAnswered}
-                      onClick={() => choosePlacementAnswer(choice)}
-                      className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                    >
-                      <span className={typeof choice === "string" && choice.match(/[\u0600-\u06FF]/) ? "text-2xl font-urdu select-none leading-none" : ""}>
-                        {formatValueForDisplay(choice)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          );
-        })()}
-
-        {/* =============================================================================
+          {/* =============================================================================
             SCREEN E: TRAINING ARENA WORKFLOW
             ============================================================================= */}
-        {!recoveryState && activeScreen === "training-arena" && (
-          <div className="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
-            <AnimatePresence mode="wait">
-              {(() => {
-          const minRange = appState.arenaMin ?? 30;
-          const maxRange = appState.arenaMax ?? 100;
-          const stageProgress = appState.arenaStageProgress ?? 1;
+          {!recoveryState && activeScreen === "training-arena" && (
+            <div className="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
+              <AnimatePresence mode="wait">
+                {(() => {
+                  const minRange = appState.arenaMin ?? 30;
+                  const maxRange = appState.arenaMax ?? 100;
+                  const stageProgress = appState.arenaStageProgress ?? 1;
 
-          // If stage selection mode
-          if (arenaActiveStage === null) {
-            return (
-              <motion.div
-                key="arena-select"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-training-arena"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-5 text-slate-800"
-              >
-                {/* Header block with elegant dark forest color theme */}
-                <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 p-6 rounded-[2rem] border-4 border-emerald-800 border-b-[10px] border-b-emerald-955 relative text-white shadow-xl overflow-hidden">
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-0" />
-                  
-                  <div className="flex items-center gap-3 relative z-10">
-                    <button
-                      onClick={() => {
-                        playSoundSynth("navigation");
-                        setActiveScreen("dashboard");
-                      }}
-                      className="p-2 bg-emerald-950 hover:bg-emerald-800 border-2 border-emerald-700/80 rounded-2xl cursor-pointer transition active:scale-95 text-emerald-300"
-                      title="Back to Dashboard"
-                    >
-                      <ArrowLeft className="w-5 h-5 leading-none" />
-                    </button>
-                    <div>
-                      <h2 className="text-xl font-extrabold text-amber-300 tracking-tight leading-none uppercase font-sans">
-                        Combat Arena
-                      </h2>
-                      <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-widest mt-1">
-                        Bilingual Battleground
-                      </p>
-                    </div>
-                  </div>
+                  // If stage selection mode
+                  if (arenaActiveStage === null) {
+                    return (
+                      <motion.div
+                        key="arena-select"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        id="screen-training-arena"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-5 text-slate-800"
+                      >
+                        {/* Header block with elegant dark forest color theme */}
+                        <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 p-6 rounded-[2rem] border-4 border-emerald-800 border-b-[10px] border-b-emerald-955 relative text-white shadow-xl overflow-hidden">
+                          <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-0" />
 
-                  <div className="mt-4 bg-emerald-950/80 rounded-2xl border border-emerald-850 p-3.5 flex flex-col gap-1 relative z-10">
-                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
-                      Selected Range Bounds
-                    </div>
-                    <div className="text-sm font-black flex items-center gap-1.5">
-                      <span className="font-mono text-amber-300 text-lg">{minRange}</span>
-                      <span className="opacity-60 text-xs">→</span>
-                      <span className="font-mono text-lg text-amber-300">{maxRange}</span>
-                    </div>
-                    <div className="text-[10px] text-emerald-300/80 italic mt-1 leading-relaxed">
-                      Unlocked up to Stage {stageProgress} based on performance. Check details below!
-                    </div>
-                  </div>
-                </div>
-
-                {/* Vertical Stage Maps or Timeline */}
-                <div className="relative flex flex-col gap-4 mt-2">
-                  {/* Visual central vertical path line matching dashboard roadmap */}
-                  <div className="absolute left-[39px] -translate-x-1/2 w-[10px] top-[39px] bottom-[39px] pointer-events-none z-0">
-                    {/* Muted outer track background */}
-                    <div className="w-full h-full ginti-roadmap-track-bg rounded-full" />
-                    {/* Emerald progress track fill */}
-                    <div
-                      className="absolute top-0 left-0 w-full ginti-roadmap-track-fill rounded-full transition-all duration-500"
-                      style={{ height: `${((stageProgress - 1) / 4) * 100}%` }}
-                    />
-                  </div>
-
-                  {(() => {
-                    const stagesData = [
-                      {
-                        id: 1,
-                        title: "Stage 1: Soundboard Explore",
-                        desc: "Interactive range visualizer dictionary",
-                        buttonText: "EXPLORE",
-                        bgClass: "bg-emerald-600 hover:bg-emerald-500 border-emerald-500 border-b-emerald-800 text-white",
-                        launch: () => {
-                          playSoundSynth("navigation");
-                          setArenaActiveStage(1);
-                        }
-                      },
-                      {
-                        id: 2,
-                        title: "Stage 2: MCQ Translation Duel",
-                        desc: "5 multiple-choice matching cards",
-                        buttonText: "START",
-                        bgClass: "bg-sky-600 hover:bg-sky-500 border-sky-500 border-b-sky-800 text-white",
-                        launch: setupArenaStage2Quiz
-                      },
-                      {
-                        id: 3,
-                        title: "Stage 3: Ear Trainer Auditory Duel",
-                        desc: "Listen to numeral, select matching digit",
-                        buttonText: "START",
-                        bgClass: "bg-indigo-600 hover:bg-indigo-500 border-indigo-500 border-b-indigo-800 text-white",
-                        launch: () => {
-                          setArenaQuizScore(0);
-                          setupArenaStage3Listening();
-                        }
-                      },
-                      {
-                        id: 4,
-                        title: "Stage 4: Stopwatch Countdown Blitz",
-                        desc: "30 seconds speed reflex time trials",
-                        buttonText: "START",
-                        bgClass: "bg-rose-600 hover:bg-rose-500 border-rose-500 border-b-rose-800 text-white",
-                        launch: startArenaStage4Arcade
-                      },
-                      {
-                        id: 5,
-                        title: "Stage 5: Ultimate Mastery Battle",
-                        desc: "10 legendary mixed translation trials",
-                        buttonText: "START",
-                        bgClass: "bg-amber-500 hover:bg-amber-450 border-amber-400 border-b-amber-700 text-emerald-955",
-                        launch: setupArenaStage5Mastery
-                      }
-                    ];
-
-                    return stagesData.map((stg) => {
-                      const isUnlocked = stg.id <= stageProgress;
-                      const isDone = stg.id < stageProgress;
-                      const isCurrent = stg.id === stageProgress;
-
-                      let cardBg = "bg-slate-50/50 border-slate-200/50 opacity-60";
-
-                      if (isDone) {
-                        cardBg = "bg-white hover:bg-slate-50/50 border-slate-200 hover:border-slate-350 cursor-pointer shadow-xs transition-all";
-                      } else if (isCurrent) {
-                        cardBg = "bg-gradient-to-r from-amber-50/50 to-white hover:from-amber-50 hover:to-slate-50/50 border-amber-300 hover:border-amber-400 cursor-pointer shadow-sm active:scale-[0.98] transition-all";
-                      }
-
-                      return (
-                        <div key={stg.id} className="flex gap-4 items-center relative z-10 animate-fade-in" id={`arena-stage-row-${stg.id}`}>
-                          {/* Circular Milestone Node with 3D tactile design */}
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.94 }}
-                            onClick={() => {
-                              if (!isUnlocked) {
-                                playSoundSynth("incorrect");
-                                showToast(`Stage ${stg.id} is locked! Complete previous stages first. 🔒`);
-                                return;
-                              }
-                              stg.launch();
-                            }}
-                            className={`w-[78px] h-[78px] p-0 m-0 rounded-full flex flex-col items-center justify-center font-black text-center shrink-0 select-none transition relative z-10 cursor-pointer ${
-                              isDone
-                                ? "ginti-node-finished"
-                                : isCurrent
-                                  ? "ginti-node-current ginti-pulse-active"
-                                  : "ginti-node-locked cursor-not-allowed"
-                            }`}
-                          >
-                            <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-80 leading-none text-center w-full block pl-[0.05em] m-0">Stage</span>
-                            <span className="text-2xl font-black mt-0.5 text-center w-full block tabular-nums m-0">{stg.id}</span>
-
-                            {/* Status Overlay Badge on bottom-right of the circle node */}
-                            {isCurrent ? (
-                              <span 
-                                className="absolute -bottom-1 -right-1 w-[26px] h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
-                                style={{
-                                  boxShadow: "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)"
-                                }}
-                              >
-                                <Zap className="w-3.5 h-3.5 text-[#451a03] fill-[#451a03]" />
-                              </span>
-                            ) : (
-                              <span className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
-                                isDone
-                                  ? "bg-emerald-700 text-amber-300"
-                                  : "bg-slate-300 text-slate-500 ginti-status-badge-locked"
-                              }`}>
-                                {isDone ? "✓" : "🔒"}
-                              </span>
-                            )}
-                          </motion.button>
-
-                          {/* Description Card */}
-                          <div
-                            className={`flex-1 rounded-2xl border p-4 flex gap-3.5 items-center select-none ${cardBg}`}
-                            onClick={() => {
-                              if (!isUnlocked) {
-                                playSoundSynth("incorrect");
-                                showToast(`Stage ${stg.id} is locked! Complete previous stages first. 🔒`);
-                                return;
-                              }
-                              stg.launch();
-                            }}
-                          >
-                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center self-start shrink-0">
-                              {stg.id === 1 && <BookOpen className="w-5 h-5 text-emerald-600" />}
-                              {stg.id === 2 && <Zap className="w-5 h-5 text-sky-500" />}
-                              {stg.id === 3 && <PremiumSpeakerIcon className="w-5 h-5 text-rose-500" />}
-                              {stg.id === 4 && <Sparkles className="w-5 h-5 text-indigo-500" />}
-                              {stg.id === 5 && <Star className="w-5 h-5 text-amber-600" />}
-                            </div>
+                          <div className="flex items-center gap-3 relative z-10">
+                            <button
+                              onClick={() => {
+                                playSoundSynth("navigation");
+                                setActiveScreen("dashboard");
+                              }}
+                              className="p-2 bg-emerald-950 hover:bg-emerald-800 border-2 border-emerald-700/80 rounded-2xl cursor-pointer transition active:scale-95 text-emerald-300"
+                              title="Back to Dashboard"
+                            >
+                              <ArrowLeft className="w-5 h-5 leading-none" />
+                            </button>
                             <div>
-                              <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5 leading-none">
-                                <span>{stg.title}</span>
-                                {isDone && (
-                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 dark:border dark:border-emerald-800/50 px-1.5 py-0.5 rounded-md font-bold leading-none">
-                                    Done
-                                  </span>
-                                )}
-                                {isCurrent && (
-                                  <span className="text-[9px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md font-black animate-pulse leading-none">
-                                    Play
-                                  </span>
-                                )}
-                              </h3>
-                              <p className="text-[10px] text-slate-500 leading-normal mt-1">
-                                {stg.desc}
+                              <h2 className="text-xl font-extrabold text-amber-300 tracking-tight leading-none uppercase font-sans">
+                                Combat Arena
+                              </h2>
+                              <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-widest mt-1">
+                                Bilingual Battleground
                               </p>
                             </div>
                           </div>
+
+                          <div className="mt-4 bg-emerald-950/80 rounded-2xl border border-emerald-850 p-3.5 flex flex-col gap-1 relative z-10">
+                            <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
+                              Selected Range Bounds
+                            </div>
+                            <div className="text-sm font-black flex items-center gap-1.5">
+                              <span className="font-mono text-amber-300 text-lg">
+                                {minRange}
+                              </span>
+                              <span className="opacity-60 text-xs">→</span>
+                              <span className="font-mono text-lg text-amber-300">
+                                {maxRange}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-emerald-300/80 italic mt-1 leading-relaxed">
+                              Unlocked up to Stage {stageProgress} based on
+                              performance. Check details below!
+                            </div>
+                          </div>
                         </div>
-                      );
-                    });
-                  })()}
-                </div>
 
-                <div className="flex flex-col items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-emerald-950/20">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("navigation");
-                      setShowDeleteArenaConfirm(true);
-                    }}
-                    className="destructive-tactile-link"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Delete Training Range</span>
-                  </button>
-                  <div className="text-center text-[10.5px] text-slate-400 font-semibold italic">
-                    Delete your current range to create a new one.
-                  </div>
-                </div>
-              </motion.div>
-            );
-          }
+                        {/* Vertical Stage Maps or Timeline */}
+                        <div className="relative flex flex-col gap-4 mt-2">
+                          {/* Visual central vertical path line matching dashboard roadmap */}
+                          <div className="absolute left-[39px] -translate-x-1/2 w-[10px] top-[39px] bottom-[39px] pointer-events-none z-0">
+                            {/* Muted outer track background */}
+                            <div className="w-full h-full ginti-roadmap-track-bg rounded-full" />
+                            {/* Emerald progress track fill */}
+                            <div
+                              className="absolute top-0 left-0 w-full ginti-roadmap-track-fill rounded-full transition-all duration-500"
+                              style={{
+                                height: `${((stageProgress - 1) / 4) * 100}%`,
+                              }}
+                            />
+                          </div>
 
-          // STAGE 1: INTERACTIVE DECK EXPLORER SCREEN
-          if (arenaActiveStage === 1) {
-            // Get list of entry records in the range pool
-            const rangePool = getArenaNumbersPool();
-            return (
-              <motion.div
-                key="arena-stage-1"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-arena-stage-1"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
-              >
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("navigation");
-                      setArenaActiveStage(null);
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center justify-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Back to Stages</span>
-                  </button>
-                  <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                    STAGE 1: SOUND EXPLORER DECK
-                  </span>
-                </div>
+                          {(() => {
+                            const stagesData = [
+                              {
+                                id: 1,
+                                title: "Stage 1: Soundboard Explore",
+                                desc: "Interactive range visualizer dictionary",
+                                buttonText: "EXPLORE",
+                                bgClass:
+                                  "bg-emerald-600 hover:bg-emerald-500 border-emerald-500 border-b-emerald-800 text-white",
+                                launch: () => {
+                                  playSoundSynth("navigation");
+                                  setArenaActiveStage(1);
+                                },
+                              },
+                              {
+                                id: 2,
+                                title: "Stage 2: MCQ Translation Duel",
+                                desc: "5 multiple-choice matching cards",
+                                buttonText: "START",
+                                bgClass:
+                                  "bg-sky-600 hover:bg-sky-500 border-sky-500 border-b-sky-800 text-white",
+                                launch: setupArenaStage2Quiz,
+                              },
+                              {
+                                id: 3,
+                                title: "Stage 3: Ear Trainer Auditory Duel",
+                                desc: "Listen to numeral, select matching digit",
+                                buttonText: "START",
+                                bgClass:
+                                  "bg-indigo-600 hover:bg-indigo-500 border-indigo-500 border-b-indigo-800 text-white",
+                                launch: () => {
+                                  setArenaQuizScore(0);
+                                  setupArenaStage3Listening();
+                                },
+                              },
+                              {
+                                id: 4,
+                                title: "Stage 4: Stopwatch Countdown Blitz",
+                                desc: "30 seconds speed reflex time trials",
+                                buttonText: "START",
+                                bgClass:
+                                  "bg-rose-600 hover:bg-rose-500 border-rose-500 border-b-rose-800 text-white",
+                                launch: startArenaStage4Arcade,
+                              },
+                              {
+                                id: 5,
+                                title: "Stage 5: Ultimate Mastery Battle",
+                                desc: "10 legendary mixed translation trials",
+                                buttonText: "START",
+                                bgClass:
+                                  "bg-amber-500 hover:bg-amber-450 border-amber-400 border-b-amber-700 text-emerald-955",
+                                launch: setupArenaStage5Mastery,
+                              },
+                            ];
 
-                <div className="bg-emerald-50 border border-emerald-200/50 rounded-2xl p-4 text-center">
-                  <h3 className="text-base font-black text-emerald-900 leading-tight">Interactive Soundboard lookup</h3>
-                  <p className="text-[11px] text-emerald-700 leading-normal mt-1">Tap a card to speak out loud. Familiarize bilingual recognition prior to taking translation challenge.</p>
-                </div>
+                            return stagesData.map((stg) => {
+                              const isUnlocked = stg.id <= stageProgress;
+                              const isDone = stg.id < stageProgress;
+                              const isCurrent = stg.id === stageProgress;
 
-                {/* Grid layout of all number cards in subset pool */}
-                <div
-                  ref={arenaStage1ScrollRef}
-                  onScroll={checkArenaScroll}
-                  className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pt-3 px-1.5 pb-2 pr-1 border-b border-dashed border-slate-200"
-                >
-                  {rangePool.map((entry, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        playSoundSynth("click");
-                        playWordAudio(entry);
-                      }}
-                      className="bg-white border-2 border-slate-200 hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border-b-[5px] border-b-slate-300 hover:border-b-[4px] p-4 rounded-2xl flex flex-col items-center gap-2 transition-all text-center cursor-pointer group relative"
-                    >
-                      <span className="font-mono text-2xl font-black text-slate-900 group-hover:text-emerald-700">
-                        {entry.digit}
-                      </span>
-                      <div className="flex flex-col select-none">
-                        <span className={`text-xs font-sans font-extrabold tracking-tight leading-none ${
-                          appState.isDarkMode ? "text-emerald-300" : "text-indigo-700"
-                        }`}>
-                          {entry.romanUrdu}
-                        </span>
-                        {appState.showScript && (
-                          <span className={`text-lg font-urdu leading-normal mt-1 block ${
-                            appState.isDarkMode ? "text-white" : "text-emerald-700"
-                          }`}>
-                            {entry.nativeScript}
+                              let cardBg =
+                                "bg-slate-50/50 border-slate-200/50 opacity-60";
+
+                              if (isDone) {
+                                cardBg =
+                                  "bg-white hover:bg-slate-50/50 border-slate-200 hover:border-slate-350 cursor-pointer shadow-xs transition-all";
+                              } else if (isCurrent) {
+                                cardBg =
+                                  "bg-gradient-to-r from-amber-50/50 to-white hover:from-amber-50 hover:to-slate-50/50 border-amber-300 hover:border-amber-400 cursor-pointer shadow-sm active:scale-[0.98] transition-all";
+                              }
+
+                              return (
+                                <div
+                                  key={stg.id}
+                                  className="flex gap-4 items-center relative z-10 animate-fade-in"
+                                  id={`arena-stage-row-${stg.id}`}
+                                >
+                                  {/* Circular Milestone Node with 3D tactile design */}
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.94 }}
+                                    onClick={() => {
+                                      if (!isUnlocked) {
+                                        playSoundSynth("incorrect");
+                                        showToast(
+                                          `Stage ${stg.id} is locked! Complete previous stages first. 🔒`,
+                                        );
+                                        return;
+                                      }
+                                      stg.launch();
+                                    }}
+                                    className={`w-[78px] h-[78px] p-0 m-0 rounded-full flex flex-col items-center justify-center font-black text-center shrink-0 select-none transition relative z-10 cursor-pointer ${
+                                      isDone
+                                        ? "ginti-node-finished"
+                                        : isCurrent
+                                          ? "ginti-node-current ginti-pulse-active"
+                                          : "ginti-node-locked cursor-not-allowed"
+                                    }`}
+                                  >
+                                    <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-80 leading-none text-center w-full block pl-[0.05em] m-0">
+                                      Stage
+                                    </span>
+                                    <span className="text-2xl font-black mt-0.5 text-center w-full block tabular-nums m-0">
+                                      {stg.id}
+                                    </span>
+
+                                    {/* Status Overlay Badge on bottom-right of the circle node */}
+                                    {isCurrent ? (
+                                      <span
+                                        className="absolute -bottom-1 -right-1 w-[26px] h-[26px] flex items-center justify-center rounded-full bg-gradient-to-b from-[#fcd34d] to-[#d97706] border-2 border-[#b45309] z-20 ginti-badge-bounce-sync"
+                                        style={{
+                                          boxShadow:
+                                            "0 2px 4px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 1.5px rgba(0,0,0,0.2)",
+                                        }}
+                                      >
+                                        <Zap className="w-3.5 h-3.5 text-[#451a03] fill-[#451a03]" />
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className={`absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black border border-white shadow-xs ${
+                                          isDone
+                                            ? "bg-emerald-700 text-amber-300"
+                                            : "bg-slate-300 text-slate-500 ginti-status-badge-locked"
+                                        }`}
+                                      >
+                                        {isDone ? "✓" : "🔒"}
+                                      </span>
+                                    )}
+                                  </motion.button>
+
+                                  {/* Description Card */}
+                                  <div
+                                    className={`flex-1 rounded-2xl border p-4 flex gap-3.5 items-center select-none ${cardBg}`}
+                                    onClick={() => {
+                                      if (!isUnlocked) {
+                                        playSoundSynth("incorrect");
+                                        showToast(
+                                          `Stage ${stg.id} is locked! Complete previous stages first. 🔒`,
+                                        );
+                                        return;
+                                      }
+                                      stg.launch();
+                                    }}
+                                  >
+                                    <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center self-start shrink-0">
+                                      {stg.id === 1 && (
+                                        <BookOpen className="w-5 h-5 text-emerald-600" />
+                                      )}
+                                      {stg.id === 2 && (
+                                        <Zap className="w-5 h-5 text-sky-500" />
+                                      )}
+                                      {stg.id === 3 && (
+                                        <PremiumSpeakerIcon className="w-5 h-5 text-rose-500" />
+                                      )}
+                                      {stg.id === 4 && (
+                                        <Sparkles className="w-5 h-5 text-indigo-500" />
+                                      )}
+                                      {stg.id === 5 && (
+                                        <Star className="w-5 h-5 text-amber-600" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                                        <span>{stg.title}</span>
+                                        {isDone && (
+                                          <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 dark:border dark:border-emerald-800/50 px-1.5 py-0.5 rounded-md font-bold leading-none">
+                                            Done
+                                          </span>
+                                        )}
+                                        {isCurrent && (
+                                          <span className="text-[9px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-md font-black animate-pulse leading-none">
+                                            Play
+                                          </span>
+                                        )}
+                                      </h3>
+                                      <p className="text-[10px] text-slate-500 leading-normal mt-1">
+                                        {stg.desc}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+
+                        <div className="flex flex-col items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-emerald-950/20">
+                          <button
+                            onClick={() => {
+                              playSoundSynth("navigation");
+                              setShowDeleteArenaConfirm(true);
+                            }}
+                            className="destructive-tactile-link"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete Training Range</span>
+                          </button>
+                          <div className="text-center text-[10.5px] text-slate-400 font-semibold italic">
+                            Delete your current range to create a new one.
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  }
+
+                  // STAGE 1: INTERACTIVE DECK EXPLORER SCREEN
+                  if (arenaActiveStage === 1) {
+                    // Get list of entry records in the range pool
+                    const rangePool = getArenaNumbersPool();
+                    return (
+                      <motion.div
+                        key="arena-stage-1"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        id="screen-arena-stage-1"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+                      >
+                        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 border-b border-slate-100 pb-3 w-full">
+                          <button
+                            onClick={() => {
+                              playSoundSynth("navigation");
+                              setArenaActiveStage(null);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center justify-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Back to Stages</span>
+                          </button>
+                          <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                            STAGE 1: SOUND EXPLORER DECK
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 w-full justify-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all duration-150 shadow-xs shrink-0 ${
-                          appState.isDarkMode 
-                            ? "bg-emerald-950/90 hover:bg-emerald-900/90 border border-emerald-800 text-emerald-300" 
-                            : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white"
-                        }`}>
-                          <PremiumSpeakerIcon className={`w-4 h-4 ${
-                            appState.isDarkMode ? "text-emerald-300" : "text-emerald-600 group-hover:text-white"
-                          }`} />
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            playSoundSynth("click");
-                            setMithuExplanationDigit(entry.digit);
-                          }}
-                          className={`px-2 py-1 border rounded-full text-[9px] font-black flex items-center gap-0.5 hover:scale-105 active:scale-95 transition cursor-pointer select-none shadow-xs ${
-                            appState.isDarkMode 
-                              ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300" 
-                              : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800"
-                          }`}
-                          title="View decoding patterns"
+
+                        <div className="bg-emerald-50 border border-emerald-200/50 rounded-2xl p-4 text-center">
+                          <h3 className="text-base font-black text-emerald-900 leading-tight">
+                            Interactive Soundboard lookup
+                          </h3>
+                          <p className="text-[11px] text-emerald-700 leading-normal mt-1">
+                            Tap a card to speak out loud. Familiarize bilingual
+                            recognition prior to taking translation challenge.
+                          </p>
+                        </div>
+
+                        {/* Grid layout of all number cards in subset pool */}
+                        <div
+                          ref={arenaStage1ScrollRef}
+                          onScroll={checkArenaScroll}
+                          className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pt-3 px-1.5 pb-2 pr-1 border-b border-dashed border-slate-200"
                         >
-                          🦜 Clues
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                          {rangePool.map((entry, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                playSoundSynth("click");
+                                playWordAudio(entry);
+                              }}
+                              className="bg-white border-2 border-slate-200 hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border-b-[5px] border-b-slate-300 hover:border-b-[4px] p-4 rounded-2xl flex flex-col items-center gap-2 transition-all text-center cursor-pointer group relative"
+                            >
+                              <span className="font-mono text-2xl font-black text-slate-900 group-hover:text-emerald-700">
+                                {entry.digit}
+                              </span>
+                              <div className="flex flex-col select-none">
+                                <span
+                                  className={`text-xs font-sans font-extrabold tracking-tight leading-none ${
+                                    appState.isDarkMode
+                                      ? "text-emerald-300"
+                                      : "text-indigo-700"
+                                  }`}
+                                >
+                                  {entry.romanUrdu}
+                                </span>
+                                {appState.showScript && (
+                                  <span
+                                    className={`text-lg font-urdu leading-normal mt-1 block ${
+                                      appState.isDarkMode
+                                        ? "text-white"
+                                        : "text-emerald-700"
+                                    }`}
+                                  >
+                                    {entry.nativeScript}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 w-full justify-center">
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all duration-150 shadow-xs shrink-0 ${
+                                    appState.isDarkMode
+                                      ? "bg-emerald-950/90 hover:bg-emerald-900/90 border border-emerald-800 text-emerald-300"
+                                      : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white"
+                                  }`}
+                                >
+                                  <PremiumSpeakerIcon
+                                    className={`w-4 h-4 ${
+                                      appState.isDarkMode
+                                        ? "text-emerald-300"
+                                        : "text-emerald-600 group-hover:text-white"
+                                    }`}
+                                  />
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    playSoundSynth("click");
+                                    setMithuExplanationDigit(entry.digit);
+                                  }}
+                                  className={`px-2 py-1 border rounded-full text-[9px] font-black flex items-center gap-0.5 hover:scale-105 active:scale-95 transition cursor-pointer select-none shadow-xs ${
+                                    appState.isDarkMode
+                                      ? "bg-emerald-950/90 hover:bg-emerald-900/90 border-emerald-800 text-emerald-300"
+                                      : "bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-300 text-emerald-800"
+                                  }`}
+                                  title="View decoding patterns"
+                                >
+                                  🦜 Clues
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
 
-                {/* Dynamic Finish Line Overlay Takeover */}
-                {arenaStage1Finished ? (
-                  <motion.div
-                    key="arena-stage-1-finished-overlay"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-emerald-50/95 border-2 border-emerald-500 rounded-3xl p-6 text-center shadow-lg flex flex-col items-center justify-center gap-4 mt-2"
-                  >
-                    <MithuMascot mood="happy" />
-                    
-                    <h3 className="text-base font-black text-slate-800 leading-tight">
-                      You have completed the exploration! 🎉
-                    </h3>
-                    
-                    <p className="text-xs text-slate-600 leading-relaxed max-w-xs">
-                      Mithu has recorded your training history. What is your next play?
-                    </p>
+                        {/* Dynamic Finish Line Overlay Takeover */}
+                        {arenaStage1Finished ? (
+                          <motion.div
+                            key="arena-stage-1-finished-overlay"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-emerald-50/95 border-2 border-emerald-500 rounded-3xl p-6 text-center shadow-lg flex flex-col items-center justify-center gap-4 mt-2"
+                          >
+                            <MithuMascot mood="happy" />
 
-                    <div className="flex flex-col gap-3 w-full mt-2">
-                      {/* Option Button A (Progress Forward) */}
-                      <button
-                        onClick={() => {
-                          const leveledUp = saveArenaStageProgress(1);
-                          if (!leveledUp) {
-                            playSoundSynth("click");
-                          }
-                          setArenaStage1Finished(false);
-                          setArenaActiveStage(null);
-                        }}
-                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
-                          appState.isDarkMode 
-                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                        }`}
-                      >
-                        CONTINUE TO NEXT STAGE
-                      </button>
+                            <h3 className="text-base font-black text-slate-800 leading-tight">
+                              You have completed the exploration! 🎉
+                            </h3>
 
-                      {/* Option Button B (Loop Reset Review) */}
-                      <button
-                        onClick={() => {
-                          playSoundSynth("click");
-                          setArenaStage1Finished(false);
-                          if (arenaStage1ScrollRef.current) {
-                            arenaStage1ScrollRef.current.scrollTop = 0;
-                          }
-                        }}
-                        className="w-full bg-white hover:bg-slate-50 text-slate-700 rounded-2xl py-3.5 px-5 font-bold uppercase text-xs tracking-wider border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
-                      >
-                        REVIEW EXPLORARENA AGAIN
-                      </button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="text-center py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/60 mt-1">
-                    <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1.5 animate-pulse">
-                      ↕️ Scroll all the way to complete this module
-                    </span>
-                  </div>
-                )}
-              </motion.div>
-            );
-          }
+                            <p className="text-xs text-slate-600 leading-relaxed max-w-xs">
+                              Mithu has recorded your training history. What is
+                              your next play?
+                            </p>
 
-          // STAGE 2: TRANSLATION MCQ WORKFLOW
-          if (arenaActiveStage === 2) {
-            // Check if finished
-            if (arenaQuizIdx >= 5) {
-              const pass = arenaQuizScore >= 3;
-              return (
-                <motion.div
-                  key="arena-stage-2-end"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.12, ease: "easeOut" }}
-                  id="screen-arena-stage-2-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md">
-                    🏁
-                  </div>
+                            <div className="flex flex-col gap-3 w-full mt-2">
+                              {/* Option Button A (Progress Forward) */}
+                              <button
+                                onClick={() => {
+                                  const leveledUp = saveArenaStageProgress(1);
+                                  if (!leveledUp) {
+                                    playSoundSynth("click");
+                                  }
+                                  setArenaStage1Finished(false);
+                                  setArenaActiveStage(null);
+                                }}
+                                className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3.5 px-5 font-black uppercase text-xs tracking-wider cursor-pointer transition-all shadow-md ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                }`}
+                              >
+                                CONTINUE TO NEXT STAGE
+                              </button>
 
-                  <h3 className="text-xl font-extrabold text-slate-900 leading-tight">
-                    {pass ? "MCQ translation Duel Complete!" : "Need 3 Hits to Clear!"}
-                  </h3>
-                  
-                  <p className="text-xs text-slate-500 max-w-xs leading-relaxed font-semibold">
-                    {pass 
-                      ? `Brilliant progress reflexes! You solved ${arenaQuizScore} out of 5 equations correctly and scored +25 XP!`
-                      : `You correctly answered ${arenaQuizScore}/5. Retake this trial to unlock the Ear Trainer Auditory Stage.`}
-                  </p>
+                              {/* Option Button B (Loop Reset Review) */}
+                              <button
+                                onClick={() => {
+                                  playSoundSynth("click");
+                                  setArenaStage1Finished(false);
+                                  if (arenaStage1ScrollRef.current) {
+                                    arenaStage1ScrollRef.current.scrollTop = 0;
+                                  }
+                                }}
+                                className="w-full bg-white hover:bg-slate-50 text-slate-700 rounded-2xl py-3.5 px-5 font-bold uppercase text-xs tracking-wider border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 cursor-pointer transition-all"
+                              >
+                                REVIEW EXPLORARENA AGAIN
+                              </button>
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <div className="text-center py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/60 mt-1">
+                            <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1.5 animate-pulse">
+                              ↕️ Scroll all the way to complete this module
+                            </span>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  }
 
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    {pass ? (
-                      <button
-                        onClick={() => {
-                          saveArenaStageProgress(2);
-                          setArenaActiveStage(null);
-                        }}
-                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
-                          appState.isDarkMode 
-                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                        }`}
-                      >
-                        Unlock Stage 3: Listening Duel (+25 XP) 🎉
-                      </button>
-                    ) : (
-                      <button
-                        onClick={setupArenaStage2Quiz}
-                        className="w-full bg-sky-600 hover:bg-sky-500 text-white rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
-                      >
-                        Try Challenge Again
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setArenaActiveStage(null);
-                      }}
-                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
-                    >
-                      Exit to Stages Map
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            }
+                  // STAGE 2: TRANSLATION MCQ WORKFLOW
+                  if (arenaActiveStage === 2) {
+                    // Check if finished
+                    if (arenaQuizIdx >= 5) {
+                      const pass = arenaQuizScore >= 3;
+                      return (
+                        <motion.div
+                          key="arena-stage-2-end"
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -15 }}
+                          transition={{ duration: 0.12, ease: "easeOut" }}
+                          id="screen-arena-stage-2-end"
+                          className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
+                        >
+                          <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 text-emerald-950 font-black rounded-2xl flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md">
+                            🏁
+                          </div>
 
-            const currentQ = arenaQuizQuestions[arenaQuizIdx];
-            if (!currentQ) return null;
+                          <h3 className="text-xl font-extrabold text-slate-900 leading-tight">
+                            {pass
+                              ? "MCQ translation Duel Complete!"
+                              : "Need 3 Hits to Clear!"}
+                          </h3>
 
-            return (
-              <motion.div
-                key="arena-stage-2-game"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-arena-stage-2"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800 font-sans"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setArenaActiveStage(null);
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quit Challenge</span>
-                  </button>
-                  <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
-                    Question <span className="font-mono text-indigo-700">{arenaQuizIdx + 1}</span> of 5
-                  </span>
-                </div>
+                          <p className="text-xs text-slate-500 max-w-xs leading-relaxed font-semibold">
+                            {pass
+                              ? `Brilliant progress reflexes! You solved ${arenaQuizScore} out of 5 equations correctly and scored +25 XP!`
+                              : `You correctly answered ${arenaQuizScore}/5. Retake this trial to unlock the Ear Trainer Auditory Stage.`}
+                          </p>
 
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${((arenaQuizIdx + 1) / 5) * 100}%` }}
-                  />
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
-                      Translation match:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
-                  </div>
-                  <div className={`text-4xl font-extrabold leading-none py-2 tracking-tight ${
-                    appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                  } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                    {formatValueForDisplay(getDisplayPromptValue(currentQ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {currentQ.choices.map((choice, index) => {
-                    const isSelected = arenaQuizSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    
-                    let cardStyle = "ginti-choice-btn";
-                    if (arenaQuizAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
+                          <div className="flex flex-col gap-2.5 w-full mt-2">
+                            {pass ? (
+                              <button
+                                onClick={() => {
+                                  saveArenaStageProgress(2);
+                                  setArenaActiveStage(null);
+                                }}
+                                className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                }`}
+                              >
+                                Unlock Stage 3: Listening Duel (+25 XP) 🎉
+                              </button>
+                            ) : (
+                              <button
+                                onClick={setupArenaStage2Quiz}
+                                className="w-full bg-sky-600 hover:bg-sky-500 text-white rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
+                              >
+                                Try Challenge Again
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setArenaActiveStage(null);
+                              }}
+                              className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
+                            >
+                              Exit to Stages Map
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
                     }
 
+                    const currentQ = arenaQuizQuestions[arenaQuizIdx];
+                    if (!currentQ) return null;
+
                     return (
-                      <button
-                        key={index}
-                        disabled={arenaQuizAnswered}
-                        onClick={() => {
-                          const elapsed = Date.now() - arenaQuestionStartTime;
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
-                          } else {
-                            resetMasteryStreak();
-                          }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setArenaQuizSelected(choice);
-                          setArenaQuizAnswered(true);
+                      <motion.div
+                        key="arena-stage-2-game"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        id="screen-arena-stage-2"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800 font-sans"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setArenaActiveStage(null);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Quit Challenge</span>
+                          </button>
+                          <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
+                            Question{" "}
+                            <span className="font-mono text-indigo-700">
+                              {arenaQuizIdx + 1}
+                            </span>{" "}
+                            of 5
+                          </span>
+                        </div>
 
-                          if (isCorrect) {
-                            setArenaQuizScore((s) => s + 1);
-                          } else {
-                            setArenaQuizMistakes((prev) => [...prev, currentQ]);
-                          }
+                        <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                          <div
+                            className="bg-emerald-600 h-full transition-all duration-300"
+                            style={{
+                              width: `${((arenaQuizIdx + 1) / 5) * 100}%`,
+                            }}
+                          />
+                        </div>
 
-                          recordArenaResponse(currentQ.entry.digit, isCorrect, elapsed);
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
+                          <div className="flex items-center justify-between w-full mb-2">
+                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
+                              Translation match:
+                            </span>
+                            {renderMithuHelpBadge(currentQ.entry.digit)}
+                          </div>
+                          <div
+                            className={`text-4xl font-extrabold leading-none py-2 tracking-tight ${
+                              appState.showScript &&
+                              typeof getDisplayPromptValue(currentQ) ===
+                                "string" &&
+                              (getDisplayPromptValue(currentQ) as string).match(
+                                /[\u0600-\u06FF]/,
+                              )
+                                ? "font-urdu"
+                                : ""
+                            } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}
+                          >
+                            {formatValueForDisplay(
+                              getDisplayPromptValue(currentQ),
+                            )}
+                          </div>
+                        </div>
 
-                          const latestMistakes = isCorrect 
-                            ? arenaQuizMistakes 
-                            : [...arenaQuizMistakes, currentQ];
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          {currentQ.choices.map((choice, index) => {
+                            const isSelected = arenaQuizSelected === choice;
+                            const isCorrectVal =
+                              choice === currentQ.correctAnswer;
 
-                          // Advance state on delay timer
-                          setTimeout(() => {
-                            setArenaQuizSelected(null);
-                            setArenaQuizAnswered(false);
-                            const nextIdx = arenaQuizIdx + 1;
-                            if (nextIdx >= 5) {
-                              if (latestMistakes.length > 0) {
-                                startRecoveryRound("arena_stage2", latestMistakes);
+                            let cardStyle = "ginti-choice-btn";
+                            if (arenaQuizAnswered) {
+                              if (isCorrectVal) {
+                                cardStyle = "ginti-choice-btn-correct";
+                              } else if (isSelected) {
+                                cardStyle = "ginti-choice-btn-incorrect";
                               } else {
-                                playSoundSynth("levelUp");
-                                setArenaQuizIdx(nextIdx);
+                                cardStyle = "ginti-choice-btn-dimmed";
                               }
-                            } else {
-                              setArenaQuizIdx(nextIdx);
-                              setArenaQuestionStartTime(Date.now());
                             }
-                          }, 1200);
-                        }}
-                        className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none leading-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
+
+                            return (
+                              <button
+                                key={index}
+                                disabled={arenaQuizAnswered}
+                                onClick={() => {
+                                  const elapsed =
+                                    Date.now() - arenaQuestionStartTime;
+                                  const isCorrect =
+                                    choice === currentQ.correctAnswer;
+                                  if (isCorrect) {
+                                    incrementMasteryStreak();
+                                  } else {
+                                    resetMasteryStreak();
+                                  }
+                                  playSoundSynth(
+                                    isCorrect ? "correct" : "incorrect",
+                                  );
+                                  setArenaQuizSelected(choice);
+                                  setArenaQuizAnswered(true);
+
+                                  if (isCorrect) {
+                                    setArenaQuizScore((s) => s + 1);
+                                  } else {
+                                    setArenaQuizMistakes((prev) => [
+                                      ...prev,
+                                      currentQ,
+                                    ]);
+                                  }
+
+                                  recordArenaResponse(
+                                    currentQ.entry.digit,
+                                    isCorrect,
+                                    elapsed,
+                                  );
+
+                                  const latestMistakes = isCorrect
+                                    ? arenaQuizMistakes
+                                    : [...arenaQuizMistakes, currentQ];
+
+                                  // Advance state on delay timer
+                                  setTimeout(() => {
+                                    setArenaQuizSelected(null);
+                                    setArenaQuizAnswered(false);
+                                    const nextIdx = arenaQuizIdx + 1;
+                                    if (nextIdx >= 5) {
+                                      if (latestMistakes.length > 0) {
+                                        startRecoveryRound(
+                                          "arena_stage2",
+                                          latestMistakes,
+                                        );
+                                      } else {
+                                        playSoundSynth("levelUp");
+                                        setArenaQuizIdx(nextIdx);
+                                      }
+                                    } else {
+                                      setArenaQuizIdx(nextIdx);
+                                      setArenaQuestionStartTime(Date.now());
+                                    }
+                                  }, 1200);
+                                }}
+                                className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                              >
+                                <span
+                                  className={
+                                    appState.showScript &&
+                                    typeof choice === "string" &&
+                                    choice.match(/[\u0600-\u06FF]/)
+                                      ? "text-2xl font-urdu select-none leading-none"
+                                      : ""
+                                  }
+                                >
+                                  {formatValueForDisplay(choice)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
                     );
-                  })}
-                </div>
-              </motion.div>
-            );
-          }
+                  }
 
-          // STAGE 3: LISTENING AUDIT DUEL WORKFLOW
-          if (arenaActiveStage === 3) {
-            // Check if finished
-            if (arenaListIdx >= 5) {
-              const pass = arenaQuizScore >= 3;
-              return (
-                <motion.div
-                  key="arena-stage-3-end"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.12, ease: "easeOut" }}
-                  id="screen-arena-stage-3-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
-                >
-                  <div className="w-12 h-12 bg-indigo-105 rounded-2xl flex items-center justify-center text-indigo-750 border border-indigo-200 mb-1 shadow-sm">
-                    {pass ? (
-                      <Star className="w-6 h-6 fill-indigo-300 text-indigo-600 animate-spin-once" />
-                    ) : (
-                      <Lock className="w-6 h-6 text-slate-400" />
-                    )}
-                  </div>
+                  // STAGE 3: LISTENING AUDIT DUEL WORKFLOW
+                  if (arenaActiveStage === 3) {
+                    // Check if finished
+                    if (arenaListIdx >= 5) {
+                      const pass = arenaQuizScore >= 3;
+                      return (
+                        <motion.div
+                          key="arena-stage-3-end"
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -15 }}
+                          transition={{ duration: 0.12, ease: "easeOut" }}
+                          id="screen-arena-stage-3-end"
+                          className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
+                        >
+                          <div className="w-12 h-12 bg-indigo-105 rounded-2xl flex items-center justify-center text-indigo-750 border border-indigo-200 mb-1 shadow-sm">
+                            {pass ? (
+                              <Star className="w-6 h-6 fill-indigo-300 text-indigo-600 animate-spin-once" />
+                            ) : (
+                              <Lock className="w-6 h-6 text-slate-400" />
+                            )}
+                          </div>
 
-                  <h3 className="text-xl font-extrabold text-slate-900 leading-tight">
-                    {pass ? "Auditory Training Duel Complete!" : "Need 3 Hits to Clear!"}
-                  </h3>
-                  
-                  <p className="text-xs text-slate-555 max-w-xs leading-relaxed font-semibold">
-                    {pass 
-                      ? `Fantastic matching reflexes! You correctly translated ${arenaQuizScore} spoken Urdu numerals and scored +25 XP!`
-                      : `You finished with ${arenaQuizScore}/5 matches. Practice some more then retry the Listening Duel.`}
-                  </p>
+                          <h3 className="text-xl font-extrabold text-slate-900 leading-tight">
+                            {pass
+                              ? "Auditory Training Duel Complete!"
+                              : "Need 3 Hits to Clear!"}
+                          </h3>
 
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    {pass ? (
-                      <button
-                        onClick={() => {
-                          saveArenaStageProgress(3);
-                          setArenaActiveStage(null);
-                        }}
-                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
-                          appState.isDarkMode 
-                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                        }`}
-                      >
-                        Unlock Stage 4: Speed Blitz (+25 XP) 🎉
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setArenaQuizScore(0);
-                          setupArenaStage3Listening();
-                        }}
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
-                      >
-                        Try Challenge Again
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setArenaActiveStage(null);
-                      }}
-                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
-                    >
-                      Exit to Stages Map
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            }
+                          <p className="text-xs text-slate-555 max-w-xs leading-relaxed font-semibold">
+                            {pass
+                              ? `Fantastic matching reflexes! You correctly translated ${arenaQuizScore} spoken Urdu numerals and scored +25 XP!`
+                              : `You finished with ${arenaQuizScore}/5 matches. Practice some more then retry the Listening Duel.`}
+                          </p>
 
-            const currentQ = arenaListQuestions[arenaListIdx];
-            if (!currentQ) return null;
-
-            return (
-              <motion.div
-                key="arena-stage-3-game"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-arena-stage-3"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setArenaActiveStage(null);
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quit Challenge</span>
-                  </button>
-                  <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
-                    Question <span className="font-mono text-indigo-700">{arenaListIdx + 1}</span> of 5
-                  </span>
-                </div>
-
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${((arenaListIdx + 1) / 5) * 100}%` }}
-                  />
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-3">
-                    <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest text-left">
-                      Listening comprehension:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
-                  </div>
-                  
-                  {/* Clean layout container with outline removed as requested */}
-                  <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
-                    <button
-                      disabled={speechActive}
-                      onClick={() => {
-                        if (speechActive) return;
-                        playSoundSynth("click");
-                        playWordAudio(currentQ.entry);
-                        setArenaListSpeakerAnimate(true);
-                        const timer = setTimeout(() => {
-                           setArenaListSpeakerAnimate(false);
-                        }, 1200);
-                      }}
-                      className="w-20 h-20 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center border-2 border-indigo-400 border-b-[6px] border-b-indigo-850 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
-                      title="Speak Spoken Numeral"
-                    >
-                      <PremiumSpeakerIcon className={`w-9 h-9 text-white ${arenaListSpeakerAnimate ? 'animate-bounce' : ''}`} />
-                    </button>
-                  </div>
-                  <span className="text-[10px] text-indigo-550 dark:text-indigo-400 font-extrabold uppercase tracking-widest mt-3.5 block animate-pulse">
-                    REPLAY NUMERAL
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {currentQ.choices.map((choice, index) => {
-                    const isSelected = arenaListSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    
-                    let cardStyle = "ginti-choice-btn";
-                    if (arenaListAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
+                          <div className="flex flex-col gap-2.5 w-full mt-2">
+                            {pass ? (
+                              <button
+                                onClick={() => {
+                                  saveArenaStageProgress(3);
+                                  setArenaActiveStage(null);
+                                }}
+                                className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                }`}
+                              >
+                                Unlock Stage 4: Speed Blitz (+25 XP) 🎉
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setArenaQuizScore(0);
+                                  setupArenaStage3Listening();
+                                }}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
+                              >
+                                Try Challenge Again
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setArenaActiveStage(null);
+                              }}
+                              className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
+                            >
+                              Exit to Stages Map
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
                     }
 
+                    const currentQ = arenaListQuestions[arenaListIdx];
+                    if (!currentQ) return null;
+
                     return (
-                      <button
-                        key={index}
-                        disabled={arenaListAnswered}
-                        onClick={() => {
-                          const elapsed = Date.now() - arenaQuestionStartTime;
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
-                          } else {
-                            resetMasteryStreak();
-                          }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setArenaListSelected(choice);
-                          setArenaListAnswered(true);
+                      <motion.div
+                        key="arena-stage-3-game"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        id="screen-arena-stage-3"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setArenaActiveStage(null);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Quit Challenge</span>
+                          </button>
+                          <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
+                            Question{" "}
+                            <span className="font-mono text-indigo-700">
+                              {arenaListIdx + 1}
+                            </span>{" "}
+                            of 5
+                          </span>
+                        </div>
 
-                          if (isCorrect) {
-                            setArenaQuizScore((s) => s + 1);
-                          } else {
-                            setArenaListMistakes((prev) => [...prev, currentQ]);
-                          }
+                        <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                          <div
+                            className="bg-emerald-600 h-full transition-all duration-300"
+                            style={{
+                              width: `${((arenaListIdx + 1) / 5) * 100}%`,
+                            }}
+                          />
+                        </div>
 
-                          recordArenaResponse(currentQ.entry.digit, isCorrect, elapsed);
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
+                          <div className="flex items-center justify-between w-full mb-3">
+                            <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest text-left">
+                              Listening comprehension:
+                            </span>
+                            {renderMithuHelpBadge(currentQ.entry.digit)}
+                          </div>
 
-                          const latestMistakes = isCorrect 
-                            ? arenaListMistakes 
-                            : [...arenaListMistakes, currentQ];
+                          {/* Clean layout container with outline removed as requested */}
+                          <div className="flex items-center justify-center py-2.5 mt-1 mb-2">
+                            <button
+                              disabled={speechActive}
+                              onClick={() => {
+                                if (speechActive) return;
+                                playSoundSynth("click");
+                                playWordAudio(currentQ.entry);
+                                setArenaListSpeakerAnimate(true);
+                                const timer = setTimeout(() => {
+                                  setArenaListSpeakerAnimate(false);
+                                }, 1200);
+                              }}
+                              className="w-20 h-20 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center border-2 border-indigo-400 border-b-[6px] border-b-indigo-850 transition-all duration-100 active:translate-y-[4.5px] active:border-b-2 cursor-pointer shadow-lg select-none disabled:opacity-80 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:border-b-2"
+                              title="Speak Spoken Numeral"
+                            >
+                              <PremiumSpeakerIcon
+                                className={`w-9 h-9 text-white ${arenaListSpeakerAnimate ? "animate-bounce" : ""}`}
+                              />
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-indigo-550 dark:text-indigo-400 font-extrabold uppercase tracking-widest mt-3.5 block animate-pulse">
+                            REPLAY NUMERAL
+                          </span>
+                        </div>
 
-                          // Advance state on delay timer
-                          setTimeout(() => {
-                            setArenaListSelected(null);
-                            setArenaListAnswered(false);
-                            const nextIdx = arenaListIdx + 1;
-                            if (nextIdx >= 5) {
-                              if (latestMistakes.length > 0) {
-                                startRecoveryRound("arena_stage3", latestMistakes);
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          {currentQ.choices.map((choice, index) => {
+                            const isSelected = arenaListSelected === choice;
+                            const isCorrectVal =
+                              choice === currentQ.correctAnswer;
+
+                            let cardStyle = "ginti-choice-btn";
+                            if (arenaListAnswered) {
+                              if (isCorrectVal) {
+                                cardStyle = "ginti-choice-btn-correct";
+                              } else if (isSelected) {
+                                cardStyle = "ginti-choice-btn-incorrect";
                               } else {
-                                playSoundSynth("levelUp");
-                                setArenaListIdx(nextIdx);
+                                cardStyle = "ginti-choice-btn-dimmed";
                               }
-                            } else {
-                              setArenaListIdx(nextIdx);
-                              setArenaQuestionStartTime(Date.now());
                             }
-                          }, 1200);
-                        }}
-                        className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-mono font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                      >
-                        {choice}
-                      </button>
+
+                            return (
+                              <button
+                                key={index}
+                                disabled={arenaListAnswered}
+                                onClick={() => {
+                                  const elapsed =
+                                    Date.now() - arenaQuestionStartTime;
+                                  const isCorrect =
+                                    choice === currentQ.correctAnswer;
+                                  if (isCorrect) {
+                                    incrementMasteryStreak();
+                                  } else {
+                                    resetMasteryStreak();
+                                  }
+                                  playSoundSynth(
+                                    isCorrect ? "correct" : "incorrect",
+                                  );
+                                  setArenaListSelected(choice);
+                                  setArenaListAnswered(true);
+
+                                  if (isCorrect) {
+                                    setArenaQuizScore((s) => s + 1);
+                                  } else {
+                                    setArenaListMistakes((prev) => [
+                                      ...prev,
+                                      currentQ,
+                                    ]);
+                                  }
+
+                                  recordArenaResponse(
+                                    currentQ.entry.digit,
+                                    isCorrect,
+                                    elapsed,
+                                  );
+
+                                  const latestMistakes = isCorrect
+                                    ? arenaListMistakes
+                                    : [...arenaListMistakes, currentQ];
+
+                                  // Advance state on delay timer
+                                  setTimeout(() => {
+                                    setArenaListSelected(null);
+                                    setArenaListAnswered(false);
+                                    const nextIdx = arenaListIdx + 1;
+                                    if (nextIdx >= 5) {
+                                      if (latestMistakes.length > 0) {
+                                        startRecoveryRound(
+                                          "arena_stage3",
+                                          latestMistakes,
+                                        );
+                                      } else {
+                                        playSoundSynth("levelUp");
+                                        setArenaListIdx(nextIdx);
+                                      }
+                                    } else {
+                                      setArenaListIdx(nextIdx);
+                                      setArenaQuestionStartTime(Date.now());
+                                    }
+                                  }, 1200);
+                                }}
+                                className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-mono font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                              >
+                                {choice}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
                     );
-                  })}
-                </div>
-              </motion.div>
-            );
-          }
+                  }
 
-          // STAGE 4: SPEED ARCADE BLITZ TIME TRIAL WORKFLOW
-          if (arenaActiveStage === 4) {
-            if (arenaArcadeOver) {
-              const pass = arenaArcadeScore >= 3;
-              return (
-                <motion.div
-                  key="arena-stage-4-end"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.12, ease: "easeOut" }}
-                  id="screen-arena-stage-4-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center text-white border-2 border-rose-455 border-b-4 border-b-rose-900 shadow-sm">
-                    {pass ? (
-                      <Star className="w-6 h-6 fill-rose-200 text-white animate-bounce" />
-                    ) : (
-                      <Lock className="w-6 h-6 text-white/80" />
-                    )}
-                  </div>
+                  // STAGE 4: SPEED ARCADE BLITZ TIME TRIAL WORKFLOW
+                  if (arenaActiveStage === 4) {
+                    if (arenaArcadeOver) {
+                      const pass = arenaArcadeScore >= 3;
+                      return (
+                        <motion.div
+                          key="arena-stage-4-end"
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -15 }}
+                          transition={{ duration: 0.12, ease: "easeOut" }}
+                          id="screen-arena-stage-4-end"
+                          className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
+                        >
+                          <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center text-white border-2 border-rose-455 border-b-4 border-b-rose-900 shadow-sm">
+                            {pass ? (
+                              <Star className="w-6 h-6 fill-rose-200 text-white animate-bounce" />
+                            ) : (
+                              <Lock className="w-6 h-6 text-white/80" />
+                            )}
+                          </div>
 
-                  <h3 className="text-xl font-extrabold text-slate-900 pb-1 leading-tight">
-                    {pass ? "Stopwatch Blitz Completed!" : "Need 3 Hits to Clear!"}
-                  </h3>
-                  
-                  <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
-                    {pass 
-                      ? `Phenomenal reflex translation! You completed the run scoring ${arenaArcadeScore} correct matches in 30s!`
-                      : `You finished with ${arenaArcadeScore} hits. Reach at least 3 correct matches to pass Ginti's Stopwatch evaluation.`}
-                  </p>
+                          <h3 className="text-xl font-extrabold text-slate-900 pb-1 leading-tight">
+                            {pass
+                              ? "Stopwatch Blitz Completed!"
+                              : "Need 3 Hits to Clear!"}
+                          </h3>
 
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    {pass ? (
-                      <button
-                        onClick={() => {
-                          saveArenaStageProgress(4);
-                          setArenaActiveStage(null);
-                        }}
-                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
-                          appState.isDarkMode 
-                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                        }`}
-                      >
-                        Proceed to Stage 5: Mastery Battle (+25 XP) 🎉
-                      </button>
-                    ) : (
-                      <button
-                        onClick={startArenaStage4Arcade}
-                        className="w-full bg-rose-600 hover:bg-rose-500 text-white rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
-                      >
-                        Play Speed Blitz Again
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setArenaActiveStage(null);
-                      }}
-                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
-                    >
-                      Exit to Stages Map
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            }
+                          <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
+                            {pass
+                              ? `Phenomenal reflex translation! You completed the run scoring ${arenaArcadeScore} correct matches in 30s!`
+                              : `You finished with ${arenaArcadeScore} hits. Reach at least 3 correct matches to pass Ginti's Stopwatch evaluation.`}
+                          </p>
 
-            const currentQ = arenaArcadeActiveQ;
-            if (!currentQ) return null;
-
-            return (
-              <motion.div
-                key="arena-stage-4-game"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-arena-stage-4"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setArenaArcadeOver(true);
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quit Match</span>
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
-                      ⏱️ <span className="font-mono text-rose-600 font-extrabold">{arenaArcadeTime}s</span>
-                    </span>
-                    <span className="text-xs font-black text-emerald-950 bg-emerald-50 rounded-full px-2.5 py-1 select-none">
-                      🔥 <span className="font-semibold text-emerald-700">{arenaArcadeScore} hits</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${(arenaArcadeTime / 30) * 100}%` }}
-                  />
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200/85 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
-                      Speed blitz match:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
-                  </div>
-                  <div className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
-                    appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                  } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                    {formatValueForDisplay(getDisplayPromptValue(currentQ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {currentQ.choices.map((choice, index) => {
-                    const isSelected = arenaArcadeSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    
-                    let cardStyle = "ginti-choice-btn";
-                    if (arenaArcadeAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
+                          <div className="flex flex-col gap-2.5 w-full mt-2">
+                            {pass ? (
+                              <button
+                                onClick={() => {
+                                  saveArenaStageProgress(4);
+                                  setArenaActiveStage(null);
+                                }}
+                                className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md animate-pulse transition-all ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                }`}
+                              >
+                                Proceed to Stage 5: Mastery Battle (+25 XP) 🎉
+                              </button>
+                            ) : (
+                              <button
+                                onClick={startArenaStage4Arcade}
+                                className="w-full bg-rose-600 hover:bg-rose-500 text-white rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
+                              >
+                                Play Speed Blitz Again
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setArenaActiveStage(null);
+                              }}
+                              className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
+                            >
+                              Exit to Stages Map
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
                     }
 
-                    return (
-                      <button
-                        key={index}
-                        disabled={arenaArcadeAnswered}
-                        onClick={() => {
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
-                          } else {
-                            resetMasteryStreak();
-                          }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setArenaArcadeSelected(choice);
-                          setArenaArcadeAnswered(true);
-
-                          if (isCorrect) {
-                            setArenaArcadeScore((s) => s + 1);
-                          }
-
-                          // Rapid speed change mechanics (400ms flash gap)
-                          setTimeout(() => {
-                            setArenaArcadeSelected(null);
-                            setArenaArcadeAnswered(false);
-                            const nextQ = makeSingleArenaArcadeQuestion();
-                            setArenaArcadeActiveQ(nextQ);
-                          }, 400);
-                        }}
-                        className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none leading-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            );
-          }
-
-          // STAGE 5: ULTRA MASTERY GRAND FINAL BATTLE
-          if (arenaActiveStage === 5) {
-            // Check if finished (10 questions total)
-            if (arenaQuizIdx >= 10) {
-              const pass = arenaQuizScore >= 7;
-              return (
-                <motion.div
-                  key="arena-stage-5-end"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.12, ease: "easeOut" }}
-                  id="screen-arena-stage-5-end"
-                  className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
-                >
-                  <div className="w-14 h-14 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none animate-bounce">
-                    🏆
-                  </div>
-
-                  <h3 className="text-xl font-black text-slate-900 font-extrabold leading-tight">
-                    {pass ? "Grand Final Mastery Completed! 🎉" : "Need 7 Correct Answers to Master!"}
-                  </h3>
-                  
-                  <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
-                    {pass 
-                      ? `Incredible! You solved ${arenaQuizScore}/10 mixed trials and achieved total Ginti range mastery for ${minRange} → ${maxRange}! Awarded +100 bonus XP!`
-                      : `You correctly answered ${arenaQuizScore}/10 questions. Review some elements in Stage 1 and retake the Final Battle.`}
-                  </p>
-
-                  <div className="flex flex-col gap-2.5 w-full mt-2">
-                    {pass ? (
-                      <button
-                        onClick={() => {
-                          const min = appState.arenaMin ?? 30;
-                          const max = appState.arenaMax ?? 100;
-                          const rangeKey = `${min}-${max}`;
-                          const isFirstTime = !appState.completedArenaFields?.includes(rangeKey);
-                          
-                          // Record completed field
-                          saveState((prev) => {
-                            const prevCompleted = prev.completedArenaFields || [];
-                            const nextCompleted = prevCompleted.includes(rangeKey) ? prevCompleted : [...prevCompleted, rangeKey];
-                            return {
-                              ...prev,
-                              completedArenaFields: nextCompleted,
-                            };
-                          });
-
-                          const leveledUp = saveArenaStageProgress(5);
-                          if (!leveledUp) {
-                            playSoundSynth("click");
-                          }
-                          
-                          setArenaActiveStage(null);
-
-                          if (isFirstTime) {
-                            setCompletedArenaFieldPopup({ min, max });
-                          } else {
-                            showToast(`Mastery confirmed! You've previously completed the range ${min}–${max}! 🎉`);
-                          }
-                        }}
-                        className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all ${
-                          appState.isDarkMode 
-                            ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2" 
-                            : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
-                        }`}
-                      >
-                        Claim Mastery Badge & Trophy (+100 XP) 🏆
-                      </button>
-                    ) : (
-                      <button
-                        onClick={setupArenaStage5Mastery}
-                        className="w-full bg-amber-500 hover:bg-amber-450 text-emerald-955 rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
-                      >
-                        Fight Final Battle Again
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        playSoundSynth("click");
-                        setArenaActiveStage(null);
-                      }}
-                      className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
-                    >
-                      Exit to Stages Map
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            }
-
-            const currentQ = arenaQuizQuestions[arenaQuizIdx];
-            if (!currentQ) return null;
-
-            return (
-              <motion.div
-                key="arena-stage-5-game"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.12, ease: "easeOut" }}
-                id="screen-arena-stage-5"
-                className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
-                  <button
-                    onClick={() => {
-                      playSoundSynth("click");
-                      setArenaActiveStage(null);
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quit Challenge</span>
-                  </button>
-                  <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
-                    Battle <span className="font-mono text-amber-600 font-extrabold">{arenaQuizIdx + 1}</span> of 10
-                  </span>
-                </div>
-
-                <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300"
-                    style={{ width: `${((arenaQuizIdx + 1) / 10) * 100}%` }}
-                  />
-                </div>
-
-                <div className="bg-slate-50 border border-slate-205 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest text-left">
-                      Mixed mastery trial:
-                    </span>
-                    {renderMithuHelpBadge(currentQ.entry.digit)}
-                  </div>
-                  <div className={`text-4xl font-extrabold leading-none py-2 tracking-tight ${
-                    appState.showScript && typeof getDisplayPromptValue(currentQ) === "string" && (getDisplayPromptValue(currentQ) as string).match(/[\u0600-\u06FF]/) ? "font-urdu" : ""
-                  } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}>
-                    {formatValueForDisplay(getDisplayPromptValue(currentQ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {currentQ.choices.map((choice, index) => {
-                    const isSelected = arenaQuizSelected === choice;
-                    const isCorrectVal = choice === currentQ.correctAnswer;
-                    
-                    let cardStyle = "ginti-choice-btn";
-                    if (arenaQuizAnswered) {
-                      if (isCorrectVal) {
-                        cardStyle = "ginti-choice-btn-correct";
-                      } else if (isSelected) {
-                        cardStyle = "ginti-choice-btn-incorrect";
-                      } else {
-                        cardStyle = "ginti-choice-btn-dimmed";
-                      }
-                    }
+                    const currentQ = arenaArcadeActiveQ;
+                    if (!currentQ) return null;
 
                     return (
-                      <button
-                        key={index}
-                        disabled={arenaQuizAnswered}
-                        onClick={() => {
-                          const elapsed = Date.now() - arenaQuestionStartTime;
-                          const isCorrect = choice === currentQ.correctAnswer;
-                          if (isCorrect) {
-                            incrementMasteryStreak();
-                          } else {
-                            resetMasteryStreak();
-                          }
-                          playSoundSynth(isCorrect ? "correct" : "incorrect");
-                          setArenaQuizSelected(choice);
-                          setArenaQuizAnswered(true);
+                      <motion.div
+                        key="arena-stage-4-game"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        id="screen-arena-stage-4"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setArenaArcadeOver(true);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Quit Match</span>
+                          </button>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-black text-slate-900 bg-slate-100 rounded-full px-2.5 py-1 flex items-center gap-1 select-none">
+                              ⏱️{" "}
+                              <span className="font-mono text-rose-600 font-extrabold">
+                                {arenaArcadeTime}s
+                              </span>
+                            </span>
+                            <span className="text-xs font-black text-emerald-950 bg-emerald-50 rounded-full px-2.5 py-1 select-none">
+                              🔥{" "}
+                              <span className="font-semibold text-emerald-700">
+                                {arenaArcadeScore} hits
+                              </span>
+                            </span>
+                          </div>
+                        </div>
 
-                          if (isCorrect) {
-                            setArenaQuizScore((s) => s + 1);
-                          } else {
-                            setArenaQuizMistakes((prev) => [...prev, currentQ]);
-                          }
+                        <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                          <div
+                            className="bg-emerald-600 h-full transition-all duration-300"
+                            style={{
+                              width: `${(arenaArcadeTime / 30) * 100}%`,
+                            }}
+                          />
+                        </div>
 
-                          recordArenaResponse(currentQ.entry.digit, isCorrect, elapsed);
+                        <div className="bg-slate-50 border border-slate-200/85 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
+                          <div className="flex items-center justify-between w-full mb-2">
+                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-left">
+                              Speed blitz match:
+                            </span>
+                            {renderMithuHelpBadge(currentQ.entry.digit)}
+                          </div>
+                          <div
+                            className={`text-3xl font-extrabold leading-none py-2 tracking-tight ${
+                              appState.showScript &&
+                              typeof getDisplayPromptValue(currentQ) ===
+                                "string" &&
+                              (getDisplayPromptValue(currentQ) as string).match(
+                                /[\u0600-\u06FF]/,
+                              )
+                                ? "font-urdu"
+                                : ""
+                            } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}
+                          >
+                            {formatValueForDisplay(
+                              getDisplayPromptValue(currentQ),
+                            )}
+                          </div>
+                        </div>
 
-                          const latestMistakes = isCorrect 
-                            ? arenaQuizMistakes 
-                            : [...arenaQuizMistakes, currentQ];
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          {currentQ.choices.map((choice, index) => {
+                            const isSelected = arenaArcadeSelected === choice;
+                            const isCorrectVal =
+                              choice === currentQ.correctAnswer;
 
-                          // Advance state on delay timer
-                          setTimeout(() => {
-                            setArenaQuizSelected(null);
-                            setArenaQuizAnswered(false);
-                            const nextIdx = arenaQuizIdx + 1;
-                            if (nextIdx >= 10) {
-                              if (latestMistakes.length > 0) {
-                                startRecoveryRound("arena_stage5", latestMistakes);
+                            let cardStyle = "ginti-choice-btn";
+                            if (arenaArcadeAnswered) {
+                              if (isCorrectVal) {
+                                cardStyle = "ginti-choice-btn-correct";
+                              } else if (isSelected) {
+                                cardStyle = "ginti-choice-btn-incorrect";
                               } else {
-                                playSoundSynth("levelUp");
-                                setArenaQuizIdx(nextIdx);
+                                cardStyle = "ginti-choice-btn-dimmed";
                               }
-                            } else {
-                              setArenaQuizIdx(nextIdx);
-                              setArenaQuestionStartTime(Date.now());
                             }
-                          }, 1200);
-                        }}
-                        className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
-                      >
-                        <span className={appState.showScript && typeof choice === 'string' && choice.match(/[\u0600-\u06FF]/) ? 'text-2xl font-urdu select-none leading-none' : ''}>
-                          {formatValueForDisplay(choice)}
-                        </span>
-                      </button>
+
+                            return (
+                              <button
+                                key={index}
+                                disabled={arenaArcadeAnswered}
+                                onClick={() => {
+                                  const isCorrect =
+                                    choice === currentQ.correctAnswer;
+                                  if (isCorrect) {
+                                    incrementMasteryStreak();
+                                  } else {
+                                    resetMasteryStreak();
+                                  }
+                                  playSoundSynth(
+                                    isCorrect ? "correct" : "incorrect",
+                                  );
+                                  setArenaArcadeSelected(choice);
+                                  setArenaArcadeAnswered(true);
+
+                                  if (isCorrect) {
+                                    setArenaArcadeScore((s) => s + 1);
+                                  }
+
+                                  // Rapid speed change mechanics (400ms flash gap)
+                                  setTimeout(() => {
+                                    setArenaArcadeSelected(null);
+                                    setArenaArcadeAnswered(false);
+                                    const nextQ =
+                                      makeSingleArenaArcadeQuestion();
+                                    setArenaArcadeActiveQ(nextQ);
+                                  }, 400);
+                                }}
+                                className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                              >
+                                <span
+                                  className={
+                                    appState.showScript &&
+                                    typeof choice === "string" &&
+                                    choice.match(/[\u0600-\u06FF]/)
+                                      ? "text-2xl font-urdu select-none leading-none"
+                                      : ""
+                                  }
+                                >
+                                  {formatValueForDisplay(choice)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
                     );
-                  })}
-                </div>
-              </motion.div>
-            );
-          }
+                  }
 
-          return null;
-        })()}
-            </AnimatePresence>
-          </div>
-        )}
+                  // STAGE 5: ULTRA MASTERY GRAND FINAL BATTLE
+                  if (arenaActiveStage === 5) {
+                    // Check if finished (10 questions total)
+                    if (arenaQuizIdx >= 10) {
+                      const pass = arenaQuizScore >= 7;
+                      return (
+                        <motion.div
+                          key="arena-stage-5-end"
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -15 }}
+                          transition={{ duration: 0.12, ease: "easeOut" }}
+                          id="screen-arena-stage-5-end"
+                          className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col items-center justify-center text-center gap-3 py-6 sm:py-8 my-auto text-slate-800 min-h-[70vh] sm:min-h-[75vh]"
+                        >
+                          <div className="w-14 h-14 bg-amber-400 text-emerald-950 rounded-full flex items-center justify-center text-xl border border-amber-300 border-b-4 border-b-amber-700 shadow-md transform hover:rotate-6 transition select-none animate-bounce">
+                            🏆
+                          </div>
 
+                          <h3 className="text-xl font-black text-slate-900 font-extrabold leading-tight">
+                            {pass
+                              ? "Grand Final Mastery Completed! 🎉"
+                              : "Need 7 Correct Answers to Master!"}
+                          </h3>
+
+                          <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
+                            {pass
+                              ? `Incredible! You solved ${arenaQuizScore}/10 mixed trials and achieved total Ginti range mastery for ${minRange} → ${maxRange}! Awarded +100 bonus XP!`
+                              : `You correctly answered ${arenaQuizScore}/10 questions. Review some elements in Stage 1 and retake the Final Battle.`}
+                          </p>
+
+                          <div className="flex flex-col gap-2.5 w-full mt-2">
+                            {pass ? (
+                              <button
+                                onClick={() => {
+                                  const min = appState.arenaMin ?? 30;
+                                  const max = appState.arenaMax ?? 100;
+                                  const rangeKey = `${min}-${max}`;
+                                  const isFirstTime =
+                                    !appState.completedArenaFields?.includes(
+                                      rangeKey,
+                                    );
+
+                                  // Record completed field
+                                  saveState((prev) => {
+                                    const prevCompleted =
+                                      prev.completedArenaFields || [];
+                                    const nextCompleted =
+                                      prevCompleted.includes(rangeKey)
+                                        ? prevCompleted
+                                        : [...prevCompleted, rangeKey];
+                                    return {
+                                      ...prev,
+                                      completedArenaFields: nextCompleted,
+                                    };
+                                  });
+
+                                  const leveledUp = saveArenaStageProgress(5);
+                                  if (!leveledUp) {
+                                    playSoundSynth("click");
+                                  }
+
+                                  setArenaActiveStage(null);
+
+                                  if (isFirstTime) {
+                                    setCompletedArenaFieldPopup({ min, max });
+                                  } else {
+                                    showToast(
+                                      `Mastery confirmed! You've previously completed the range ${min}–${max}! 🎉`,
+                                    );
+                                  }
+                                }}
+                                className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl py-3 px-5 font-black uppercase text-xs tracking-wider cursor-pointer shadow-md transition-all ${
+                                  appState.isDarkMode
+                                    ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                                    : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
+                                }`}
+                              >
+                                Claim Mastery Badge & Trophy (+100 XP) 🏆
+                              </button>
+                            ) : (
+                              <button
+                                onClick={setupArenaStage5Mastery}
+                                className="w-full bg-amber-500 hover:bg-amber-450 text-emerald-955 rounded-2xl py-3 px-5 font-black text-xs uppercase cursor-pointer"
+                              >
+                                Fight Final Battle Again
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                playSoundSynth("click");
+                                setArenaActiveStage(null);
+                              }}
+                              className="w-full bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl py-3 px-5 text-xs font-black cursor-pointer active:translate-y-[2px] active:border-b-2 active:shadow-xs transition-all duration-100 select-none shadow-xs"
+                            >
+                              Exit to Stages Map
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
+                    const currentQ = arenaQuizQuestions[arenaQuizIdx];
+                    if (!currentQ) return null;
+
+                    return (
+                      <motion.div
+                        key="arena-stage-5-game"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        id="screen-arena-stage-5"
+                        className="max-w-md mx-auto w-full p-4 flex flex-col gap-4 text-slate-800"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 w-full">
+                          <button
+                            onClick={() => {
+                              playSoundSynth("click");
+                              setArenaActiveStage(null);
+                            }}
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-slate-700 bg-white border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-[2px] active:border-b-2 active:shadow-xs flex items-center gap-1 cursor-pointer transition-all duration-100 select-none shadow-xs"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Quit Challenge</span>
+                          </button>
+                          <span className="text-xs font-extrabold text-slate-900 bg-slate-100 rounded-full px-2.5 py-1">
+                            Battle{" "}
+                            <span className="font-mono text-amber-600 font-extrabold">
+                              {arenaQuizIdx + 1}
+                            </span>{" "}
+                            of 10
+                          </span>
+                        </div>
+
+                        <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden border border-slate-300/40">
+                          <div
+                            className="bg-emerald-600 h-full transition-all duration-300"
+                            style={{
+                              width: `${((arenaQuizIdx + 1) / 10) * 100}%`,
+                            }}
+                          />
+                        </div>
+
+                        <div className="bg-slate-50 border border-slate-205 rounded-2xl p-5 text-center shadow-inner mt-2 flex flex-col items-center relative">
+                          <div className="flex items-center justify-between w-full mb-2">
+                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest text-left">
+                              Mixed mastery trial:
+                            </span>
+                            {renderMithuHelpBadge(currentQ.entry.digit)}
+                          </div>
+                          <div
+                            className={`text-4xl font-extrabold leading-none py-2 tracking-tight ${
+                              appState.showScript &&
+                              typeof getDisplayPromptValue(currentQ) ===
+                                "string" &&
+                              (getDisplayPromptValue(currentQ) as string).match(
+                                /[\u0600-\u06FF]/,
+                              )
+                                ? "font-urdu"
+                                : ""
+                            } ${appState.isDarkMode ? "text-white" : "text-slate-800"}`}
+                          >
+                            {formatValueForDisplay(
+                              getDisplayPromptValue(currentQ),
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          {currentQ.choices.map((choice, index) => {
+                            const isSelected = arenaQuizSelected === choice;
+                            const isCorrectVal =
+                              choice === currentQ.correctAnswer;
+
+                            let cardStyle = "ginti-choice-btn";
+                            if (arenaQuizAnswered) {
+                              if (isCorrectVal) {
+                                cardStyle = "ginti-choice-btn-correct";
+                              } else if (isSelected) {
+                                cardStyle = "ginti-choice-btn-incorrect";
+                              } else {
+                                cardStyle = "ginti-choice-btn-dimmed";
+                              }
+                            }
+
+                            return (
+                              <button
+                                key={index}
+                                disabled={arenaQuizAnswered}
+                                onClick={() => {
+                                  const elapsed =
+                                    Date.now() - arenaQuestionStartTime;
+                                  const isCorrect =
+                                    choice === currentQ.correctAnswer;
+                                  if (isCorrect) {
+                                    incrementMasteryStreak();
+                                  } else {
+                                    resetMasteryStreak();
+                                  }
+                                  playSoundSynth(
+                                    isCorrect ? "correct" : "incorrect",
+                                  );
+                                  setArenaQuizSelected(choice);
+                                  setArenaQuizAnswered(true);
+
+                                  if (isCorrect) {
+                                    setArenaQuizScore((s) => s + 1);
+                                  } else {
+                                    setArenaQuizMistakes((prev) => [
+                                      ...prev,
+                                      currentQ,
+                                    ]);
+                                  }
+
+                                  recordArenaResponse(
+                                    currentQ.entry.digit,
+                                    isCorrect,
+                                    elapsed,
+                                  );
+
+                                  const latestMistakes = isCorrect
+                                    ? arenaQuizMistakes
+                                    : [...arenaQuizMistakes, currentQ];
+
+                                  // Advance state on delay timer
+                                  setTimeout(() => {
+                                    setArenaQuizSelected(null);
+                                    setArenaQuizAnswered(false);
+                                    const nextIdx = arenaQuizIdx + 1;
+                                    if (nextIdx >= 10) {
+                                      if (latestMistakes.length > 0) {
+                                        startRecoveryRound(
+                                          "arena_stage5",
+                                          latestMistakes,
+                                        );
+                                      } else {
+                                        playSoundSynth("levelUp");
+                                        setArenaQuizIdx(nextIdx);
+                                      }
+                                    } else {
+                                      setArenaQuizIdx(nextIdx);
+                                      setArenaQuestionStartTime(Date.now());
+                                    }
+                                  }, 1200);
+                                }}
+                                className={`choice-btn py-3.5 px-3 text-center text-base sm:text-lg md:text-xl font-black transition-all cursor-pointer flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px] select-none w-full ${cardStyle}`}
+                              >
+                                <span
+                                  className={
+                                    appState.showScript &&
+                                    typeof choice === "string" &&
+                                    choice.match(/[\u0600-\u06FF]/)
+                                      ? "text-2xl font-urdu select-none leading-none"
+                                      : ""
+                                  }
+                                >
+                                  {formatValueForDisplay(choice)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    );
+                  }
+
+                  return null;
+                })()}
+              </AnimatePresence>
+            </div>
+          )}
         </AnimatePresence>
       </main>
 
       {/* =============================================================================
           GLOBAL SYSTEM STATUTORY FOOTER
           ============================================================================= */}
-      <footer className={`py-4 px-4 md:px-8 mt-12 border-t text-center text-xs transition-all duration-300 ${
-        appState.isDarkMode 
-          ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-300/70" 
-          : "bg-slate-50 border-slate-200 text-slate-500"
-      }`}>
+      <footer
+        className={`py-4 px-4 md:px-8 mt-12 border-t text-center text-xs transition-all duration-300 ${
+          appState.isDarkMode
+            ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-300/70"
+            : "bg-slate-50 border-slate-200 text-slate-500"
+        }`}
+      >
         <div className="max-w-2xl mx-auto flex flex-col items-center">
           <button
             onClick={() => {
@@ -10447,20 +12423,25 @@ export default function App() {
               setAboutExpanded(!aboutExpanded);
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black text-[11px] uppercase tracking-wider cursor-pointer transition-all ${
-              appState.isDarkMode 
-                ? "bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-800/60" 
+              appState.isDarkMode
+                ? "bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-200 border border-emerald-800/60"
                 : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-xs"
             }`}
           >
             <Info className="w-3.5 h-3.5 text-amber-500 fill-amber-500/10" />
             <span>{aboutExpanded ? "Hide Details" : "About Ginti"}</span>
-            <svg 
-              className={`w-3 h-3 transition-transform duration-200 ${aboutExpanded ? "rotate-180" : ""}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`w-3 h-3 transition-transform duration-200 ${aboutExpanded ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.5"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
@@ -10473,28 +12454,52 @@ export default function App() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden w-full"
               >
-                <div className={`mt-4 pt-4 border-t text-left text-[11px] sm:text-xs space-y-3 leading-relaxed max-w-md mx-auto ${
-                  appState.isDarkMode ? "border-emerald-900/40 text-emerald-300/85" : "border-slate-200 text-slate-600"
-                }`}>
+                <div
+                  className={`mt-4 pt-4 border-t text-left text-[11px] sm:text-xs space-y-3 leading-relaxed max-w-md mx-auto ${
+                    appState.isDarkMode
+                      ? "border-emerald-900/40 text-emerald-300/85"
+                      : "border-slate-200 text-slate-600"
+                  }`}
+                >
                   <div className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400">
                     <span>🌿</span>
                     <span>About Ginti</span>
                   </div>
                   <p>
-                    Learn Urdu numbers through practice, pattern recognition, and rapid recall challenges.
+                    Learn Urdu numbers through practice, pattern recognition,
+                    and rapid recall challenges.
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10.5px] sm:text-[11px] font-medium pt-1">
                     <div>
-                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">Version:</span> 1.0
+                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">
+                        Version:
+                      </span>{" "}
+                      1.0
                     </div>
                     <div>
-                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">Built with</span> AI-assisted development
+                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">
+                        Built with
+                      </span>{" "}
+                      AI-assisted development
                     </div>
                     <div>
-                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">GitHub:</span> <a href="https://github.com/5uleman" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-500 transition-colors">5uleman</a>
+                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">
+                        GitHub:
+                      </span>{" "}
+                      <a
+                        href="https://github.com/5uleman"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-amber-500 transition-colors"
+                      >
+                        5uleman
+                      </a>
                     </div>
                     <div>
-                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">Intellectual Property:</span> © 2026 Ginti
+                      <span className="text-slate-400 dark:text-emerald-500/75 font-semibold">
+                        Intellectual Property:
+                      </span>{" "}
+                      © 2026 Ginti
                     </div>
                   </div>
                 </div>
@@ -10502,12 +12507,13 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          <div className={`text-[10px] tracking-wide mt-2 ${appState.isDarkMode ? "text-emerald-500/60" : "text-slate-400"}`}>
+          <div
+            className={`text-[10px] tracking-wide mt-2 ${appState.isDarkMode ? "text-emerald-500/60" : "text-slate-400"}`}
+          >
             © 2026 Ginti. All rights reserved.
           </div>
         </div>
       </footer>
-
     </motion.div>
   );
 }

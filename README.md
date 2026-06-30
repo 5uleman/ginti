@@ -1,57 +1,58 @@
-# Ginti — گنتی
+# Ginti
 
-Ginti is an interactive web app designed to help learners master Urdu numbers from 1–100 through gameplay, pattern recognition, and repeated practice.
+<p align="center">
+  <img src="./public/logo-en.png" alt="Ginti Logo" width="140">
+</p>
 
-Instead of memorizing number words through lists, Ginti teaches learners to recognize number families, identify common patterns, and build speed through structured challenges.
+<p align="center">
+  <strong>Learn Urdu numbers through play.</strong>
+</p>
 
-## Features
+<p align="center">
+  A carefully crafted educational experience where learning feels more like playing than studying.
+</p>
 
-### Learning Journey
+---
 
-Progress through guided units and stages that gradually introduce Urdu number words from 1–100.
+## About
 
-### Training Arena
+Ginti is a gamified web application designed to teach Urdu numbers through interaction rather than memorization.
 
-Create custom practice sessions using your own number ranges and difficulty preferences.
+Instead of repetitive drills, learners progress through structured lessons, placement challenges, fast-paced practice modes, and rewarding feedback systems—all wrapped inside an interface inspired by modern game design.
 
-### Blitz Mode
+Every animation, sound effect, transition, and interaction has been intentionally refined to make the experience enjoyable from the very first tap.
 
-A fast-paced challenge mode focused on speed, recall, and accuracy.
+---
 
-### Mastery Streaks
+## Highlights
 
-Build streaks by answering correctly. A wrong answer resets the streak, rewarding consistent mastery rather than daily attendance.
+- 🦜 Interactive learning companion (Mithu)
+- 🔥 Skill-based Mastery Streak
+- 🎯 Placement Challenge system
+- ⚡ Blitz Mode
+- 🌗 Light & Dark themes
+- 🔊 Polished audio feedback
+- 📱 Responsive across desktop, tablet, and mobile
+- 🎮 Arcade-inspired interface with meaningful progression
 
-### Mithu Help System
+---
 
-Receive contextual hints and explanations when you struggle with a number. Mithu helps learners recognize number families and patterns instead of simply revealing answers.
+## Philosophy
 
-### Number Lookup
+Good educational software shouldn't feel educational.
 
-Instantly search Urdu numbers by word or numeral.
+Ginti was built around a simple idea:
 
-### Urdu Script Support
+> **If learning is enjoyable, people naturally want to keep going.**
 
-Switch between Roman Urdu and Urdu script for additional reading practice.
+---
 
-### Dark Mode
+## Screenshots
 
-Full light and dark theme support.
+_Coming later._
 
-## Purpose
+---
 
-Urdu numbers can be difficult to memorize because many words do not follow obvious patterns at first glance.
+## License
 
-Ginti focuses on helping learners discover those patterns naturally through practice, repetition, and guided hints.
-
-## Technology
-
-Built as a client-side web application using HTML, CSS, and JavaScript.
-
-## Credits
-
-Designed and developed by Suleman.
-
-Built with the assistance of modern AI development tools.
-
-© 2026 Ginti. All rights reserved.
+This repository is shared for educational and portfolio purposes.
