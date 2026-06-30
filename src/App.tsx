@@ -1818,6 +1818,12 @@ const markUserActive = (currentState: AppState): AppState => {
   };
 };
 
+const formatCompactXP = (xp: number): string => {
+  if (xp < 1000) return `${xp}`;
+  const value = Math.floor(xp / 100) / 10;
+  return `${value}K`;
+};
+
 export default function App() {
   const shouldReduceMotion = useReducedMotion();
 
@@ -2154,6 +2160,7 @@ export default function App() {
   // Arcade Blitz Arena
   const [arcadeState, setArcadeState] = useState<ArcadeState | null>(null);
   const arcadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSavedArcadeScoreRef = useRef<boolean>(false);
 
   // Speech and Audio state
   const [speechActive, setSpeechActive] = useState<boolean>(false);
@@ -2170,6 +2177,7 @@ export default function App() {
 
   // Mastery Streak states
   const [showStreakPopup, setShowStreakPopup] = useState<boolean>(false);
+  const [showXPPopup, setShowXPPopup] = useState<boolean>(false);
   const [streakCelebration, setStreakCelebration] = useState<{
     title: string;
     message: string;
@@ -3539,10 +3547,14 @@ export default function App() {
           ? Math.min(5, completedStage + 1)
           : currentProgressPrev;
 
+      const isNewCompletion = completedStage >= currentProgressPrev;
+
       const updated: AppState = {
         ...prev,
         arenaStageProgress: nextProgress,
-        totalXP: prev.totalXP + 25, // Generous XP award bounty
+        totalXP: isNewCompletion
+          ? prev.totalXP + (completedStage === 5 ? 20 : 5)
+          : prev.totalXP,
       };
       if (completedStage === 5) {
         updated.arenaCompleted = true;
@@ -3832,7 +3844,7 @@ export default function App() {
         return {
           ...prev,
           unitStagesProgress: updatedProgress,
-          totalXP: prev.totalXP + 15, // Micro XP award for finishing a stage!
+          totalXP: prev.totalXP + 3, // Rebalanced: +3 XP for stage completion!
         };
       });
       playSoundSynth("levelUp");
@@ -4076,31 +4088,31 @@ export default function App() {
 
   const passPlacementChallengeDirectly = (unitId: string) => {
     playSoundSynth("levelUp");
-    const isNewCompletion = !appState.completedUnits.includes(unitId);
-    const unitsArray = isNewCompletion
-      ? [...appState.completedUnits, unitId]
-      : appState.completedUnits;
+    saveState((prev) => {
+      const isNewCompletion = !prev.completedUnits.includes(unitId);
+      const unitsArray = isNewCompletion
+        ? [...prev.completedUnits, unitId]
+        : prev.completedUnits;
 
-    const placementsArray =
-      appState.placementCompletedUnits &&
-      !appState.placementCompletedUnits.includes(unitId)
-        ? [...appState.placementCompletedUnits, unitId]
-        : appState.placementCompletedUnits || [unitId];
+      const placementsArray =
+        prev.placementCompletedUnits &&
+        !prev.placementCompletedUnits.includes(unitId)
+          ? [...prev.placementCompletedUnits, unitId]
+          : prev.placementCompletedUnits || [unitId];
 
-    const nextJourneyProgress = {
-      ...(appState.unitStagesProgress ?? {}),
-      [unitId]: 5,
-    };
+      const nextJourneyProgress = {
+        ...(prev.unitStagesProgress ?? {}),
+        [unitId]: 5,
+      };
 
-    const updated = {
-      ...appState,
-      completedUnits: unitsArray,
-      placementCompletedUnits: placementsArray,
-      totalXP: appState.totalXP + 50,
-      unitStagesProgress: nextJourneyProgress,
-    };
-
-    saveState(updated);
+      return {
+        ...prev,
+        completedUnits: unitsArray,
+        placementCompletedUnits: placementsArray,
+        totalXP: prev.totalXP + 10, // Rebalanced: +10 XP for Placement completion!
+        unitStagesProgress: nextJourneyProgress,
+      };
+    });
 
     const currentIndex = UNITS.findIndex((u) => u.id === unitId);
     const nextUnitAvailable =
@@ -4372,12 +4384,12 @@ export default function App() {
       setAppState((prev) => {
         const updated = {
           ...prev,
-          totalXP: Math.max(0, prev.totalXP - 20),
+          totalXP: Math.max(0, prev.totalXP - 4), // Rebalanced heart cost to 4 XP
         };
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
         return updated;
       });
-      showToast("Spent 20 XP! Mithu restored your 5 Hearts. ❤️");
+      showToast("Spent 4 XP! Mithu restored your 5 Hearts. ❤️");
     } else {
       showToast("Mithu gifted you 5 free Hearts! Shabash! 🦜❤️");
     }
@@ -4439,7 +4451,7 @@ export default function App() {
     setAppState((prev) => {
       let stateUpdate = {
         ...prev,
-        totalXP: correct ? prev.totalXP + 10 : prev.totalXP,
+        totalXP: correct ? prev.totalXP + 2 : prev.totalXP, // Rebalanced: +2 XP per correct answer
         weakAreas: updatedWeakAreas,
       };
       if (stateUpdate.totalXP > prev.totalXP) {
@@ -4502,26 +4514,25 @@ export default function App() {
           return;
         }
         // Completed full set! Save completion milestones
-        const isNewCompletion = !appState.completedUnits.includes(
-          quizState.unitId,
-        );
-        const unitsArray = isNewCompletion
-          ? [...appState.completedUnits, quizState.unitId]
-          : appState.completedUnits;
+        const uId = quizState.unitId;
+        saveState((prev) => {
+          const isNewCompletion = !prev.completedUnits.includes(uId);
+          const unitsArray = isNewCompletion
+            ? [...prev.completedUnits, uId]
+            : prev.completedUnits;
 
-        const nextJourneyProgress = {
-          ...(appState.unitStagesProgress ?? {}),
-          [quizState.unitId]: 5,
-        };
+          const nextJourneyProgress = {
+            ...(prev.unitStagesProgress ?? {}),
+            [uId]: 5,
+          };
 
-        const updated = {
-          ...appState,
-          completedUnits: unitsArray,
-          totalXP: appState.totalXP + 50, // Major completion reward!
-          unitStagesProgress: nextJourneyProgress,
-        };
-
-        saveState(updated);
+          return {
+            ...prev,
+            completedUnits: unitsArray,
+            totalXP: prev.totalXP + 10, // Rebalanced: +10 XP for full mastery completion!
+            unitStagesProgress: nextJourneyProgress,
+          };
+        });
         playSoundSynth("levelUp");
 
         const celebratoryMsg = getMithuUnitCompletionMessage(
@@ -4536,7 +4547,7 @@ export default function App() {
           setCompletedUnitPopup(quizState.unitId);
         } else {
           showToast(
-            `${celebratoryMsg} Stage Completed! Awarded +50 Reward XP! 🎉`,
+            `${celebratoryMsg} Stage Completed! Awarded +10 Reward XP! 🎉`,
           );
         }
 
@@ -4854,6 +4865,7 @@ export default function App() {
     playSoundSynth("click");
     setSearchQuery("");
     setSelectedSearchEntry(null);
+    hasSavedArcadeScoreRef.current = false;
 
     setArcadeState({
       score: 0,
@@ -4878,26 +4890,6 @@ export default function App() {
         if (prev.timeLeft <= 1) {
           // Time completed
           if (arcadeTimerRef.current) clearInterval(arcadeTimerRef.current);
-
-          const reachedScore = prev.score;
-
-          setAppState((currentAppState) => {
-            const currentHigh = currentAppState.highScore;
-            const nextHigh = reachedScore > currentHigh;
-
-            let saved = {
-              ...currentAppState,
-              highScore: nextHigh ? reachedScore : currentHigh,
-              totalXP: currentAppState.totalXP + reachedScore, // Real XP earned matches scorecard points
-            };
-
-            if (reachedScore > 0) {
-              saved = markUserActive(saved);
-            }
-
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saved));
-            return saved;
-          });
 
           playSoundSynth("levelUp");
 
@@ -4966,8 +4958,8 @@ export default function App() {
     }, 600);
 
     const calculatedScore = correctMatch
-      ? arcadeState.score + 10
-      : Math.max(0, arcadeState.score - 5);
+      ? arcadeState.score + 2
+      : Math.max(0, arcadeState.score - 1); // Rebalanced Blitz: +2 correct, -1 wrong
     const completedChallenges = arcadeState.totalAnswered + 1;
     const errorsCounter = correctMatch
       ? arcadeState.wrongCount
@@ -5128,6 +5120,34 @@ export default function App() {
       if (arcadeTimerRef.current) clearInterval(arcadeTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      arcadeState?.isGameOver &&
+      arcadeState?.score !== undefined &&
+      !hasSavedArcadeScoreRef.current
+    ) {
+      hasSavedArcadeScoreRef.current = true;
+      const reachedScore = arcadeState.score;
+      setAppState((currentAppState) => {
+        const currentHigh = currentAppState.highScore;
+        const nextHigh = reachedScore > currentHigh;
+
+        let saved = {
+          ...currentAppState,
+          highScore: nextHigh ? reachedScore : currentHigh,
+          totalXP: currentAppState.totalXP + reachedScore, // Real XP earned matches scorecard points
+        };
+
+        if (reachedScore > 0) {
+          saved = markUserActive(saved);
+        }
+
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saved));
+        return saved;
+      });
+    }
+  }, [arcadeState?.isGameOver, arcadeState?.score]);
 
   const closeArcadeFrame = () => {
     playSoundSynth("destructive");
@@ -5700,6 +5720,143 @@ export default function App() {
           })()}
       </AnimatePresence>
 
+      {/* Lifetime XP Popup Modal */}
+      <AnimatePresence>
+        {showXPPopup &&
+          (() => {
+            const xpVal = appState.totalXP;
+            let mithuMood: "thinking" | "happy" | "sparkly" = "thinking";
+            let mithuDialogueRoman =
+              "Boht khoob! Har naya lafz\nek nayi kamyabi hai! 🎯";
+            let mithuDialogueEng =
+              "Every Urdu numeral you learn builds your permanent knowledge profile!";
+
+            if (xpVal >= 500) {
+              mithuMood = "sparkly";
+              mithuDialogueRoman =
+                "Subhanallah! Aap to urdu ginti ke ustad ban chuke hain! 👑";
+              mithuDialogueEng =
+                "Your dedication to Urdu numerals is outstanding. Truly master-level experience!";
+            } else if (xpVal >= 100) {
+              mithuMood = "happy";
+              mithuDialogueRoman =
+                "Zabardast! Ginti par aap ka qaboo mazeed mazboot ho raha hai! 🚀";
+              mithuDialogueEng =
+                "Fantastic progress! Your vocabulary is growing stronger and faster every day.";
+            }
+
+            return (
+              <motion.div
+                id="xp-popup-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12 }}
+                className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.98,
+                    transition: { duration: 0.1 },
+                  }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
+                  className="relative w-full max-w-[365px] bg-gradient-to-b from-emerald-50/90 via-emerald-50/20 to-white dark:from-[#14321f] dark:via-[#0c1c11] dark:to-[#08120b] border-[3px] border-emerald-100 dark:border-[#22442c] border-b-[8px] border-b-emerald-200 dark:border-b-[#0b140e] rounded-[2rem] p-5 shadow-2xl overflow-hidden flex flex-col gap-4"
+                >
+                  {/* Premium Gradient Top-bar Accent */}
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-500" />
+
+                  {/* Ambient glowing radial light background */}
+                  <div className="absolute top-0 right-0 -mt-10 -mr-10 w-36 h-36 rounded-full bg-gradient-to-br from-emerald-400/10 to-transparent blur-2xl pointer-events-none" />
+
+                  {/* 1. Header with Close Button */}
+                  <div className="flex items-start justify-between w-full">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-none mb-1">
+                        Lifetime XP
+                      </h3>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+                        Ginti Learning Experience
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        playSoundSynth("navigation");
+                        setShowXPPopup(false);
+                      }}
+                      className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer z-10 -mr-1 -mt-1"
+                      aria-label="Close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* 2. Mithu Guidance */}
+                  <div className="flex items-center gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/70 dark:border-emerald-900/30 rounded-xl py-2 px-3 text-left w-full shrink-0">
+                    {/* Mascot */}
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <div
+                        className={`absolute inset-0 ${appState.isDarkMode ? "bg-emerald-400/20" : "bg-amber-400/20"} rounded-full blur-xs animate-pulse`}
+                      />
+                      <div className="relative z-10 w-9 h-9 flex items-center justify-center">
+                        <MithuMascot mood={mithuMood} size={36} />
+                      </div>
+                    </div>
+                    {/* Bubble Content */}
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[7.5px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-widest block mb-0.5">
+                        Mithu says
+                      </span>
+                      <p className="font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 leading-snug mb-0.5 not-italic whitespace-pre-line">
+                        "{mithuDialogueRoman}"
+                      </p>
+                      <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
+                        {mithuDialogueEng}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3. Current XP (Premium visual centerpiece) */}
+                  <div className="relative w-full bg-gradient-to-b from-emerald-50/40 to-teal-50/10 dark:from-emerald-950/5 dark:to-teal-950/2 border-2 border-emerald-100/80 dark:border-emerald-950/30 border-b-[5px] border-b-emerald-200/80 dark:border-b-emerald-950/80 rounded-[1.5rem] p-4 overflow-hidden shadow-xs">
+                    <div className="flex flex-col items-center text-center">
+                      <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest block mb-1">
+                        Total Accumulated Experience
+                      </span>
+
+                      <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tracking-tight flex items-center justify-center gap-2 leading-none py-1">
+                        <span className="text-2xl sm:text-3xl">⭐</span>
+                        <span>{xpVal.toLocaleString()}</span>
+                        <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 select-none">
+                          XP
+                        </span>
+                      </div>
+
+                      <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-900/80 border border-emerald-100 dark:border-emerald-950 text-[10px] sm:text-[11px] font-black text-emerald-800 dark:text-emerald-300 shadow-3xs">
+                        🎓 Level {Math.max(1, Math.floor(xpVal / 100) + 1)}{" "}
+                        Learner
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dismiss Button */}
+                  <button
+                    onClick={() => {
+                      playSoundSynth("navigation");
+                      setShowXPPopup(false);
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 dark:border-b-emerald-950 active:translate-y-[3px] active:border-b-[2px] transition-all rounded-full py-2.5 px-4 font-black tracking-wide text-xs shadow-md cursor-pointer select-none uppercase"
+                  >
+                    Acha, Samajh Gaya! 🦜
+                  </button>
+                </motion.div>
+              </motion.div>
+            );
+          })()}
+      </AnimatePresence>
+
       {/* Mastery Streak Milestone Celebration Toast */}
       <AnimatePresence>
         {streakCelebration && (
@@ -5863,7 +6020,7 @@ export default function App() {
                           Rewards
                         </span>
                         <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-                          +50 XP ⚡
+                          +10 XP ⚡
                         </span>
                       </div>
                       <div className="bg-amber-100/40 dark:bg-[#251e0f]/85 border border-amber-200/70 dark:border-[#4d3d1e]/80 rounded-xl p-2.5 flex flex-col items-center justify-center shadow-[inset_0_1.5px_3px_rgba(139,92,26,0.06)] dark:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.4)]">
@@ -6883,24 +7040,26 @@ export default function App() {
           </div>
 
           {/* Global Progress Indicators - Inline sleek layout (highly readable, uncluttered) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-nowrap shrink-0">
             {/* XP Button - Tactile Styled matching Urdu script switcher button style */}
             <button
               onClick={() => {
                 playSoundSynth("click");
-                showToast(
-                  `Keep practicing! You have accumulated ${appState.totalXP} XP.`,
-                );
+                setShowXPPopup(true);
               }}
-              className="flex items-center justify-center gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-700 hover:bg-slate-50/50 shadow-xs"
-              title="Total XP - Click to check status"
+              className={`flex items-center justify-center gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none shadow-xs active:translate-y-[2px] active:border-b-[2px] ${
+                appState.isDarkMode
+                  ? "bg-[#111A14] border-[#22382c] border-b-[4px] sm:border-b-[5px] border-b-[#2b4435] text-[#f3f9f6] hover:bg-[#1a2e22]"
+                  : "bg-white border-slate-200 border-b-[4px] sm:border-b-[5px] border-b-slate-300 text-slate-700 hover:bg-slate-50"
+              }`}
+              title="Total XP - Click to view lifetime value"
             >
               <span className="text-xs sm:text-sm select-none leading-none translate-y-[-0.5px]">
                 ⭐
               </span>
-              <span className="font-mono font-black text-slate-700 leading-none tracking-tight flex items-center">
+              <span className="font-mono font-black leading-none tracking-tight flex items-center">
                 {appState.totalXP}
-                <span className="text-[7.5px] sm:text-[8.5px] text-slate-400 font-bold ml-0.5 uppercase tracking-wide">
+                <span className="text-[7.5px] sm:text-[8.5px] text-slate-400 dark:text-emerald-500/50 font-bold ml-0.5 uppercase tracking-wide">
                   XP
                 </span>
               </span>
@@ -6912,7 +7071,7 @@ export default function App() {
                 playSoundSynth("click");
                 setShowStreakPopup(true);
               }}
-              className={`flex items-center justify-center gap-1 sm:gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] border-b-[3.5px] sm:border-b-[4.5px] ${getStreakBadgeStyles()}`}
+              className={`flex items-center justify-center gap-1 sm:gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[2px] active:border-b-[2px] border-b-[4px] sm:border-b-[5px] ${getStreakBadgeStyles()}`}
               title="Mastery Streak - Click to view true value"
             >
               <MasteryFlame
@@ -6932,7 +7091,7 @@ export default function App() {
             </button>
 
             {/* Urdu Script Switcher - Highly Refined & Center-Aligned Tactile 3D button */}
-            <div className="flex items-center pl-1.5 sm:pl-3 border-l-2 border-slate-200">
+            <div className="flex items-center pl-1.5 sm:pl-3 border-l-2 border-slate-200 dark:border-emerald-950/40">
               <button
                 id="script-toggle"
                 onClick={() => {
@@ -6944,14 +7103,14 @@ export default function App() {
                     nextState ? "Urdu Script shown." : "Urdu Script hidden.",
                   );
                 }}
-                className={`flex items-center justify-center gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] ${
+                className={`flex items-center justify-center gap-1.5 h-[30px] sm:h-[38px] px-2 sm:px-3 rounded-full border-2 transition-all duration-100 cursor-pointer select-none shadow-xs active:translate-y-[2px] active:border-b-[2px] ${
                   appState.isDarkMode
                     ? appState.showScript
-                      ? "bg-[#0c2417] border-[#064e3b] border-b-[3.5px] sm:border-b-[4.5px] border-b-[#047857] text-emerald-300 font-black shadow-xs"
-                      : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-400 hover:bg-slate-50/50 shadow-xs"
+                      ? "bg-[#0c2417] border-[#064e3b] border-b-[4px] sm:border-b-[5px] border-b-[#047857] text-emerald-300 font-black"
+                      : "bg-[#111A14] border-[#22382c] border-b-[4px] sm:border-b-[5px] border-b-[#2b4435] text-slate-400 hover:bg-[#1a2e22]"
                     : appState.showScript
-                      ? "bg-emerald-50 border-emerald-500 border-b-[3.5px] sm:border-b-[4.5px] border-b-emerald-700 text-emerald-950 font-black shadow-xs"
-                      : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-slate-500 hover:bg-slate-50/50"
+                      ? "bg-emerald-50 border-emerald-500 border-b-[4px] sm:border-b-[5px] border-b-emerald-700 text-emerald-950 font-black hover:bg-emerald-100/50"
+                      : "bg-white border-slate-200 border-b-[4px] sm:border-b-[5px] border-b-slate-300 text-slate-500 hover:bg-slate-50"
                 }`}
                 title="Toggle Urdu Nastaliq Script"
               >
@@ -6991,7 +7150,7 @@ export default function App() {
             </div>
 
             {/* Theme Toggle - Highly Polished Tactile 3D button */}
-            <div className="flex items-center pl-1.5 sm:pl-3 border-l-2 border-slate-200">
+            <div className="flex items-center pl-1.5 sm:pl-3 border-l-2 border-slate-200 dark:border-emerald-950/40">
               <button
                 id="theme-toggle"
                 onClick={() => {
@@ -7009,10 +7168,10 @@ export default function App() {
                       : "Classic Emerald theme active",
                   );
                 }}
-                className={`flex items-center justify-center p-2 sm:p-2.5 rounded-full border-2 transition-all duration-100 cursor-pointer select-none active:translate-y-[1.5px] ${
+                className={`flex items-center justify-center p-2 sm:p-2.5 rounded-full border-2 transition-all duration-100 cursor-pointer select-none shadow-xs active:translate-y-[2px] active:border-b-[2px] ${
                   appState.isDarkMode
-                    ? "bg-[#111A14] border-[#22382c] border-b-[3.5px] sm:border-b-[4.5px] border-b-[#2b4435] text-amber-400 shadow-xs"
-                    : "bg-white border-slate-200 border-b-[3.5px] sm:border-b-[4.5px] border-b-slate-300 text-yellow-500 hover:bg-slate-50/55"
+                    ? "bg-[#111A14] border-[#22382c] border-b-[4px] sm:border-b-[5px] border-b-[#2b4435] text-amber-400 hover:bg-[#1a2e22]"
+                    : "bg-white border-slate-200 border-b-[4px] sm:border-b-[5px] border-b-slate-300 text-yellow-500 hover:bg-slate-50"
                 }`}
                 title={
                   appState.isDarkMode
@@ -7188,25 +7347,25 @@ export default function App() {
                               leveledUp = saveUnitStageProgress(uId, 3);
                               setStageListIdx(5); // Show stage end screen
                             } else if (mode === "journey_stage5" && uId) {
-                              const isNewCompletion =
-                                !appState.completedUnits.includes(uId);
-                              const unitsArray = isNewCompletion
-                                ? [...appState.completedUnits, uId]
-                                : appState.completedUnits;
+                              saveState((prev) => {
+                                const isNewCompletion =
+                                  !prev.completedUnits.includes(uId);
+                                const unitsArray = isNewCompletion
+                                  ? [...prev.completedUnits, uId]
+                                  : prev.completedUnits;
 
-                              const nextJourneyProgress = {
-                                ...(appState.unitStagesProgress ?? {}),
-                                [uId]: 5,
-                              };
+                                const nextJourneyProgress = {
+                                  ...(prev.unitStagesProgress ?? {}),
+                                  [uId]: 5,
+                                };
 
-                              const updated = {
-                                ...appState,
-                                completedUnits: unitsArray,
-                                totalXP: appState.totalXP + 50,
-                                unitStagesProgress: nextJourneyProgress,
-                              };
-
-                              saveState(updated);
+                                return {
+                                  ...prev,
+                                  completedUnits: unitsArray,
+                                  totalXP: prev.totalXP + 10,
+                                  unitStagesProgress: nextJourneyProgress,
+                                };
+                              });
                               leveledUp = true;
                               const celebratoryMsg =
                                 getMithuUnitCompletionMessage(
@@ -7219,32 +7378,32 @@ export default function App() {
                               setCompletedUnitPopup(uId);
                               setActiveScreen("dashboard");
                             } else if (mode === "placement_challenge" && uId) {
-                              const isNewCompletion =
-                                !appState.completedUnits.includes(uId);
-                              const unitsArray = isNewCompletion
-                                ? [...appState.completedUnits, uId]
-                                : appState.completedUnits;
+                              saveState((prev) => {
+                                const isNewCompletion =
+                                  !prev.completedUnits.includes(uId);
+                                const unitsArray = isNewCompletion
+                                  ? [...prev.completedUnits, uId]
+                                  : prev.completedUnits;
 
-                              const placementsArray =
-                                appState.placementCompletedUnits &&
-                                !appState.placementCompletedUnits.includes(uId)
-                                  ? [...appState.placementCompletedUnits, uId]
-                                  : appState.placementCompletedUnits || [uId];
+                                const placementsArray =
+                                  prev.placementCompletedUnits &&
+                                  !prev.placementCompletedUnits.includes(uId)
+                                    ? [...prev.placementCompletedUnits, uId]
+                                    : prev.placementCompletedUnits || [uId];
 
-                              const nextJourneyProgress = {
-                                ...(appState.unitStagesProgress ?? {}),
-                                [uId]: 5,
-                              };
+                                const nextJourneyProgress = {
+                                  ...(prev.unitStagesProgress ?? {}),
+                                  [uId]: 5,
+                                };
 
-                              const updated = {
-                                ...appState,
-                                completedUnits: unitsArray,
-                                placementCompletedUnits: placementsArray,
-                                totalXP: appState.totalXP + 50,
-                                unitStagesProgress: nextJourneyProgress,
-                              };
-
-                              saveState(updated);
+                                return {
+                                  ...prev,
+                                  completedUnits: unitsArray,
+                                  placementCompletedUnits: placementsArray,
+                                  totalXP: prev.totalXP + 10,
+                                  unitStagesProgress: nextJourneyProgress,
+                                };
+                              });
                               leveledUp = true;
 
                               // Check if there is a next unit to focus
@@ -8428,7 +8587,7 @@ export default function App() {
                                   </span>
                                 </div>
 
-                                <p className="text-[10.5px] text-slate-550 leading-relaxed font-semibold max-w-sm">
+                                <p className="text-[10.5px] text-slate-500 leading-relaxed font-semibold max-w-sm">
                                   {unit.description}
                                 </p>
                               </div>
@@ -8779,10 +8938,10 @@ export default function App() {
                   <div className="flex flex-col gap-2 w-full mt-2">
                     <button
                       onClick={() => refillHearts(true)}
-                      disabled={appState.totalXP < 20}
+                      disabled={appState.totalXP < 4}
                       className="w-full btn-gold py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
-                      <span>❤️ Save with 20 XP</span>
+                      <span>❤️ Save with 4 XP</span>
                       <span className="bg-amber-950/20 text-slate-900 px-1.5 py-0.5 rounded text-[10px]">
                         Your XP: {appState.totalXP}
                       </span>
@@ -9565,7 +9724,7 @@ export default function App() {
                         {
                           id: 5,
                           name: "Stage 5: Final Mastery Test",
-                          desc: "Tackle a comprehensive mixed-challenge assessment to fully master this unit! (+50 XP)",
+                          desc: "Tackle a comprehensive mixed-challenge assessment to fully master this unit! (+10 XP)",
                           icon: <Star className="w-5 h-5 text-amber-600" />,
                         },
                       ].map((stg) => {
@@ -9979,7 +10138,7 @@ export default function App() {
                             }}
                             className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black cursor-pointer shadow-md"
                           >
-                            Unlock Stage 3: Listening (+15 XP) 🎉
+                            Unlock Stage 3: Listening (+3 XP) 🎉
                           </button>
                           <button
                             onClick={() => {
@@ -10201,7 +10360,7 @@ export default function App() {
                             }}
                             className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black animate-pulse shadow-md cursor-pointer"
                           >
-                            Unlock Stage 4: Arcade Blitz (+15 XP) 🎉
+                            Unlock Stage 4: Arcade Blitz (+3 XP) 🎉
                           </button>
                           <button
                             onClick={() => {
@@ -10428,7 +10587,7 @@ export default function App() {
                               }}
                               className="w-full btn-gold py-3 px-5 rounded-2xl text-xs font-black uppercase shadow-md cursor-pointer animate-pulse"
                             >
-                              Proceed to Stage 5: Mastery Test (+15 XP) 🎉
+                              Proceed to Stage 5: Mastery Test (+3 XP) 🎉
                             </button>
                           ) : (
                             <button
@@ -11472,7 +11631,7 @@ export default function App() {
 
                           <p className="text-xs text-slate-500 max-w-xs leading-relaxed font-semibold">
                             {pass
-                              ? `Brilliant progress reflexes! You solved ${arenaQuizScore} out of 5 equations correctly and scored +25 XP!`
+                              ? `Brilliant progress reflexes! You solved ${arenaQuizScore} out of 5 equations correctly and scored +5 XP!`
                               : `You correctly answered ${arenaQuizScore}/5. Retake this trial to unlock the Ear Trainer Auditory Stage.`}
                           </p>
 
@@ -11489,7 +11648,7 @@ export default function App() {
                                     : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                                 }`}
                               >
-                                Unlock Stage 3: Listening Duel (+25 XP) 🎉
+                                Unlock Stage 3: Listening Duel (+5 XP) 🎉
                               </button>
                             ) : (
                               <button
@@ -11707,9 +11866,9 @@ export default function App() {
                               : "Need 3 Hits to Clear!"}
                           </h3>
 
-                          <p className="text-xs text-slate-555 max-w-xs leading-relaxed font-semibold">
+                          <p className="text-xs text-slate-500 max-w-xs leading-relaxed font-semibold">
                             {pass
-                              ? `Fantastic matching reflexes! You correctly translated ${arenaQuizScore} spoken Urdu numerals and scored +25 XP!`
+                              ? `Fantastic matching reflexes! You correctly translated ${arenaQuizScore} spoken Urdu numerals and scored +5 XP!`
                               : `You finished with ${arenaQuizScore}/5 matches. Practice some more then retry the Listening Duel.`}
                           </p>
 
@@ -11726,7 +11885,7 @@ export default function App() {
                                     : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                                 }`}
                               >
-                                Unlock Stage 4: Speed Blitz (+25 XP) 🎉
+                                Unlock Stage 4: Speed Blitz (+5 XP) 🎉
                               </button>
                             ) : (
                               <button
@@ -11945,7 +12104,7 @@ export default function App() {
                               : "Need 3 Hits to Clear!"}
                           </h3>
 
-                          <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
+                          <p className="text-xs text-slate-500 max-w-xs leading-relaxed font-semibold">
                             {pass
                               ? `Phenomenal reflex translation! You completed the run scoring ${arenaArcadeScore} correct matches in 30s!`
                               : `You finished with ${arenaArcadeScore} hits. Reach at least 3 correct matches to pass Ginti's Stopwatch evaluation.`}
@@ -11964,7 +12123,7 @@ export default function App() {
                                     : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                                 }`}
                               >
-                                Proceed to Stage 5: Mastery Battle (+25 XP) 🎉
+                                Proceed to Stage 5: Mastery Battle (+5 XP) 🎉
                               </button>
                             ) : (
                               <button
@@ -12156,9 +12315,9 @@ export default function App() {
                               : "Need 7 Correct Answers to Master!"}
                           </h3>
 
-                          <p className="text-xs text-slate-505 max-w-xs leading-relaxed font-semibold">
+                          <p className="text-xs text-slate-500 max-w-xs leading-relaxed font-semibold">
                             {pass
-                              ? `Incredible! You solved ${arenaQuizScore}/10 mixed trials and achieved total Ginti range mastery for ${minRange} → ${maxRange}! Awarded +100 bonus XP!`
+                              ? `Incredible! You solved ${arenaQuizScore}/10 mixed trials and achieved total Ginti range mastery for ${minRange} → ${maxRange}! Awarded +20 bonus XP!`
                               : `You correctly answered ${arenaQuizScore}/10 questions. Review some elements in Stage 1 and retake the Final Battle.`}
                           </p>
 
@@ -12209,7 +12368,7 @@ export default function App() {
                                     : "border-2 border-emerald-500 border-b-4 border-b-emerald-800 active:translate-y-[2px] active:border-b-2"
                                 }`}
                               >
-                                Claim Mastery Badge & Trophy (+100 XP) 🏆
+                                Claim Mastery Badge & Trophy (+20 XP) 🏆
                               </button>
                             ) : (
                               <button
