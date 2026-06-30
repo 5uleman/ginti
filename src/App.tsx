@@ -101,6 +101,8 @@ const createSafeLocalStorage = () => {
 const safeLocalStorage = createSafeLocalStorage();
 const localStorage = safeLocalStorage;
 
+export const MAX_SEARCH_LIMIT = 9999;
+
 // Premium Speaker Icon Component
 const PremiumSpeakerIcon = ({
   className = "w-full h-full text-emerald-800",
@@ -3045,7 +3047,7 @@ export default function App() {
 
     total += tempSum;
 
-    if (total >= 0 && total <= 9999) {
+    if (total >= 0 && total <= MAX_SEARCH_LIMIT) {
       return total;
     }
     return null;
@@ -3065,7 +3067,7 @@ export default function App() {
       };
     }
 
-    if (digit < 0 || digit > 9999) return null;
+    if (digit < 0 || digit > MAX_SEARCH_LIMIT) return null;
 
     const thousands = Math.floor(digit / 1000);
     const hundreds = Math.floor((digit % 1000) / 100);
@@ -3221,7 +3223,7 @@ export default function App() {
 
     let dynamicEntryAdded = false;
     let dynamicEntry: NumberEntry | null = null;
-    if (parsedNum !== null && parsedNum >= 0 && parsedNum <= 9999) {
+    if (parsedNum !== null && parsedNum >= 0 && parsedNum <= MAX_SEARCH_LIMIT) {
       dynamicEntry = generateNumberEntry(parsedNum);
     }
 
@@ -5847,7 +5849,11 @@ export default function App() {
                       playSoundSynth("navigation");
                       setShowXPPopup(false);
                     }}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 dark:border-b-emerald-950 active:translate-y-[3px] active:border-b-[2px] transition-all rounded-full py-2.5 px-4 font-black tracking-wide text-xs shadow-md cursor-pointer select-none uppercase"
+                    className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white transition-all rounded-full py-2.5 px-4 font-black tracking-wide text-xs cursor-pointer select-none uppercase ${
+                      appState.isDarkMode
+                        ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                        : "border-2 border-emerald-500 border-b-[5px] border-b-emerald-800 active:translate-y-[3px] active:border-b-[2px] shadow-md"
+                    }`}
                   >
                     Acha, Samajh Gaya! 🦜
                   </button>
@@ -6592,7 +6598,11 @@ export default function App() {
                       playSoundSynth("click");
                       setMithuExplanationDigit(null);
                     }}
-                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white border-2 border-emerald-500 border-b-[6px] border-b-emerald-700 active:translate-y-[4px] active:border-b-[2px] transition-all rounded-full py-3 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md select-none mt-1 ginti-samajh-gaya-btn"
+                    className={`w-full bg-emerald-500 hover:bg-emerald-400 text-white transition-all rounded-full py-3 font-black text-xs uppercase tracking-wider cursor-pointer select-none mt-1 ginti-samajh-gaya-btn ${
+                      appState.isDarkMode
+                        ? "border-2 border-emerald-950 border-b-4 border-b-emerald-955 active:translate-y-[2px] active:border-b-2"
+                        : "border-2 border-emerald-500 border-b-[6px] border-b-emerald-700 active:translate-y-[4px] active:border-b-[2px] shadow-md"
+                    }`}
                   >
                     {mithuLanguage === "en" ? "Got It! 👍" : "Samajh Gaya! 👍"}
                   </button>
@@ -7925,7 +7935,7 @@ export default function App() {
                           </div>
                         </div>
                         <span className="text-[9.5px] font-mono font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-100/50 px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-xs">
-                          1-5000
+                          1–{MAX_SEARCH_LIMIT}
                         </span>
                       </div>
 
