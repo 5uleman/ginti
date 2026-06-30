@@ -7058,7 +7058,7 @@ export default function App() {
                 ⭐
               </span>
               <span className="font-mono font-black leading-none tracking-tight flex items-center">
-                {appState.totalXP}
+                {formatCompactXP(appState.totalXP)}
                 <span className="text-[7.5px] sm:text-[8.5px] text-slate-400 dark:text-emerald-500/50 font-bold ml-0.5 uppercase tracking-wide">
                   XP
                 </span>
