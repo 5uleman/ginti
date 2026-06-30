@@ -6855,7 +6855,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto flex items-center justify-between w-full">
           <div
             onClick={closeArcadeFrame}
-            className="flex items-center gap-1.5 sm:gap-[7px] cursor-pointer group shrink-0"
+            className="flex items-center gap-0 sm:gap-[7px] cursor-pointer group shrink-0"
           >
             <img
               src={appState.showScript ? "/logo-urdu.png" : "/logo-en.png"}
