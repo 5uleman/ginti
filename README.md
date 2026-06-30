@@ -1,7 +1,7 @@
 # Ginti
 
 <p align="center">
-  <img src="./public/logo-en.png" alt="Ginti Logo" width="140">
+  <img src="./public/logo-urdu.png" alt="Ginti Logo" width="140">
 </p>
 
 <p align="center">
