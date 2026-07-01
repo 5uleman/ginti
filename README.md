@@ -47,12 +47,6 @@ Ginti was built around a simple idea:
 
 ---
 
-## Screenshots
-
-_Coming later._
-
----
-
 ## License
 
 This repository is shared for educational and portfolio purposes.
